@@ -22,7 +22,7 @@ export async function POST(request) {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const { prompt, isMatty, isTechnical, jsonMode, model } = await request.json();
+    const { prompt, isMatty, isTechnical, isConviction, jsonMode, model } = await request.json();
 
     const GROK_KEY = process.env.GROK_API_KEY || process.env.NEXT_PUBLIC_GROK_KEY;
 
@@ -65,13 +65,21 @@ Evaluate: cup shape (U vs V), depth (10-35% ideal), duration, handle formation, 
 Provide analysis then end with:
 CUP_HANDLE_SCORE: [0-100]`;
       maxTokens = 1500;
-    } else {
+    } else if (isConviction) {
       systemPrompt = `You are an equity research analyst evaluating conviction on individual stocks.
 
 Weigh: business quality and moat, supply-chain positioning for AI/robotics/energy megatrends, fundamentals (valuation, growth, margins), insider activity, and near-term catalysts.
 
 Provide analysis then end with:
 CONVICTION_SCORE: [0-100]`;
+      maxTokens = 1500;
+    } else {
+      systemPrompt = `You are an insider trading analyst.
+
+Evaluate: insider ownership %, recent buying vs selling, purchase size relative to net worth, cluster buying, C-suite transactions.
+
+Provide analysis then end with:
+INSIDER_CONVICTION: [0-100]`;
       maxTokens = 1500;
     }
 

@@ -286,7 +286,7 @@ End with: CONVICTION_SCORE: [0-100]`;
     const response = await fetch("/api/grok", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt, model: DEEP_MODEL })
+      body: JSON.stringify({ prompt, model: DEEP_MODEL, isConviction: true })
     });
     if (!response.ok) throw new Error((await response.json()).error || response.status);
     const data = await response.json();
