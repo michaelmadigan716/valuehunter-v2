@@ -3,8 +3,25 @@
 
 const DEFAULT_MODEL = 'grok-4.3';
 
+// Retired model names still floating around in old clients/sessions
+const LEGACY_MODELS = {
+  'grok-4': 'grok-4.5',
+  'grok-4-fast-reasoning': 'grok-4.20',
+  'grok-3-mini': 'grok-4.20-non-reasoning',
+  'grok-3': 'grok-4.3',
+};
+
 export async function POST(request) {
   try {
+    // Block cross-origin browser calls so random sites can't burn our xAI
+    // credits through this endpoint. Same-origin requests pass; requests
+    // without an Origin header (server-to-server) are allowed.
+    const origin = request.headers.get('origin');
+    const host = request.headers.get('host');
+    if (origin && host && new URL(origin).host !== host) {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const { prompt, isMatty, isTechnical, jsonMode, model } = await request.json();
 
     const GROK_KEY = process.env.GROK_API_KEY || process.env.NEXT_PUBLIC_GROK_KEY;
@@ -13,7 +30,8 @@ export async function POST(request) {
       return Response.json({ error: 'Grok API key not configured' }, { status: 500 });
     }
 
-    const grokModel = model || DEFAULT_MODEL;
+    const requested = model || DEFAULT_MODEL;
+    const grokModel = LEGACY_MODELS[requested] || requested;
 
     // Different system prompts based on analysis type
     let systemPrompt;

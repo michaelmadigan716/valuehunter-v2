@@ -466,7 +466,7 @@ async function getOptionsSentiment(ticker) {
 // ============================================
 // GROK AI ANALYSIS - Insider Conviction Focus
 // ============================================
-async function getAIAnalysis(stock, model = 'grok-4') {
+async function getAIAnalysis(stock, model = 'grok-4.5') {
   console.log(`Starting Grok Conviction analysis for ${stock.ticker} with ${model}...`);
   
   try {
@@ -525,7 +525,7 @@ INSIDER_CONVICTION: [number from 0 to 100]`;
 // ============================================
 // TECHNICAL ANALYSIS - Cup and Handle Deep Dive
 // ============================================
-async function getTechnicalAnalysis(stock, model = 'grok-4') {
+async function getTechnicalAnalysis(stock, model = 'grok-4.5') {
   console.log(`Starting Technical Analysis for ${stock.ticker} with ${model}...`);
   
   try {
@@ -697,7 +697,7 @@ CUP_HANDLE_SCORE: [0-100]`;
 // ============================================
 // UPSIDE SCAN - 8-Month Price Target Analysis
 // ============================================
-async function getUpsideAnalysis(stock, model = 'grok-4') {
+async function getUpsideAnalysis(stock, model = 'grok-4.5') {
   console.log(`Running Upside Scan for ${stock.ticker} with ${model}...`);
   
   try {
@@ -1154,7 +1154,7 @@ export default function StockResearchApp() {
   const [convictionCount, setConvictionCount] = useState(10);
   const [technicalCount, setTechnicalCount] = useState(10);
   const [upsideCount, setUpsideCount] = useState(10);
-  const [grokModel, setGrokModel] = useState('grok-4');
+  const [grokModel, setGrokModel] = useState('grok-4.5');
   const [singularityBatchSize, setSingularityBatchSize] = useState(15);
   
   // Filter settings
@@ -2781,8 +2781,8 @@ Respond with ONLY a JSON array:
                   className="w-full rounded-lg px-3 py-2 text-sm border outline-none"
                   style={{ background: 'rgba(30,41,59,0.5)', borderColor: 'rgba(245,158,11,0.3)', color: '#fbbf24' }}
                 >
-                  <option value="grok-4">Grok 4 (Smartest)</option>
-                  <option value="grok-4-fast-reasoning">Grok 4 Fast Reasoning (Faster)</option>
+                  <option value="grok-4.5">Grok 4.5 (Smartest)</option>
+                  <option value="grok-4.20">Grok 4.20 (Faster)</option>
                 </select>
                 <p className="text-xs text-slate-500 mt-1">Grok 4 is more thorough, Fast Reasoning is quicker but may be less detailed</p>
               </div>

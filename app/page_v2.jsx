@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Search, Brain, Zap, RefreshCw, ChevronDown, ChevronUp, X, Plus, Trash2, Play, Building2, Factory, Sparkles, AlertCircle, Edit3, Save } from 'lucide-react';
+import { Search, Brain, Zap, RefreshCw, ChevronDown, ChevronUp, X, Plus, Trash2, Play, Building2, Factory, Sparkles, AlertCircle, Edit3, Save, Calculator, Users } from 'lucide-react';
 
 // ============================================
 // API CONFIGURATION
@@ -128,6 +128,12 @@ async function getFundamentals(ticker) {
       peRatio: pick(metric.peTTM ?? metric.peBasicExclExtraTTM),
       revenueGrowth: pick(metric.revenueGrowthTTMYoy),
       grossMargin: pick(metric.grossMarginTTM),
+      netMargin: pick(metric.netProfitMarginTTM),
+      roe: pick(metric.roeTTM),
+      eps: pick(metric.epsTTM),
+      cashFlowPerShare: pick(metric.cashFlowPerShareTTM),
+      revenuePerShare: pick(metric.revenuePerShareTTM),
+      debtToEquity: pick(metric['totalDebt/totalEquityQuarterly']),
       insiderBought3m: insiderBought,
       insiderSold3m: insiderSold,
     };
@@ -140,9 +146,15 @@ async function getFundamentals(ticker) {
 function fundamentalsSummary(f) {
   if (!f) return 'No fundamental data available.';
   const parts = [];
-  if (f.peRatio !== null) parts.push(`P/E (TTM): ${f.peRatio.toFixed(1)}`);
-  if (f.revenueGrowth !== null) parts.push(`Revenue growth YoY: ${f.revenueGrowth.toFixed(1)}%`);
-  if (f.grossMargin !== null) parts.push(`Gross margin: ${f.grossMargin.toFixed(1)}%`);
+  if (f.peRatio != null) parts.push(`P/E (TTM): ${f.peRatio.toFixed(1)}`);
+  if (f.revenueGrowth != null) parts.push(`Revenue growth YoY: ${f.revenueGrowth.toFixed(1)}%`);
+  if (f.grossMargin != null) parts.push(`Gross margin: ${f.grossMargin.toFixed(1)}%`);
+  if (f.netMargin != null) parts.push(`Net margin: ${f.netMargin.toFixed(1)}%`);
+  if (f.roe != null) parts.push(`ROE: ${f.roe.toFixed(1)}%`);
+  if (f.eps != null) parts.push(`EPS (TTM): $${f.eps.toFixed(2)}`);
+  if (f.cashFlowPerShare != null) parts.push(`Cash flow/share (TTM): $${f.cashFlowPerShare.toFixed(2)}`);
+  if (f.revenuePerShare != null) parts.push(`Revenue/share (TTM): $${f.revenuePerShare.toFixed(2)}`);
+  if (f.debtToEquity != null) parts.push(`Debt/equity: ${f.debtToEquity.toFixed(2)}`);
   parts.push(`Insider shares bought (3mo): ${Math.round(f.insiderBought3m).toLocaleString()}`);
   parts.push(`Insider shares sold (3mo): ${Math.round(f.insiderSold3m).toLocaleString()}`);
   return parts.join(' | ');
@@ -228,7 +240,8 @@ Price: $${stock.price?.toFixed(2) ?? '?'} | Market cap: $${stock.marketCap ?? '?
 Fundamentals: ${fundamentalsSummary(stock.fundamentals)}
 
 Weigh the fundamentals and insider activity in your conviction.
-Respond with JSON: {"ticker":"${stock.ticker}","convictionScore":85,"targetUpside":"+150%","timeframe":"6-12 months","thesis":"2-3 sentence thesis"}`;
+Also rate the quality of the management team (teamScore 0-100): CEO and leadership track record, execution history, capital allocation discipline, insider ownership alignment, and R&D/strategic focus.
+Respond with JSON: {"ticker":"${stock.ticker}","convictionScore":85,"teamScore":75,"teamNotes":"1-2 sentences on management quality","targetUpside":"+150%","timeframe":"6-12 months","thesis":"2-3 sentence thesis"}`;
 
   try {
     const response = await callGrokAI(prompt, { model: DEEP_MODEL, json: true });
@@ -236,6 +249,27 @@ Respond with JSON: {"ticker":"${stock.ticker}","convictionScore":85,"targetUpsid
   } catch (e) {
     return null;
   }
+}
+
+// Iterative DCF forecast: each run sees the previous runs' assumptions and
+// open data gaps, so the estimate refines as you re-run it over time.
+async function runDcfAnalysis(stock, priorRuns) {
+  const history = (priorRuns || []).slice(-3).map((r, i) =>
+    `Run ${i + 1} (${new Date(r.timestamp).toLocaleDateString()}): fair value $${r.fairValue}, assumptions ${JSON.stringify(r.assumptions)}, open data gaps: ${(r.dataGaps || []).join('; ') || 'none noted'}`
+  ).join('\n');
+
+  const prompt = `Build a discounted cash flow (DCF) estimate for ${stock.ticker} (${stock.name}).
+Current price: $${stock.price?.toFixed(2) ?? '?'} | Market cap: $${stock.marketCap ?? '?'}M
+Fundamentals: ${fundamentalsSummary(stock.fundamentals)}
+${history ? `\nPrevious DCF runs on this stock (refine them - address the data gaps, adjust assumptions you now believe were wrong):\n${history}` : '\nThis is the first DCF run on this stock.'}
+
+Project free cash flow 5 years out, pick a defensible WACC and terminal growth rate, and derive fair value per share. Be explicit about what data you are missing that would most improve the next run.
+Respond with JSON: {"fairValue":42.50,"upsidePct":35,"assumptions":{"fcfGrowth5y":"18%/yr","wacc":"10.5%","terminalGrowth":"3%"},"confidence":"low/medium/high","summary":"3-4 sentence walkthrough of the valuation","dataGaps":["missing datapoint 1","missing datapoint 2"],"nextSteps":"what to investigate before the next run"}`;
+
+  const response = await callGrokAI(prompt, { model: DEEP_MODEL, json: true });
+  const parsed = parseJson(response, /\{[\s\S]*\}/);
+  if (!parsed || typeof parsed.fairValue !== 'number') throw new Error('DCF analysis returned no usable estimate');
+  return { ...parsed, price: stock.price ?? null, timestamp: Date.now() };
 }
 
 async function getConvictionAnalysis(stock) {
@@ -280,6 +314,8 @@ export default function SingularityFinderV2() {
   const [isResearching, setIsResearching] = useState(false);
   const [expandedStock, setExpandedStock] = useState(null);
   const [error, setError] = useState(null);
+  const [dcfHistory, setDcfHistory] = useState({});
+  const [dcfRunning, setDcfRunning] = useState(null);
 
   useEffect(() => {
     try {
@@ -290,15 +326,75 @@ export default function SingularityFinderV2() {
         if (data.foundStocks) setFoundStocks(data.foundStocks);
         if (data.researchResults) setResearchResults(data.researchResults);
         if (data.scanDepth) setScanDepth(data.scanDepth);
+        if (data.dcfHistory) setDcfHistory(data.dcfHistory);
       }
     } catch (e) {}
   }, []);
 
   useEffect(() => {
-    if (foundStocks.length > 0 || researchResults.length > 0) {
-      localStorage.setItem(SESSIONS_KEY, JSON.stringify({ megaStocks, foundStocks, researchResults, scanDepth, timestamp: Date.now() }));
+    if (foundStocks.length > 0 || researchResults.length > 0 || Object.keys(dcfHistory).length > 0) {
+      localStorage.setItem(SESSIONS_KEY, JSON.stringify({ megaStocks, foundStocks, researchResults, scanDepth, dcfHistory, timestamp: Date.now() }));
     }
-  }, [megaStocks, foundStocks, researchResults, scanDepth]);
+  }, [megaStocks, foundStocks, researchResults, scanDepth, dcfHistory]);
+
+  const runDcf = async (stock) => {
+    const ticker = stock.ticker;
+    if (dcfRunning) return;
+    setDcfRunning(ticker);
+    setError(null);
+    try {
+      let full = stock;
+      if (!full.price) {
+        const stockData = await getStockData(ticker);
+        if (!stockData) throw new Error(`Could not fetch market data for ${ticker}`);
+        full = { ...stockData, ...full, price: stockData.price, marketCap: stockData.marketCap };
+      }
+      if (!full.fundamentals) {
+        full = { ...full, fundamentals: await getFundamentals(ticker) };
+      }
+      const run = await runDcfAnalysis(full, dcfHistory[ticker]);
+      setDcfHistory(prev => ({ ...prev, [ticker]: [...(prev[ticker] || []), run].slice(-10) }));
+    } catch (e) {
+      setError(`DCF failed for ${ticker}: ${e.message}`);
+    } finally {
+      setDcfRunning(null);
+    }
+  };
+
+  const renderDcf = (stock) => {
+    const runs = dcfHistory[stock.ticker] || [];
+    const latest = runs[runs.length - 1];
+    const running = dcfRunning === stock.ticker;
+    return (
+      <div className="p-3 rounded-lg bg-slate-800/50">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+          <p className="text-xs text-slate-500 flex items-center gap-1.5"><Calculator className="w-3.5 h-3.5" />DCF Forecast{runs.length > 0 && <span className="text-slate-600">· {runs.length} run{runs.length > 1 ? 's' : ''}</span>}</p>
+          <button onClick={(e) => { e.stopPropagation(); runDcf(stock); }} disabled={!!dcfRunning} className="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap" style={{ background: running ? 'rgba(16,185,129,0.15)' : 'linear-gradient(90deg, #10b981, #059669)', color: running ? '#6ee7b7' : 'white', opacity: dcfRunning && !running ? 0.5 : 1 }}>
+            {running ? <><RefreshCw className="w-3 h-3 animate-spin" />Running DCF...</> : <><Calculator className="w-3 h-3" />{latest ? 'Refine DCF' : 'Run DCF'}</>}
+          </button>
+        </div>
+        {latest ? (
+          <>
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 mb-2">
+              <span className="text-xl font-bold text-white">${latest.fairValue?.toFixed(2)}</span>
+              <span className={`text-sm font-semibold ${latest.upsidePct >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{latest.upsidePct >= 0 ? '+' : ''}{latest.upsidePct?.toFixed(0)}% vs price</span>
+              {latest.confidence && <span className="text-xs text-slate-500 capitalize">{latest.confidence} confidence</span>}
+            </div>
+            {latest.assumptions && (
+              <div className="flex flex-wrap gap-2 mb-2 text-xs">
+                {Object.entries(latest.assumptions).map(([k, v]) => <span key={k} className="px-2 py-1 rounded bg-slate-700/50 text-slate-300">{k}: {String(v)}</span>)}
+              </div>
+            )}
+            {latest.summary && <p className="text-sm text-slate-300 break-words">{latest.summary}</p>}
+            {latest.dataGaps?.length > 0 && <p className="mt-2 text-xs text-amber-400/80 break-words">To improve next run: {latest.dataGaps.join('; ')}</p>}
+            {latest.nextSteps && <p className="mt-1 text-xs text-slate-500 break-words">Next: {latest.nextSteps}</p>}
+          </>
+        ) : (
+          <p className="text-sm text-slate-500">No DCF yet. Each run refines the last one's assumptions and chases down its open data gaps.</p>
+        )}
+      </div>
+    );
+  };
 
   const runSupplierScan = async () => {
     if (isScanning) return;
@@ -373,7 +469,7 @@ export default function SingularityFinderV2() {
       // Round 4: Final scoring
       setScanStatus({ phase: 'round4', message: 'Round 4: final scoring...', progress: 90 });
       const final = stocksWithData
-        .map(s => ({ ...s, finalScore: Math.round((s.convictionScore || 50) * 0.4 + (s.singularityScore || 50) * 0.3 + (s.confidence === 'high' ? 100 : s.confidence === 'medium' ? 70 : 40) * 0.3) }))
+        .map(s => ({ ...s, finalScore: Math.round((s.convictionScore || 50) * 0.35 + (s.singularityScore || 50) * 0.25 + (s.deepAnalysis?.teamScore || 50) * 0.2 + (s.confidence === 'high' ? 100 : s.confidence === 'medium' ? 70 : 40) * 0.2) }))
         .sort((a, b) => b.finalScore - a.finalScore);
 
       setScanIteration(4);
@@ -525,25 +621,28 @@ export default function SingularityFinderV2() {
                       </div>
                       {expandedStock === stock.ticker && (
                         <div className="mt-4 pt-4 border-t border-slate-800/50 space-y-3">
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                             <div className="p-3 rounded-lg bg-slate-800/50"><p className="text-xs text-slate-500 mb-1">Singularity</p><p className="text-lg font-bold text-amber-400">{stock.singularityScore || 'N/A'}</p></div>
                             <div className="p-3 rounded-lg bg-slate-800/50"><p className="text-xs text-slate-500 mb-1">Conviction</p><p className="text-lg font-bold text-violet-400">{stock.convictionScore || 'N/A'}</p></div>
+                            <div className="p-3 rounded-lg bg-slate-800/50"><p className="text-xs text-slate-500 mb-1 flex items-center gap-1"><Users className="w-3 h-3" />Team</p><p className="text-lg font-bold text-sky-400">{stock.deepAnalysis?.teamScore || 'N/A'}</p></div>
                             <div className="p-3 rounded-lg bg-slate-800/50"><p className="text-xs text-slate-500 mb-1">Confidence</p><p className="text-lg font-bold capitalize" style={{ color: stock.confidence === 'high' ? '#10B981' : stock.confidence === 'medium' ? '#F59E0B' : '#94a3b8' }}>{stock.confidence || 'N/A'}</p></div>
                           </div>
                           {stock.business && <div className="p-3 rounded-lg bg-slate-800/50"><p className="text-xs text-slate-500 mb-1">Business</p><p className="text-sm text-slate-300 break-words">{stock.business}</p></div>}
+                          {stock.deepAnalysis?.teamNotes && <div className="p-3 rounded-lg bg-slate-800/50"><p className="text-xs text-slate-500 mb-1 flex items-center gap-1"><Users className="w-3 h-3" />Management</p><p className="text-sm text-slate-300 break-words">{stock.deepAnalysis.teamNotes}</p></div>}
                           {stock.fundamentals && (
                             <div className="p-3 rounded-lg bg-slate-800/50">
                               <p className="text-xs text-slate-500 mb-2">Fundamentals</p>
                               <div className="flex flex-wrap gap-2 text-xs">
-                                {stock.fundamentals.peRatio !== null && <span className="px-2 py-1 rounded bg-slate-700/50 text-slate-300">P/E {stock.fundamentals.peRatio.toFixed(1)}</span>}
-                                {stock.fundamentals.revenueGrowth !== null && <span className="px-2 py-1 rounded bg-slate-700/50 text-slate-300">Rev {stock.fundamentals.revenueGrowth >= 0 ? '+' : ''}{stock.fundamentals.revenueGrowth.toFixed(1)}% YoY</span>}
-                                {stock.fundamentals.grossMargin !== null && <span className="px-2 py-1 rounded bg-slate-700/50 text-slate-300">GM {stock.fundamentals.grossMargin.toFixed(1)}%</span>}
+                                {stock.fundamentals.peRatio != null && <span className="px-2 py-1 rounded bg-slate-700/50 text-slate-300">P/E {stock.fundamentals.peRatio.toFixed(1)}</span>}
+                                {stock.fundamentals.revenueGrowth != null && <span className="px-2 py-1 rounded bg-slate-700/50 text-slate-300">Rev {stock.fundamentals.revenueGrowth >= 0 ? '+' : ''}{stock.fundamentals.revenueGrowth.toFixed(1)}% YoY</span>}
+                                {stock.fundamentals.grossMargin != null && <span className="px-2 py-1 rounded bg-slate-700/50 text-slate-300">GM {stock.fundamentals.grossMargin.toFixed(1)}%</span>}
                                 <span className={`px-2 py-1 rounded ${stock.fundamentals.insiderBought3m > stock.fundamentals.insiderSold3m ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-700/50 text-slate-300'}`}>Insiders 3mo: +{Math.round(stock.fundamentals.insiderBought3m).toLocaleString()} / -{Math.round(stock.fundamentals.insiderSold3m).toLocaleString()}</span>
                               </div>
                             </div>
                           )}
                           {stock.suppliesTo?.length > 0 && <div className="p-3 rounded-lg bg-slate-800/50"><p className="text-xs text-slate-500 mb-2">Supplies To</p><div className="flex flex-wrap gap-2">{stock.suppliesTo.map(t => <span key={t} className="px-2 py-1 rounded bg-amber-500/20 text-amber-400 text-xs font-mono">{t}</span>)}</div></div>}
                           {stock.deepAnalysis && <div className="p-3 rounded-lg bg-slate-800/50"><p className="text-xs text-slate-500 mb-2">Thesis</p><p className="text-sm text-slate-300 break-words">{stock.deepAnalysis.thesis}</p>{stock.deepAnalysis.targetUpside && <p className="mt-2 text-emerald-400 font-semibold">Target: {stock.deepAnalysis.targetUpside} in {stock.deepAnalysis.timeframe}</p>}</div>}
+                          {renderDcf(stock)}
                         </div>
                       )}
                     </div>
@@ -579,18 +678,19 @@ export default function SingularityFinderV2() {
                         <div className="flex items-center gap-3 min-w-0"><span className="font-mono font-bold text-xl text-white">{r.ticker}</span><span className="text-sm text-slate-400 truncate">{r.name}</span></div>
                         <div className="flex items-center gap-4 shrink-0">
                           {r.price && <div className="text-right"><p className="font-mono text-white">${r.price.toFixed(2)}</p><p className="text-xs text-slate-500">${r.marketCap}M</p></div>}
-                          {r.convictionScore !== null && <div className="text-right"><p className={`text-2xl font-bold ${r.convictionScore >= 70 ? 'text-emerald-400' : r.convictionScore >= 50 ? 'text-amber-400' : 'text-red-400'}`}>{r.convictionScore}</p><p className="text-xs text-slate-500">Conviction</p></div>}
+                          {r.convictionScore != null && <div className="text-right"><p className={`text-2xl font-bold ${r.convictionScore >= 70 ? 'text-emerald-400' : r.convictionScore >= 50 ? 'text-amber-400' : 'text-red-400'}`}>{r.convictionScore}</p><p className="text-xs text-slate-500">Conviction</p></div>}
                         </div>
                       </div>
                       {r.fundamentals && (
                         <div className="mb-3 flex flex-wrap gap-2 text-xs">
-                          {r.fundamentals.peRatio !== null && <span className="px-2 py-1 rounded bg-slate-800/50 border border-slate-700/50 text-slate-300">P/E {r.fundamentals.peRatio.toFixed(1)}</span>}
-                          {r.fundamentals.revenueGrowth !== null && <span className="px-2 py-1 rounded bg-slate-800/50 border border-slate-700/50 text-slate-300">Rev {r.fundamentals.revenueGrowth >= 0 ? '+' : ''}{r.fundamentals.revenueGrowth.toFixed(1)}% YoY</span>}
-                          {r.fundamentals.grossMargin !== null && <span className="px-2 py-1 rounded bg-slate-800/50 border border-slate-700/50 text-slate-300">GM {r.fundamentals.grossMargin.toFixed(1)}%</span>}
+                          {r.fundamentals.peRatio != null && <span className="px-2 py-1 rounded bg-slate-800/50 border border-slate-700/50 text-slate-300">P/E {r.fundamentals.peRatio.toFixed(1)}</span>}
+                          {r.fundamentals.revenueGrowth != null && <span className="px-2 py-1 rounded bg-slate-800/50 border border-slate-700/50 text-slate-300">Rev {r.fundamentals.revenueGrowth >= 0 ? '+' : ''}{r.fundamentals.revenueGrowth.toFixed(1)}% YoY</span>}
+                          {r.fundamentals.grossMargin != null && <span className="px-2 py-1 rounded bg-slate-800/50 border border-slate-700/50 text-slate-300">GM {r.fundamentals.grossMargin.toFixed(1)}%</span>}
                           <span className={`px-2 py-1 rounded border ${r.fundamentals.insiderBought3m > r.fundamentals.insiderSold3m ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-slate-800/50 border-slate-700/50 text-slate-300'}`}>Insiders 3mo: +{Math.round(r.fundamentals.insiderBought3m).toLocaleString()} / -{Math.round(r.fundamentals.insiderSold3m).toLocaleString()}</span>
                         </div>
                       )}
                       {r.analysis && <div className="p-4 rounded-xl bg-slate-800/50 border border-slate-700/50"><p className="text-sm text-slate-300 whitespace-pre-wrap break-words">{r.analysis}</p></div>}
+                      <div className="mt-3">{renderDcf(r)}</div>
                       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500">
                         <span>52W: ${r.low52?.toFixed(2)} - ${r.high52?.toFixed(2)}</span>
                         <span className="text-emerald-400">+{r.fromLow?.toFixed(1)}% from low</span>
