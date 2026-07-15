@@ -8,7 +8,6 @@ import { TrendingUp, Users, BarChart3, Target, ChevronDown, ChevronUp, Zap, Refr
 // ============================================
 const POLYGON_KEY = process.env.NEXT_PUBLIC_POLYGON_KEY || '';
 const FINNHUB_KEY = process.env.NEXT_PUBLIC_FINNHUB_KEY || '';
-const GROK_KEY = process.env.NEXT_PUBLIC_GROK_KEY || '';
 
 const SESSIONS_KEY = 'singularityhunter_sessions';
 const CACHE_DURATION = 24 * 60 * 60 * 1000;

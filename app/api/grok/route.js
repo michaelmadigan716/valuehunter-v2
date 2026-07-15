@@ -1,24 +1,28 @@
 // app/api/grok/route.js
 // Proxies requests to xAI Grok API
 
+const DEFAULT_MODEL = 'grok-4.3';
+
 export async function POST(request) {
   try {
-    const { prompt, isMatty, isTechnical, model } = await request.json();
-    
-    const GROK_KEY = process.env.NEXT_PUBLIC_GROK_KEY;
-    
+    const { prompt, isMatty, isTechnical, jsonMode, model } = await request.json();
+
+    const GROK_KEY = process.env.GROK_API_KEY || process.env.NEXT_PUBLIC_GROK_KEY;
+
     if (!GROK_KEY) {
       return Response.json({ error: 'Grok API key not configured' }, { status: 500 });
     }
 
-    // Use provided model or default to grok-4
-    const grokModel = model || 'grok-4';
+    const grokModel = model || DEFAULT_MODEL;
 
     // Different system prompts based on analysis type
     let systemPrompt;
     let maxTokens = 1200;
-    
-    if (isMatty) {
+
+    if (jsonMode) {
+      systemPrompt = `You are a financial data engine. Respond with ONLY valid JSON matching the structure requested by the user. No prose, no markdown, no code fences. Only include real, publicly traded companies.`;
+      maxTokens = 6000;
+    } else if (isMatty) {
       systemPrompt = `You are a senior equity research analyst specializing in "singularity" infrastructure plays - companies positioned to benefit from AI, robotics, energy transition, and automation megatrends.
 
 Your analysis framework:
@@ -44,30 +48,35 @@ Provide analysis then end with:
 CUP_HANDLE_SCORE: [0-100]`;
       maxTokens = 1500;
     } else {
-      systemPrompt = `You are an insider trading analyst.
+      systemPrompt = `You are an equity research analyst evaluating conviction on individual stocks.
 
-Evaluate: insider ownership %, recent buying vs selling, purchase size relative to net worth, cluster buying, C-suite transactions.
+Weigh: business quality and moat, supply-chain positioning for AI/robotics/energy megatrends, fundamentals (valuation, growth, margins), insider activity, and near-term catalysts.
 
 Provide analysis then end with:
-INSIDER_CONVICTION: [0-100]`;
+CONVICTION_SCORE: [0-100]`;
       maxTokens = 1500;
+    }
+
+    const body = {
+      model: grokModel,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: prompt }
+      ],
+      max_tokens: maxTokens,
+      temperature: jsonMode ? 0.1 : 0.3
+    };
+    if (jsonMode) {
+      body.response_format = { type: 'json_object' };
     }
 
     const response = await fetch("https://api.x.ai/v1/chat/completions", {
       method: "POST",
-      headers: { 
+      headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${GROK_KEY}`
       },
-      body: JSON.stringify({
-        model: grokModel,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: prompt }
-        ],
-        max_tokens: maxTokens,
-        temperature: 0.3
-      })
+      body: JSON.stringify(body)
     });
 
     if (!response.ok) {
@@ -78,41 +87,54 @@ INSIDER_CONVICTION: [0-100]`;
 
     const data = await response.json();
     let text = data.choices?.[0]?.message?.content || '';
-    
+
+    // JSON mode: return the raw model output untouched so the client can parse it
+    if (jsonMode) {
+      return Response.json({ analysis: text });
+    }
+
     // Clean up markdown
     text = text.replace(/\*\*/g, '').replace(/\*/g, '').replace(/##/g, '').replace(/#/g, '').replace(/`/g, '');
-    
+
     // Extract metrics if present
     let insiderConviction = null;
     const convictionMatch = text.match(/INSIDER_CONVICTION[:\s=]*(\d+)/i);
     if (convictionMatch) {
       insiderConviction = Math.min(100, parseInt(convictionMatch[1]));
     }
-    
+
     let cupHandleScore = null;
     const cupHandleMatch = text.match(/CUP_HANDLE_SCORE[:\s=]*(\d+)/i);
     if (cupHandleMatch) {
       cupHandleScore = Math.min(100, parseInt(cupHandleMatch[1]));
     }
-    
+
     let mattyPrediction = null;
     const mattyMatch = text.match(/8MO_PREDICTION[:\s=]*([+-]?\d+)/i);
     if (mattyMatch) {
       mattyPrediction = Math.min(800, Math.max(-80, parseInt(mattyMatch[1])));
     }
-    
+
+    let convictionScore = null;
+    const scoreMatch = text.match(/CONVICTION_SCORE[:\s=]*(\d+)/i);
+    if (scoreMatch) {
+      convictionScore = Math.min(100, parseInt(scoreMatch[1]));
+    }
+
     // Clean metrics from display text
     text = text.replace(/8MO_PREDICTION[:\s=]*[+-]?\d+%?/gi, '').trim();
     text = text.replace(/INSIDER_CONVICTION[:\s=]*\d+%?/gi, '').trim();
     text = text.replace(/CUP_HANDLE_SCORE[:\s=]*\d+%?/gi, '').trim();
-    
-    return Response.json({ 
+    text = text.replace(/CONVICTION_SCORE[:\s=]*\d+%?/gi, '').trim();
+
+    return Response.json({
       analysis: text || 'No response from AI',
       insiderConviction,
       cupHandleScore,
-      mattyPrediction
+      mattyPrediction,
+      convictionScore
     });
-    
+
   } catch (error) {
     console.error('Grok route error:', error);
     return Response.json({ error: error.message, analysis: 'Error occurred' }, { status: 500 });
