@@ -1435,8 +1435,13 @@ export default function StockResearchApp() {
   const [spectrumSettings, setSpectrumSettings] = useState({
     baseStockLimit: 500,
     singularityEnabled: true,
-    grokEnabled: true,
-    grokCount: 25,
+    grokEnabled: true,          // Conviction (insider) scan
+    technicalEnabled: true,     // Cup & Handle scan
+    explosiveEnabled: true,
+    teamEnabled: true,
+    parabolicEnabled: true,
+    valuationEnabled: true,
+    grokCount: 25,              // shared "stocks to analyze" count for all AI agent scans
     grokOnlySingularity70: false  // Only analyze stocks with singularity >= 70
   });
 
@@ -1503,7 +1508,11 @@ export default function StockResearchApp() {
     upside: 15,
     cupHandle: 10,
     singularity: 30,
-    oracle: 30
+    oracle: 30,
+    explosive: 10,
+    team: 10,
+    parabolic: 10,
+    valuation: 10
   });
   const [fullSpectrumPhase, setFullSpectrumPhase] = useState('');
 
@@ -1512,7 +1521,7 @@ export default function StockResearchApp() {
     
     // Calculate total weight (base + AI)
     const baseTotal = Object.values(w).reduce((a, b) => a + b, 0);
-    const aiTotal = (aw.conviction || 0) + (aw.upside || 0) + (aw.cupHandle || 0) + (aw.singularity || 0) + (aw.oracle || 0);
+    const aiTotal = (aw.conviction || 0) + (aw.upside || 0) + (aw.cupHandle || 0) + (aw.singularity || 0) + (aw.oracle || 0) + (aw.explosive || 0) + (aw.team || 0) + (aw.parabolic || 0) + (aw.valuation || 0);
     const grandTotal = baseTotal + aiTotal;
     
     // If all weights are 0, just return unsorted
@@ -1554,27 +1563,56 @@ export default function StockResearchApp() {
         score += (s.cupHandleScore / 100) * (aw.cupHandle / grandTotal) * 100;
       }
       
-      // AI scores - Singularity (max of the 4 buckets, 0-10 scaled to 0-100)
-      if (aw.singularity > 0 && s.singularityScores) {
-        const maxSingularity = Math.max(
-          s.singularityScores.compute || 0,
-          s.singularityScores.energy || 0,
-          s.singularityScores.robotics || 0,
-          s.singularityScores.agi_interface || 0
-        );
-        score += (maxSingularity / 10) * (aw.singularity / grandTotal) * 100;
+      // AI scores - Singularity: bucket object (0-10 scale) or the flat
+      // singularityScore (0-100) written by the Singularity scan
+      if (aw.singularity > 0) {
+        let singularityNormalized = 0;
+        if (s.singularityScores) {
+          singularityNormalized = Math.max(
+            s.singularityScores.compute || 0,
+            s.singularityScores.energy || 0,
+            s.singularityScores.robotics || 0,
+            s.singularityScores.agi_interface || 0
+          ) / 10;
+        }
+        if (s.singularityScore !== null && s.singularityScore !== undefined) {
+          singularityNormalized = Math.max(singularityNormalized, s.singularityScore / 100);
+        }
+        if (singularityNormalized > 0) {
+          score += singularityNormalized * (aw.singularity / grandTotal) * 100;
+        }
       }
-      
+
       // AI scores - Oracle Conviction (0-100 scale)
       if (aw.oracle > 0 && s.oracleConviction !== null && s.oracleConviction !== undefined) {
         // Boost for BULLISH prediction
         let oracleMultiplier = 1;
         if (s.prediction === 'BULLISH') oracleMultiplier = 1.2;
         else if (s.prediction === 'BEARISH') oracleMultiplier = 0.5;
-        
+
         score += (s.oracleConviction / 100) * oracleMultiplier * (aw.oracle / grandTotal) * 100;
       }
-      
+
+      // AI scores - Explosive Growth (0-100 scale)
+      if (aw.explosive > 0 && s.explosiveScore !== null && s.explosiveScore !== undefined) {
+        score += (s.explosiveScore / 100) * (aw.explosive / grandTotal) * 100;
+      }
+
+      // AI scores - Team quality (0-100 scale)
+      if (aw.team > 0 && s.teamScore !== null && s.teamScore !== undefined) {
+        score += (s.teamScore / 100) * (aw.team / grandTotal) * 100;
+      }
+
+      // AI scores - Parabolic potential (0-100 scale)
+      if (aw.parabolic > 0 && s.parabolicScore !== null && s.parabolicScore !== undefined) {
+        score += (s.parabolicScore / 100) * (aw.parabolic / grandTotal) * 100;
+      }
+
+      // AI scores - Valuation (0-100 scale, high = undervalued)
+      if (aw.valuation > 0 && s.valuationScore !== null && s.valuationScore !== undefined) {
+        score += (s.valuationScore / 100) * (aw.valuation / grandTotal) * 100;
+      }
+
       return { ...s, compositeScore: Math.min(100, Math.max(0, score)) };
     }).sort((a, b) => b.compositeScore - a.compositeScore);
   }, []);
@@ -2679,76 +2717,78 @@ Respond with ONLY a JSON array:
         console.log(`Singularity scan complete. Stocks with scores: ${currentStocks.filter(s => s.singularityScore).length}`);
       }
       
-      // Phase 3: Grok AI Analysis
-      console.log('Phase 3 check - grokEnabled:', spectrumSettings.grokEnabled, 'stocks:', currentStocks.length);
-      if (spectrumSettings.grokEnabled && currentStocks.length > 0) {
-        setFullSpectrumPhase('Running Grok AI Analysis...');
-        setIsAnalyzingAI(true);
-        
-        // Filter to only singularity 70+ if option enabled
+      // Phase 3: AI agent scans - every enabled agent runs over the same
+      // top-N pool, one agent at a time, in the order shown in the sidebar.
+      const spectrumAgents = [
+        { enabled: spectrumSettings.grokEnabled, label: 'Conviction', fn: getAIAnalysis,
+          apply: (s, r) => ({ ...s, aiAnalysis: r.analysis, insiderConviction: r.insiderConviction }) },
+        { enabled: spectrumSettings.technicalEnabled, label: 'Technical', fn: getTechnicalAnalysis,
+          apply: (s, r) => ({ ...s, technicalAnalysis: r.technicalAnalysis, cupHandleScore: r.cupHandleScore }) },
+        { enabled: spectrumSettings.explosiveEnabled, label: 'Explosive Growth', fn: getExplosiveGrowthAnalysis,
+          apply: (s, r) => ({ ...s, explosiveAnalysis: r.explosiveAnalysis, explosiveScore: r.explosiveScore }) },
+        { enabled: spectrumSettings.teamEnabled, label: 'Team', fn: getTeamAnalysis,
+          apply: (s, r) => ({ ...s, teamAnalysis: r.teamAnalysis, teamScore: r.teamScore }) },
+        { enabled: spectrumSettings.parabolicEnabled, label: 'Parabolic', fn: getParabolicAnalysis,
+          apply: (s, r) => ({ ...s, parabolicAnalysis: r.parabolicAnalysis, parabolicScore: r.parabolicScore }) },
+        { enabled: spectrumSettings.valuationEnabled, label: 'Valuation', fn: getValuationAnalysis,
+          apply: (s, r) => ({ ...s, valuationAnalysis: r.valuationAnalysis, valuationScore: r.valuationScore }) },
+      ].filter(a => a.enabled);
+
+      if (spectrumAgents.length > 0 && currentStocks.length > 0) {
+        // Pool selection honors the Singularity Gate and the 70+ option
         let stocksPool = [...currentStocks];
-        console.log('grokOnlySingularity70:', spectrumSettings.grokOnlySingularity70);
-        if (spectrumSettings.grokOnlySingularity70) {
-          stocksPool = currentStocks.filter(s => (s.singularityScore || 0) >= 70);
-          console.log(`Filtering to singularity 70+: ${stocksPool.length} stocks qualify`);
+        if (singularityGate > 0) {
+          stocksPool = stocksPool.filter(s => (s.singularityScore || 0) >= singularityGate);
         }
-        
+        if (spectrumSettings.grokOnlySingularity70) {
+          stocksPool = stocksPool.filter(s => (s.singularityScore || 0) >= 70);
+        }
+
         if (stocksPool.length === 0) {
-          console.log('No stocks qualify for Grok analysis');
-          setIsAnalyzingAI(false);
+          console.log('No stocks qualify for AI agent scans');
         } else {
           // grokCount of 0 means "all stocks"
-          const countToAnalyze = spectrumSettings.grokCount === 0 
-            ? stocksPool.length 
+          const countToAnalyze = spectrumSettings.grokCount === 0
+            ? stocksPool.length
             : Math.min(spectrumSettings.grokCount, stocksPool.length);
           const stocksToAnalyze = stocksPool.slice(0, countToAnalyze);
-          setAiProgress({ current: 0, total: stocksToAnalyze.length });
-          console.log(`Grok will analyze ${stocksToAnalyze.length} stocks:`, stocksToAnalyze.map(s => s.ticker));
-        
-          for (let i = 0; i < stocksToAnalyze.length; i++) {
-            setAiProgress({ current: i + 1, total: stocksToAnalyze.length });
-            setStatus({ type: 'loading', msg: `Full Spectrum: Grok analyzing ${stocksToAnalyze[i].ticker} (${i + 1}/${stocksToAnalyze.length})...` });
-            
-            console.log(`Calling getAIAnalysis for ${stocksToAnalyze[i].ticker}...`);
-            const result = await getAIAnalysis(stocksToAnalyze[i], grokModel);
-            console.log(`Grok result for ${stocksToAnalyze[i].ticker}:`, result);
-            
-            // Use functional update to preserve other scan results
-            setStocks(prev => prev.map(s => 
-              s.ticker === stocksToAnalyze[i].ticker ? { 
-                ...s, 
-                aiAnalysis: result.analysis,
-                insiderConviction: result.insiderConviction,
-                upsidePct: result.upsidePct,
-                cupHandleScore: result.cupHandleScore
-              } : s
-            ));
-            
-            // Also update currentStocks for session saving
-            currentStocks = currentStocks.map(s => 
-              s.ticker === stocksToAnalyze[i].ticker ? { 
-                ...s, 
-                aiAnalysis: result.analysis,
-                insiderConviction: result.insiderConviction,
-                upsidePct: result.upsidePct,
-                cupHandleScore: result.cupHandleScore
-              } : s
-            );
-            
-            if (i < stocksToAnalyze.length - 1) {
-              await new Promise(r => setTimeout(r, 2000));
+          setIsAnalyzingAI(true);
+          console.log(`AI agents (${spectrumAgents.map(a => a.label).join(', ')}) will analyze ${stocksToAnalyze.length} stocks:`, stocksToAnalyze.map(s => s.ticker));
+
+          for (const agent of spectrumAgents) {
+            setFullSpectrumPhase(`Running ${agent.label} Scan...`);
+            setAiProgress({ current: 0, total: stocksToAnalyze.length });
+
+            for (let i = 0; i < stocksToAnalyze.length; i++) {
+              setAiProgress({ current: i + 1, total: stocksToAnalyze.length });
+              setStatus({ type: 'loading', msg: `Full Spectrum: ${agent.label} - ${stocksToAnalyze[i].ticker} (${i + 1}/${stocksToAnalyze.length})...` });
+
+              const result = await agent.fn(stocksToAnalyze[i], grokModel);
+
+              // Use functional update to preserve other scan results
+              setStocks(prev => prev.map(s =>
+                s.ticker === stocksToAnalyze[i].ticker ? agent.apply(s, result) : s
+              ));
+              // Also update currentStocks for session saving
+              currentStocks = currentStocks.map(s =>
+                s.ticker === stocksToAnalyze[i].ticker ? agent.apply(s, result) : s
+              );
+
+              if (i < stocksToAnalyze.length - 1) {
+                await new Promise(r => setTimeout(r, 1200));
+              }
             }
           }
-          
-          // Recalculate scores
+
+          // Recalculate scores with all agent results in
           setStocks(prev => calcScores(prev, weights, aiWeights));
           currentStocks = calcScores(currentStocks, weights, aiWeights);
-          
+
           setIsAnalyzingAI(false);
           setAiProgress({ current: 0, total: 0 });
         }
       } else {
-        console.log('Skipping Grok analysis - grokEnabled:', spectrumSettings.grokEnabled, 'stocks:', currentStocks.length);
+        console.log('Skipping AI agent scans - none enabled or no stocks');
       }
       
       // Save final session
@@ -3312,7 +3352,7 @@ Respond with ONLY a JSON array:
               <button onClick={() => setShowFullSpectrumModal(false)} className="text-slate-400 hover:text-white"><X className="w-5 h-5" /></button>
             </div>
             
-            <p className="text-sm text-slate-400 mb-6">This will run all scans in sequence: Base Scan → Supply Chain Tagging → Grok AI Analysis</p>
+            <p className="text-sm text-slate-400 mb-6">Runs everything in sequence: Base Scan → Singularity Scan → each enabled AI agent below (Conviction, Technical, Explosive, Team, Parabolic, Valuation)</p>
             
             <div className="space-y-4 mb-6">
               <div>
@@ -3345,7 +3385,7 @@ Respond with ONLY a JSON array:
               </div>
               
               {/* Grok only singularity 70+ option */}
-              {spectrumSettings.grokEnabled && spectrumSettings.singularityEnabled && (
+              {(spectrumSettings.grokEnabled || spectrumSettings.technicalEnabled || spectrumSettings.explosiveEnabled || spectrumSettings.teamEnabled || spectrumSettings.parabolicEnabled || spectrumSettings.valuationEnabled) && spectrumSettings.singularityEnabled && (
                 <div className="flex items-center justify-between p-3 rounded-lg border" style={{ background: 'rgba(139,92,246,0.05)', borderColor: 'rgba(139,92,246,0.2)' }}>
                   <div className="flex items-center gap-2">
                     <Filter className="w-4 h-4 text-violet-400" />
@@ -3361,25 +3401,39 @@ Respond with ONLY a JSON array:
                 </div>
               )}
               
-              <div className="flex items-center justify-between p-3 rounded-lg border" style={{ background: 'rgba(239,68,68,0.05)', borderColor: 'rgba(239,68,68,0.2)' }}>
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-red-400" />
-                  <span className="text-sm text-slate-200">Grok AI Analysis</span>
+              <div>
+                <label className="text-sm text-slate-300 mb-2 block">AI Agent Scans</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { key: 'grokEnabled', label: 'Conviction', color: '#f87171' },
+                    { key: 'technicalEnabled', label: 'Technical (C&H)', color: '#38bdf8' },
+                    { key: 'explosiveEnabled', label: 'Explosive', color: '#fb923c' },
+                    { key: 'teamEnabled', label: 'Team', color: '#38bdf8' },
+                    { key: 'parabolicEnabled', label: 'Parabolic', color: '#c084fc' },
+                    { key: 'valuationEnabled', label: 'Valuation', color: '#34d399' },
+                  ].map(agent => (
+                    <button
+                      key={agent.key}
+                      onClick={() => setSpectrumSettings(p => ({...p, [agent.key]: !p[agent.key]}))}
+                      className="flex items-center justify-between px-3 py-2 rounded-lg border text-sm"
+                      style={{
+                        background: spectrumSettings[agent.key] ? 'rgba(16,185,129,0.1)' : 'rgba(30,41,59,0.5)',
+                        borderColor: spectrumSettings[agent.key] ? 'rgba(16,185,129,0.4)' : 'rgba(51,65,85,0.5)',
+                        color: spectrumSettings[agent.key] ? '#e2e8f0' : '#64748b'
+                      }}
+                    >
+                      <span>{agent.label}</span>
+                      <span className="text-xs font-semibold" style={{ color: spectrumSettings[agent.key] ? '#10b981' : '#475569' }}>{spectrumSettings[agent.key] ? 'ON' : 'OFF'}</span>
+                    </button>
+                  ))}
                 </div>
-                <button 
-                  onClick={() => setSpectrumSettings(p => ({...p, grokEnabled: !p.grokEnabled}))}
-                  className="w-12 h-6 rounded-full transition-colors"
-                  style={{ background: spectrumSettings.grokEnabled ? '#10b981' : 'rgba(51,65,85,0.5)' }}
-                >
-                  <div className="w-5 h-5 rounded-full bg-white transition-transform" style={{ transform: spectrumSettings.grokEnabled ? 'translateX(26px)' : 'translateX(2px)' }} />
-                </button>
               </div>
-              
-              {spectrumSettings.grokEnabled && (
+
+              {(spectrumSettings.grokEnabled || spectrumSettings.technicalEnabled || spectrumSettings.explosiveEnabled || spectrumSettings.teamEnabled || spectrumSettings.parabolicEnabled || spectrumSettings.valuationEnabled) && (
                 <div>
-                  <label className="text-sm text-slate-300 mb-2 block">Grok AI - Stocks to Analyze</label>
-                  <select 
-                    value={spectrumSettings.grokCount} 
+                  <label className="text-sm text-slate-300 mb-2 block">AI Agents - Stocks to Analyze (applies to every agent above)</label>
+                  <select
+                    value={spectrumSettings.grokCount}
                     onChange={e => setSpectrumSettings(p => ({...p, grokCount: parseInt(e.target.value)}))}
                     className="w-full rounded-lg px-3 py-2 text-sm border outline-none"
                     style={{ background: 'rgba(30,41,59,0.5)', borderColor: 'rgba(239,68,68,0.3)', color: '#f87171' }}
@@ -3790,7 +3844,7 @@ Respond with ONLY a JSON array:
           <div className="mb-6 card rounded-2xl border border-slate-800/50 p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold flex items-center gap-2"><Sliders className="w-5 h-5 text-amber-400" />Scoring Weights</h2>
-              <button onClick={() => { setWeights({ pricePosition: 40, insiderActivity: 40, netCash: 20 }); setAiWeights({ conviction: 20, upside: 20, cupHandle: 10 }); }} className="text-xs text-slate-400 hover:text-white px-3 py-1.5 rounded-lg border" style={{ background: 'rgba(30,41,59,0.5)', borderColor: 'rgba(51,65,85,0.5)' }}>Reset All</button>
+              <button onClick={() => { setWeights({ pricePosition: 40, insiderActivity: 40, netCash: 20 }); setAiWeights({ conviction: 15, upside: 15, cupHandle: 10, singularity: 30, oracle: 30, explosive: 10, team: 10, parabolic: 10, valuation: 10 }); }} className="text-xs text-slate-400 hover:text-white px-3 py-1.5 rounded-lg border" style={{ background: 'rgba(30,41,59,0.5)', borderColor: 'rgba(51,65,85,0.5)' }}>Reset All</button>
             </div>
             
             <p className="text-xs text-slate-500 mb-3">Base Scoring (applied to all stocks)</p>
@@ -3816,6 +3870,30 @@ Respond with ONLY a JSON array:
               <div className="rounded-xl p-4 border" style={{ background: 'rgba(239,68,68,0.05)', borderColor: 'rgba(239,68,68,0.2)' }}>
                 <div className="flex items-center gap-2 mb-3"><div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(239,68,68,0.2)' }}><BarChart3 className="w-4 h-4 text-red-400" /></div><span className="text-sm font-medium text-slate-200">Cup & Handle</span></div>
                 <div className="flex items-center gap-3"><input type="range" min="0" max="50" value={aiWeights.cupHandle} onChange={e => { const v = parseInt(e.target.value); setAiWeights(p => ({...p, cupHandle: v})); setStocks(s => calcScores(s, weights, {...aiWeights, cupHandle: v})); }} className="flex-1" style={{ accentColor: '#f87171' }} /><span className="mono text-sm font-semibold w-8 text-right text-red-400">{aiWeights.cupHandle}</span></div>
+              </div>
+              <div className="rounded-xl p-4 border" style={{ background: 'rgba(245,158,11,0.05)', borderColor: 'rgba(245,158,11,0.2)' }}>
+                <div className="flex items-center gap-2 mb-3"><div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(245,158,11,0.2)' }}><Zap className="w-4 h-4 text-amber-400" /></div><span className="text-sm font-medium text-slate-200">Singularity</span></div>
+                <div className="flex items-center gap-3"><input type="range" min="0" max="50" value={aiWeights.singularity || 0} onChange={e => { const v = parseInt(e.target.value); setAiWeights(p => ({...p, singularity: v})); setStocks(s => calcScores(s, weights, {...aiWeights, singularity: v})); }} className="flex-1" style={{ accentColor: '#f59e0b' }} /><span className="mono text-sm font-semibold w-8 text-right text-amber-400">{aiWeights.singularity || 0}</span></div>
+              </div>
+              <div className="rounded-xl p-4 border" style={{ background: 'rgba(245,158,11,0.05)', borderColor: 'rgba(245,158,11,0.2)' }}>
+                <div className="flex items-center gap-2 mb-3"><div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(245,158,11,0.2)' }}><Eye className="w-4 h-4 text-amber-400" /></div><span className="text-sm font-medium text-slate-200">Oracle</span></div>
+                <div className="flex items-center gap-3"><input type="range" min="0" max="50" value={aiWeights.oracle || 0} onChange={e => { const v = parseInt(e.target.value); setAiWeights(p => ({...p, oracle: v})); setStocks(s => calcScores(s, weights, {...aiWeights, oracle: v})); }} className="flex-1" style={{ accentColor: '#f59e0b' }} /><span className="mono text-sm font-semibold w-8 text-right text-amber-400">{aiWeights.oracle || 0}</span></div>
+              </div>
+              <div className="rounded-xl p-4 border" style={{ background: 'rgba(251,146,60,0.05)', borderColor: 'rgba(251,146,60,0.2)' }}>
+                <div className="flex items-center gap-2 mb-3"><div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(251,146,60,0.2)' }}><Flame className="w-4 h-4 text-orange-400" /></div><span className="text-sm font-medium text-slate-200">Explosive</span></div>
+                <div className="flex items-center gap-3"><input type="range" min="0" max="50" value={aiWeights.explosive || 0} onChange={e => { const v = parseInt(e.target.value); setAiWeights(p => ({...p, explosive: v})); setStocks(s => calcScores(s, weights, {...aiWeights, explosive: v})); }} className="flex-1" style={{ accentColor: '#fb923c' }} /><span className="mono text-sm font-semibold w-8 text-right text-orange-400">{aiWeights.explosive || 0}</span></div>
+              </div>
+              <div className="rounded-xl p-4 border" style={{ background: 'rgba(56,189,248,0.05)', borderColor: 'rgba(56,189,248,0.2)' }}>
+                <div className="flex items-center gap-2 mb-3"><div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(56,189,248,0.2)' }}><Users className="w-4 h-4 text-sky-400" /></div><span className="text-sm font-medium text-slate-200">Team</span></div>
+                <div className="flex items-center gap-3"><input type="range" min="0" max="50" value={aiWeights.team || 0} onChange={e => { const v = parseInt(e.target.value); setAiWeights(p => ({...p, team: v})); setStocks(s => calcScores(s, weights, {...aiWeights, team: v})); }} className="flex-1" style={{ accentColor: '#38bdf8' }} /><span className="mono text-sm font-semibold w-8 text-right text-sky-400">{aiWeights.team || 0}</span></div>
+              </div>
+              <div className="rounded-xl p-4 border" style={{ background: 'rgba(192,132,252,0.05)', borderColor: 'rgba(192,132,252,0.2)' }}>
+                <div className="flex items-center gap-2 mb-3"><div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(192,132,252,0.2)' }}><Activity className="w-4 h-4 text-purple-400" /></div><span className="text-sm font-medium text-slate-200">Parabolic</span></div>
+                <div className="flex items-center gap-3"><input type="range" min="0" max="50" value={aiWeights.parabolic || 0} onChange={e => { const v = parseInt(e.target.value); setAiWeights(p => ({...p, parabolic: v})); setStocks(s => calcScores(s, weights, {...aiWeights, parabolic: v})); }} className="flex-1" style={{ accentColor: '#c084fc' }} /><span className="mono text-sm font-semibold w-8 text-right text-purple-400">{aiWeights.parabolic || 0}</span></div>
+              </div>
+              <div className="rounded-xl p-4 border" style={{ background: 'rgba(52,211,153,0.05)', borderColor: 'rgba(52,211,153,0.2)' }}>
+                <div className="flex items-center gap-2 mb-3"><div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(52,211,153,0.2)' }}><DollarSign className="w-4 h-4 text-emerald-400" /></div><span className="text-sm font-medium text-slate-200">Valuation</span></div>
+                <div className="flex items-center gap-3"><input type="range" min="0" max="50" value={aiWeights.valuation || 0} onChange={e => { const v = parseInt(e.target.value); setAiWeights(p => ({...p, valuation: v})); setStocks(s => calcScores(s, weights, {...aiWeights, valuation: v})); }} className="flex-1" style={{ accentColor: '#34d399' }} /><span className="mono text-sm font-semibold w-8 text-right text-emerald-400">{aiWeights.valuation || 0}</span></div>
               </div>
             </div>
           </div>
