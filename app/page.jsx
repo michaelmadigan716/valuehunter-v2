@@ -2092,6 +2092,8 @@ export default function StockResearchApp() {
   const resumeTimerRef = React.useRef(null);
 
   const [agentRunning, setAgentRunning] = useState(null);
+  const scanControlRef = React.useRef(null); // null | 'pause' | 'cancel'
+  const [pausedRun, setPausedRun] = useState(null);
   const [agentScanCount, setAgentScanCount] = useState(25);
   const [isComputingMetrics, setIsComputingMetrics] = useState(false);
   const [resumeBanner, setResumeBanner] = useState(null);
@@ -2143,7 +2145,8 @@ export default function StockResearchApp() {
     setIsAnalyzingAI(true);
     setError(null);
 
-    for (const agent of agents) {
+    scanControlRef.current = null;
+    outer: for (const agent of agents) {
       const doneSet = new Set(completedMap[agent.id] || []);
       const remaining = tickers.filter(t => !doneSet.has(t));
       if (remaining.length === 0) continue;
@@ -2151,6 +2154,7 @@ export default function StockResearchApp() {
       if (opts.setPhase) setFullSpectrumPhase(`Running ${agent.label} Scan...`);
 
       for (let i = 0; i < remaining.length; i++) {
+        if (scanControlRef.current) break outer;
         const ticker = remaining[i];
         const idx = tickers.length - remaining.length + i + 1;
         setAiProgress({ current: idx, total: tickers.length });
@@ -2178,11 +2182,29 @@ export default function StockResearchApp() {
     setStocks(stocksRef.current);
     persistProgressToSession(sid);
     setSessions(getAllSessions());
-    clearCheckpoint();
     setAgentRunning(null);
     setIsAnalyzingAI(false);
     setAiProgress({ current: 0, total: 0 });
+
+    const control = scanControlRef.current;
+    scanControlRef.current = null;
+    if (control === 'cancel') {
+      clearCheckpoint();
+      setPausedRun(null);
+      setStatus({ type: 'live', msg: 'Scan cancelled' });
+      return 'cancelled';
+    }
+    if (control === 'pause') {
+      const doneCount = Object.values(completedMap).reduce((a, arr) => a + arr.length, 0);
+      persistCheckpoint({ kind: 'agents', agentIds, tickers, completed: completedMap, model, paused: true });
+      setPausedRun({ agentIds, tickers, completed: completedMap, model });
+      setStatus({ type: 'cached', msg: `Scan paused (${doneCount}/${agentIds.length * tickers.length} steps done)` });
+      return 'paused';
+    }
+    clearCheckpoint();
+    setPausedRun(null);
     setStatus({ type: 'live', msg: `${agents.map(a => a.label).join(' + ')} scan complete` });
+    return 'done';
   };
 
   const getCurrentView = () => [...stocksRef.current]
@@ -2257,7 +2279,11 @@ export default function StockResearchApp() {
       if (cp && cp.kind === 'agents' && cp.tickers?.length && cp.agentIds?.length) {
         const doneCount = Object.values(cp.completed || {}).reduce((a, arr) => a + arr.length, 0);
         const totalCount = cp.agentIds.length * cp.tickers.length;
-        if (doneCount < totalCount) {
+        if (doneCount < totalCount && cp.paused) {
+          // User paused this scan - offer Resume instead of auto-starting
+          setPausedRun({ agentIds: cp.agentIds, tickers: cp.tickers, completed: cp.completed || {}, model: cp.model });
+          setStatus({ type: 'cached', msg: `Scan paused (${doneCount}/${totalCount} steps done)` });
+        } else if (doneCount < totalCount) {
           setResumeBanner(`Resuming interrupted scan - ${doneCount}/${totalCount} steps already done. Starting in a moment...`);
           resumeTimerRef.current = setTimeout(() => {
             setResumeBanner(null);
@@ -3393,8 +3419,16 @@ Respond with ONLY a JSON array:
         } else {
           const countToAnalyze = spectrumSettings.grokCount === 0 ? stocksPool.length : Math.min(spectrumSettings.grokCount, stocksPool.length);
           const tickers = stocksPool.slice(0, countToAnalyze).map(s => s.ticker);
-          await runAgentQueue(spectrumAgentIds, tickers, {}, { setPhase: true });
+          const runResult = await runAgentQueue(spectrumAgentIds, tickers, {}, { setPhase: true });
           currentStocks = stocksRef.current;
+          if (runResult === 'cancelled' || runResult === 'paused') {
+            // Save what we have and stop the spectrum here
+            saveSession(newSessionId, currentStocks, scanStats, `Full Spectrum ${new Date().toLocaleDateString()} (${currentStocks.length} stocks)`);
+            setSessions(getAllSessions());
+            setIsRunningFullSpectrum(false);
+            setFullSpectrumPhase('');
+            return;
+          }
         }
       } else {
         console.log('Skipping AI agent scans - none enabled or no stocks');
@@ -3587,6 +3621,28 @@ Respond with ONLY a JSON array:
               <span>{fullSpectrumPhase || status.msg}</span>
               {cacheAge && status.type === 'cached' && <span className="text-slate-500">• {formatCacheAge(cacheAge)}</span>}
             </div>
+
+            {/* Scan pause / cancel / resume controls */}
+            {isAnalyzingAI && (
+              <>
+                <button onClick={() => { scanControlRef.current = 'pause'; setStatus({ type: 'loading', msg: 'Pausing after current stock...' }); }} className="px-3 py-2 rounded-lg text-xs font-semibold border flex items-center gap-1.5" style={{ background: 'rgba(245,158,11,0.12)', borderColor: 'rgba(245,158,11,0.4)', color: '#fbbf24' }}>
+                  <Clock className="w-3.5 h-3.5" />Pause
+                </button>
+                <button onClick={() => { scanControlRef.current = 'cancel'; setStatus({ type: 'loading', msg: 'Cancelling after current stock...' }); }} className="px-3 py-2 rounded-lg text-xs font-semibold border flex items-center gap-1.5" style={{ background: 'rgba(239,68,68,0.12)', borderColor: 'rgba(239,68,68,0.4)', color: '#f87171' }}>
+                  <X className="w-3.5 h-3.5" />Cancel
+                </button>
+              </>
+            )}
+            {!isAnalyzingAI && pausedRun && (
+              <>
+                <button onClick={() => { const pr = pausedRun; setPausedRun(null); runAgentQueue(pr.agentIds, pr.tickers, pr.completed, { model: pr.model }); }} className="px-3 py-2 rounded-lg text-xs font-semibold border flex items-center gap-1.5" style={{ background: 'rgba(16,185,129,0.12)', borderColor: 'rgba(16,185,129,0.4)', color: '#34d399' }}>
+                  <Play className="w-3.5 h-3.5" />Resume Scan
+                </button>
+                <button onClick={() => { clearCheckpoint(); setPausedRun(null); setStatus({ type: 'live', msg: 'Paused scan discarded' }); }} className="px-3 py-2 rounded-lg text-xs font-semibold border flex items-center gap-1.5" style={{ background: 'rgba(239,68,68,0.12)', borderColor: 'rgba(239,68,68,0.4)', color: '#f87171' }}>
+                  <X className="w-3.5 h-3.5" />Discard
+                </button>
+              </>
+            )}
             
             {/* Sessions Button */}
             <button onClick={() => setShowSessions(!showSessions)} className="px-4 py-2.5 rounded-xl text-sm font-medium border flex items-center gap-2" style={{ background: showSessions ? 'rgba(139,92,246,0.2)' : 'rgba(30,41,59,0.5)', borderColor: 'rgba(51,65,85,0.5)', color: showSessions ? '#a78bfa' : '#94a3b8' }}><Clock className="w-4 h-4" />Sessions ({sessions.length})</button>
