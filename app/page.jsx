@@ -1090,16 +1090,27 @@ VALUATION_SCORE: [0-100]`;
 // SHARED HELPERS FOR AGENT SCANS
 // ============================================
 async function callAgentGrok(prompt, model, { liveSearch = false } = {}) {
-  const response = await fetch("/api/grok", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt, model, agentPrompt: true, liveSearch })
-  });
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err.error || `API error ${response.status}`);
+  // Retry transient failures (rate limits, hiccups) with backoff
+  let lastErr;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt > 0) await new Promise(r => setTimeout(r, 4000 * attempt));
+    try {
+      const response = await fetch("/api/grok", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt, model, agentPrompt: true, liveSearch })
+      });
+      if (response.ok) return (await response.json()).analysis || '';
+      const err = await response.json().catch(() => ({}));
+      lastErr = new Error(err.error || `API error ${response.status}`);
+      // Only retry statuses that can succeed on a second try
+      if (![403, 429, 500, 502, 503, 504].includes(response.status)) throw lastErr;
+    } catch (e) {
+      lastErr = e;
+      if (!String(e.message).match(/403|429|50\d|fetch|network/i)) throw e;
+    }
   }
-  return (await response.json()).analysis || '';
+  throw lastErr;
 }
 
 function extractScore(text, marker) {
@@ -1385,11 +1396,12 @@ Two questions: (1) Market conditions - how large is the opportunity relative to 
 Score 0-100 where 80+ = big open market AND a defensible moat.
 End with: ROOM_MOAT_SCORE: [0-100]`;
 
-    const [chartText, contText, roomText] = [
-      await callAgentGrok(chartPrompt, model),
-      await callAgentGrok(contPrompt, model, { liveSearch: true }),
-      await callAgentGrok(roomPrompt, model, { liveSearch: true }),
-    ];
+    // All three sub-scans run in parallel - total time = slowest call
+    const [chartText, contText, roomText] = await Promise.all([
+      callAgentGrok(chartPrompt, model),
+      callAgentGrok(contPrompt, model, { liveSearch: true }),
+      callAgentGrok(roomPrompt, model, { liveSearch: true }),
+    ]);
 
     const chart = extractScore(chartText, 'CHART_SCORE');
     const cont = extractScore(contText, 'CONTINUATION_SCORE');
@@ -1426,23 +1438,7 @@ Search for board changes, new CFO/CEO/corp-dev hires, retained advisors or banke
 Score 0-100 for how much the people signal points to a potential buyout.
 If specific individuals deserve a deeper background check, end with DIG_DEEPER: yes and KEY_PEOPLE: [names, semicolon-separated]. Otherwise DIG_DEEPER: no.
 End with: PEOPLE_SCORE: [0-100]`;
-    const peopleText = await callAgentGrok(peoplePrompt, model, { liveSearch: true });
-    const people = extractScore(peopleText, 'PEOPLE_SCORE');
-    let peopleScore = people.score;
-    let peopleDeepText = null;
-
-    // Conditional follow-up: dig into the specific people
-    const dig = /DIG_DEEPER[:\s]*yes/i.test(peopleText);
-    const keyPeople = peopleText.match(/KEY_PEOPLE[:\s]*([^\n]+)/i)?.[1]?.trim();
-    if (dig && keyPeople) {
-      const deepPrompt = `Deep background check on these people at ${stock.ticker} (${stock.name}): ${keyPeople}
-Search their career history: companies they helped sell or take private, M&A deals they led, banking/PE backgrounds, patterns of joining companies shortly before an exit.
-How strongly does their presence suggest ${stock.ticker} is being positioned for a buyout? Score 0-100.
-End with: PEOPLE_DEEP_SCORE: [0-100]`;
-      const deep = extractScore(await callAgentGrok(deepPrompt, model, { liveSearch: true }), 'PEOPLE_DEEP_SCORE');
-      peopleDeepText = deep.cleaned;
-      if (deep.score !== null) peopleScore = Math.round(((people.score ?? 50) + deep.score * 2) / 3);
-    }
+    const peoplePromise = callAgentGrok(peoplePrompt, model, { liveSearch: true });
 
     // Angle 2: stated intent - has the company signaled it wants to sell
     const intentPrompt = `Search for signals that ${base} is SEEKING OR OPEN TO A BUYOUT.
@@ -1462,9 +1458,32 @@ Consider: is its sector consolidating; which specific acquirers (strategic or PE
 Name the most likely acquirers. Score 0-100 for target attractiveness.
 End with: FIT_SCORE: [0-100]`;
 
-    const intent = extractScore(await callAgentGrok(intentPrompt, model, { liveSearch: true }), 'INTENT_SCORE');
-    const buzz = extractScore(await callAgentGrok(buzzPrompt, model, { liveSearch: true }), 'BUZZ_SCORE');
-    const fit = extractScore(await callAgentGrok(fitPrompt, model, { liveSearch: true }), 'FIT_SCORE');
+    // People, intent, buzz, and fit all run in parallel; only the
+    // conditional people deep-dive has to wait for the people result
+    const [peopleText, intentText, buzzText, fitText] = await Promise.all([
+      peoplePromise,
+      callAgentGrok(intentPrompt, model, { liveSearch: true }),
+      callAgentGrok(buzzPrompt, model, { liveSearch: true }),
+      callAgentGrok(fitPrompt, model, { liveSearch: true }),
+    ]);
+    const people = extractScore(peopleText, 'PEOPLE_SCORE');
+    const intent = extractScore(intentText, 'INTENT_SCORE');
+    const buzz = extractScore(buzzText, 'BUZZ_SCORE');
+    const fit = extractScore(fitText, 'FIT_SCORE');
+    let peopleScore = people.score;
+    let peopleDeepText = null;
+
+    const dig = /DIG_DEEPER[:\s]*yes/i.test(peopleText);
+    const keyPeople = peopleText.match(/KEY_PEOPLE[:\s]*([^\n]+)/i)?.[1]?.trim();
+    if (dig && keyPeople) {
+      const deepPrompt = `Deep background check on these people at ${stock.ticker} (${stock.name}): ${keyPeople}
+Search their career history: companies they helped sell or take private, M&A deals they led, banking/PE backgrounds, patterns of joining companies shortly before an exit.
+How strongly does their presence suggest ${stock.ticker} is being positioned for a buyout? Score 0-100.
+End with: PEOPLE_DEEP_SCORE: [0-100]`;
+      const deep = extractScore(await callAgentGrok(deepPrompt, model, { liveSearch: true }), 'PEOPLE_DEEP_SCORE');
+      peopleDeepText = deep.cleaned;
+      if (deep.score !== null) peopleScore = Math.round(((people.score ?? 50) + deep.score * 2) / 3);
+    }
 
     const have = [peopleScore, intent.score, buzz.score, fit.score].filter(v => v !== null);
     const buyoutScore = have.length > 0
@@ -1518,9 +1537,15 @@ Read/watch coverage of what they actually said and judge the VIBES: genuine pass
 Score 0-100 where 80+ = electric, mission-driven leadership energy.
 End with: VIBES_SCORE: [0-100]`;
 
-    const ceo = extractScore(await callAgentGrok(ceoPrompt, model, { liveSearch: true }), 'CEO_SCORE');
-    const pub = extractScore(await callAgentGrok(publicPrompt, model, { liveSearch: true }), 'PUBLIC_SCORE');
-    const vibes = extractScore(await callAgentGrok(vibesPrompt, model, { liveSearch: true }), 'VIBES_SCORE');
+    // All three sub-scans run in parallel - total time = slowest call
+    const [ceoText, pubText, vibesText] = await Promise.all([
+      callAgentGrok(ceoPrompt, model, { liveSearch: true }),
+      callAgentGrok(publicPrompt, model, { liveSearch: true }),
+      callAgentGrok(vibesPrompt, model, { liveSearch: true }),
+    ]);
+    const ceo = extractScore(ceoText, 'CEO_SCORE');
+    const pub = extractScore(pubText, 'PUBLIC_SCORE');
+    const vibes = extractScore(vibesText, 'VIBES_SCORE');
 
     const have = [ceo.score, pub.score, vibes.score].filter(v => v !== null);
     const passionScore = have.length > 0
