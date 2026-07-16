@@ -22,7 +22,7 @@ export async function POST(request) {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const { prompt, isMatty, isTechnical, isConviction, jsonMode, model } = await request.json();
+    const { prompt, isMatty, isTechnical, isConviction, agentPrompt, liveSearch, jsonMode, model } = await request.json();
 
     const GROK_KEY = process.env.GROK_API_KEY || process.env.NEXT_PUBLIC_GROK_KEY;
 
@@ -40,6 +40,9 @@ export async function POST(request) {
     if (jsonMode) {
       systemPrompt = `You are a financial data engine. Respond with ONLY valid JSON matching the structure requested by the user. No prose, no markdown, no code fences. Only include real, publicly traded companies.`;
       maxTokens = 6000;
+    } else if (agentPrompt) {
+      systemPrompt = `You are an expert equity and derivatives analyst. Follow the user's analysis instructions exactly. Be direct and substantive - no fluff. Always end with the exact score marker the user requests.`;
+      maxTokens = 1500;
     } else if (isMatty) {
       systemPrompt = `You are a senior equity research analyst specializing in "singularity" infrastructure plays - companies positioned to benefit from AI, robotics, energy transition, and automation megatrends.
 
@@ -94,6 +97,11 @@ INSIDER_CONVICTION: [0-100]`;
     };
     if (jsonMode) {
       body.response_format = { type: 'json_object' };
+    }
+    if (liveSearch) {
+      // xAI Live Search: lets the model pull current news/filings for
+      // catalyst-sensitive scans
+      body.search_parameters = { mode: 'auto' };
     }
 
     const response = await fetch("https://api.x.ai/v1/chat/completions", {

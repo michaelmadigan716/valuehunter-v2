@@ -1087,6 +1087,243 @@ VALUATION_SCORE: [0-100]`;
 }
 
 // ============================================
+// SHARED HELPERS FOR AGENT SCANS
+// ============================================
+async function callAgentGrok(prompt, model, { liveSearch = false } = {}) {
+  const response = await fetch("/api/grok", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prompt, model, agentPrompt: true, liveSearch })
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error || `API error ${response.status}`);
+  }
+  return (await response.json()).analysis || '';
+}
+
+function extractScore(text, marker) {
+  const m = text.match(new RegExp(marker + '[:\\s=]*([0-9]+)', 'i'));
+  const score = m ? Math.min(100, Math.max(0, parseInt(m[1]))) : null;
+  const cleaned = text.replace(new RegExp(marker + '[:\\s=]*[0-9]+%?', 'gi'), '').trim();
+  return { score, cleaned };
+}
+
+async function fetchDailyBars(ticker, days) {
+  const end = new Date().toISOString().split('T')[0];
+  const start = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const res = await fetch(`https://api.polygon.io/v2/aggs/ticker/${ticker}/range/1/day/${start}/${end}?adjusted=true&sort=asc&limit=500&apiKey=${POLYGON_KEY}`);
+  if (!res.ok) return [];
+  return (await res.json()).results || [];
+}
+
+// ============================================
+// COMPUTED SCANS - momentum + volatility metrics from raw price data
+// (no AI calls, one Polygon request per stock)
+// ============================================
+function computeBarMetrics(bars) {
+  if (!bars || bars.length < 25) return null;
+  const closes = bars.map(b => b.c);
+  const vols = bars.map(b => b.v);
+  const last = closes[closes.length - 1];
+  const pctFrom = n => closes.length > n ? ((last - closes[closes.length - 1 - n]) / closes[closes.length - 1 - n]) * 100 : null;
+
+  // Volume surge: last 5 days vs prior 20-day average
+  const recent5 = vols.slice(-5).reduce((a, b) => a + b, 0) / 5;
+  const prior20 = vols.slice(-25, -5).reduce((a, b) => a + b, 0) / 20;
+  const volumeSurge = prior20 > 0 ? recent5 / prior20 : null;
+
+  // Realized volatility (30d, annualized %) from log returns
+  const rets = [];
+  for (let i = Math.max(1, closes.length - 30); i < closes.length; i++) {
+    if (closes[i - 1] > 0) rets.push(Math.log(closes[i] / closes[i - 1]));
+  }
+  let realizedVol = null;
+  if (rets.length > 5) {
+    const mean = rets.reduce((a, b) => a + b, 0) / rets.length;
+    const variance = rets.reduce((a, b) => a + (b - mean) ** 2, 0) / rets.length;
+    realizedVol = Math.sqrt(variance) * Math.sqrt(252) * 100;
+  }
+
+  // ATR% (14d) and volatility contraction (ATR last 10d vs prior 30d)
+  const trs = [];
+  for (let i = 1; i < bars.length; i++) {
+    trs.push(Math.max(bars[i].h - bars[i].l, Math.abs(bars[i].h - bars[i - 1].c), Math.abs(bars[i].l - bars[i - 1].c)));
+  }
+  const atr14 = trs.slice(-14).reduce((a, b) => a + b, 0) / Math.min(14, trs.length);
+  const atrPct = last > 0 ? (atr14 / last) * 100 : null;
+  const atr10 = trs.slice(-10).reduce((a, b) => a + b, 0) / Math.min(10, trs.length);
+  const atr30 = trs.slice(-40, -10).reduce((a, b) => a + b, 0) / Math.min(30, trs.slice(-40, -10).length || 1);
+  const volContraction = atr30 > 0 ? atr10 / atr30 : null;
+
+  return {
+    pct5d: pctFrom(5), pct21d: pctFrom(21), pct63d: pctFrom(63),
+    volumeSurge, realizedVol, atrPct, volContraction,
+  };
+}
+
+async function computeMarketMetrics(stockList, onProgress) {
+  const results = {};
+  let done = 0, next = 0;
+  const items = stockList;
+  async function worker() {
+    while (next < items.length) {
+      const i = next++;
+      const s = items[i];
+      try {
+        const bars = await fetchDailyBars(s.ticker, 130);
+        results[s.ticker] = computeBarMetrics(bars);
+      } catch (e) {
+        results[s.ticker] = null;
+      }
+      done++;
+      if (onProgress) onProgress(done, items.length);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(5, items.length) }, worker));
+
+  // Relative-strength percentile ranks across the scanned pool
+  const blend = t => {
+    const m = results[t];
+    if (!m) return null;
+    return (m.pct5d ?? 0) * 0.3 + (m.pct21d ?? 0) * 0.4 + (m.pct63d ?? 0) * 0.3;
+  };
+  const ranked = stockList.map(s => ({ t: s.ticker, b: blend(s.ticker) })).filter(x => x.b !== null).sort((a, b) => a.b - b.b);
+  ranked.forEach((x, i) => {
+    results[x.t].rsScore = Math.round((i / Math.max(1, ranked.length - 1)) * 100);
+  });
+  // Volume-surge score: 1x avg -> 33, 3x avg -> 100
+  Object.values(results).forEach(m => {
+    if (m && m.volumeSurge !== null) m.volumeSurgeScore = Math.round(Math.min(100, m.volumeSurge * 33.3));
+  });
+  return results;
+}
+
+// ============================================
+// NEW AI AGENT SCANS - Momentum + Options groups
+// ============================================
+async function getBreakoutAnalysis(stock, model = 'grok-4.5') {
+  try {
+    const bars = await fetchDailyBars(stock.ticker, 200);
+    if (bars.length < 30) return { breakoutAnalysis: 'Insufficient price history', breakoutScore: null };
+    const chart = bars.slice(-90).map(p => `${new Date(p.t).toISOString().split('T')[0]}: O=${p.o.toFixed(2)} H=${p.h.toFixed(2)} L=${p.l.toFixed(2)} C=${p.c.toFixed(2)} V=${Math.round(p.v / 1000)}K`).join('\n');
+    const high = Math.max(...bars.map(b => b.h));
+    const fromHigh = ((high - stock.price) / high * 100).toFixed(1);
+
+    const prompt = `Analyze ${stock.ticker} (${stock.name}) for MOMENTUM BREAKOUT SETUPS: bull flags, tight consolidations near highs, volatility contraction patterns (VCP), high-tight flags, or first pullbacks after breakouts.
+CURRENT PRICE: $${stock.price?.toFixed(2)} | ${fromHigh}% below 200-day high
+DAILY BARS (last 90 days):
+${chart}
+
+Evaluate: proximity to pivot/resistance, tightness of recent range, volume dry-up in consolidation, prior uptrend strength, and what would confirm a breakout. Score 0-100 where 80+ = actionable setup near trigger.
+End with: BREAKOUT_SCORE: [0-100]`;
+
+    const text = await callAgentGrok(prompt, model);
+    const { score, cleaned } = extractScore(text, 'BREAKOUT_SCORE');
+    return { breakoutAnalysis: cleaned, breakoutScore: score };
+  } catch (e) {
+    return { breakoutAnalysis: `Error: ${e.message}`, breakoutScore: null };
+  }
+}
+
+async function getCatalystAnalysis(stock, model = 'grok-4.5') {
+  try {
+    const prompt = `Identify RECENT and UPCOMING CATALYSTS for ${stock.ticker} (${stock.name}), sector: ${stock.sector || 'Unknown'}, price $${stock.price?.toFixed(2)}, market cap $${stock.marketCap ? Math.round(stock.marketCap / 1000000) + 'M' : 'unknown'}.
+Search for: earnings dates and results, contract wins, FDA/regulatory decisions, product launches, analyst actions, sector momentum, index inclusion, insider/institutional buying news.
+Weigh how likely these catalysts are to drive near-term (1-8 week) price momentum. Score 0-100 where 80+ = strong live catalyst in play.
+End with: CATALYST_SCORE: [0-100]`;
+
+    const text = await callAgentGrok(prompt, model, { liveSearch: true });
+    const { score, cleaned } = extractScore(text, 'CATALYST_SCORE');
+    return { catalystAnalysis: cleaned, catalystScore: score };
+  } catch (e) {
+    return { catalystAnalysis: `Error: ${e.message}`, catalystScore: null };
+  }
+}
+
+async function getSqueezeAnalysis(stock, model = 'grok-4.5') {
+  try {
+    let floatInfo = '';
+    try {
+      const res = await fetch(`https://finnhub.io/api/v1/stock/metric?symbol=${stock.ticker}&metric=all&token=${FINNHUB_KEY}`);
+      if (res.ok) {
+        const m = (await res.json()).metric || {};
+        const bits = [];
+        if (m.sharesOutstanding) bits.push(`Shares outstanding: ${m.sharesOutstanding}M`);
+        if (m.shortInterestSharePercent) bits.push(`Short interest: ${m.shortInterestSharePercent}% of shares`);
+        if (m.shortInterestDaysToCover) bits.push(`Days to cover: ${m.shortInterestDaysToCover}`);
+        floatInfo = bits.join(' | ');
+      }
+    } catch (e) {}
+
+    const prompt = `Evaluate SHORT SQUEEZE potential for ${stock.ticker} (${stock.name}), price $${stock.price?.toFixed(2)}, market cap $${stock.marketCap ? Math.round(stock.marketCap / 1000000) + 'M' : 'unknown'}.
+${floatInfo ? `Known data: ${floatInfo}` : 'Look up current short interest, float size, and borrow availability.'}
+Assess: short interest % of float, days to cover, float size, recent price/volume action that could trigger covering, retail attention, and any hard catalysts. Score 0-100 where 80+ = elevated squeeze setup.
+End with: SQUEEZE_SCORE: [0-100]`;
+
+    const text = await callAgentGrok(prompt, model, { liveSearch: true });
+    const { score, cleaned } = extractScore(text, 'SQUEEZE_SCORE');
+    return { squeezeAnalysis: cleaned, squeezeScore: score };
+  } catch (e) {
+    return { squeezeAnalysis: `Error: ${e.message}`, squeezeScore: null };
+  }
+}
+
+async function getEarningsMomentumAnalysis(stock, model = 'grok-4.5') {
+  try {
+    let surprises = '';
+    try {
+      const res = await fetch(`https://finnhub.io/api/v1/stock/earnings?symbol=${stock.ticker}&token=${FINNHUB_KEY}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          surprises = data.slice(0, 4).map(q => `${q.period}: actual ${q.actual} vs est ${q.estimate} (surprise ${q.surprisePercent != null ? q.surprisePercent.toFixed(1) + '%' : 'n/a'})`).join('\n');
+        }
+      }
+    } catch (e) {}
+
+    const prompt = `Evaluate EARNINGS MOMENTUM for ${stock.ticker} (${stock.name}).
+${surprises ? `Last quarters (EPS actual vs estimate):\n${surprises}` : 'No surprise history available - assess from what you know.'}
+Assess: beat/miss streak, magnitude and direction of surprises, whether estimates are being revised up, revenue acceleration, and guidance trend. Score 0-100 where 80+ = accelerating beats with rising estimates.
+End with: EARNINGS_MOMENTUM_SCORE: [0-100]`;
+
+    const text = await callAgentGrok(prompt, model);
+    const { score, cleaned } = extractScore(text, 'EARNINGS_MOMENTUM_SCORE');
+    return { earningsMomentumAnalysis: cleaned, earningsMomentumScore: score };
+  } catch (e) {
+    return { earningsMomentumAnalysis: `Error: ${e.message}`, earningsMomentumScore: null };
+  }
+}
+
+async function getOptionsPlayAnalysis(stock, model = 'grok-4.5') {
+  try {
+    // Volatility context: reuse computed metrics when present, else compute
+    let vol = { realizedVol: stock.realizedVol, atrPct: stock.atrPct, volContraction: stock.volContraction };
+    if (vol.realizedVol == null) {
+      const bars = await fetchDailyBars(stock.ticker, 130);
+      const m = computeBarMetrics(bars);
+      if (m) vol = m;
+    }
+    const volLine = vol.realizedVol != null
+      ? `30d realized volatility: ${vol.realizedVol.toFixed(0)}% annualized | ATR: ${vol.atrPct?.toFixed(1)}%/day | Volatility trend: ${vol.volContraction != null ? (vol.volContraction < 0.8 ? 'contracting' : vol.volContraction > 1.2 ? 'expanding' : 'stable') : 'unknown'}`
+      : 'Volatility data unavailable.';
+
+    const prompt = `Evaluate ${stock.ticker} (${stock.name}) as an OPTIONS PLAY. Price $${stock.price?.toFixed(2)}, market cap $${stock.marketCap ? Math.round(stock.marketCap / 1000000) + 'M' : 'unknown'}.
+${volLine}
+${stock.catalystAnalysis ? `Catalyst notes: ${stock.catalystAnalysis.slice(0, 400)}` : ''}
+
+Assess: (1) does this stock even have a liquid options chain (small caps often don't - score low if not), (2) is implied volatility likely cheap or rich vs the realized volatility above, (3) what's the best structure - long calls, call debit spread, LEAPS, puts, or selling premium - and rough strike/expiry logic tied to catalysts, (4) key risks. Score 0-100 for overall options-play attractiveness.
+End with: OPTIONS_SCORE: [0-100]`;
+
+    const text = await callAgentGrok(prompt, model, { liveSearch: true });
+    const { score, cleaned } = extractScore(text, 'OPTIONS_SCORE');
+    return { optionsAnalysis: cleaned, optionsScore: score };
+  } catch (e) {
+    return { optionsAnalysis: `Error: ${e.message}`, optionsScore: null };
+  }
+}
+
+// ============================================
 // ORACLE ANALYSIS - The Singularity Capitalist
 // ============================================
 async function getOracleAnalysis(stock) {
@@ -1435,12 +1672,18 @@ export default function StockResearchApp() {
   const [spectrumSettings, setSpectrumSettings] = useState({
     baseStockLimit: 500,
     singularityEnabled: true,
+    computedEnabled: true,      // free momentum/volatility metrics from price data
     grokEnabled: true,          // Conviction (insider) scan
     technicalEnabled: true,     // Cup & Handle scan
     explosiveEnabled: true,
     teamEnabled: true,
     parabolicEnabled: true,
     valuationEnabled: true,
+    breakoutEnabled: false,     // momentum group - off by default
+    catalystEnabled: false,
+    squeezeEnabled: false,
+    earningsMomentumEnabled: false,
+    optionsEnabled: false,      // options group - off by default
     grokCount: 25,              // shared "stocks to analyze" count for all AI agent scans
     grokOnlySingularity70: false  // Only analyze stocks with singularity >= 70
   });
@@ -1512,7 +1755,14 @@ export default function StockResearchApp() {
     explosive: 10,
     team: 10,
     parabolic: 10,
-    valuation: 10
+    valuation: 10,
+    rs: 10,
+    volumeSurge: 10,
+    breakout: 10,
+    catalyst: 10,
+    squeeze: 10,
+    earningsMomentum: 10,
+    options: 10
   });
   const [fullSpectrumPhase, setFullSpectrumPhase] = useState('');
 
@@ -1521,7 +1771,7 @@ export default function StockResearchApp() {
     
     // Calculate total weight (base + AI)
     const baseTotal = Object.values(w).reduce((a, b) => a + b, 0);
-    const aiTotal = (aw.conviction || 0) + (aw.upside || 0) + (aw.cupHandle || 0) + (aw.singularity || 0) + (aw.oracle || 0) + (aw.explosive || 0) + (aw.team || 0) + (aw.parabolic || 0) + (aw.valuation || 0);
+    const aiTotal = (aw.conviction || 0) + (aw.upside || 0) + (aw.cupHandle || 0) + (aw.singularity || 0) + (aw.oracle || 0) + (aw.explosive || 0) + (aw.team || 0) + (aw.parabolic || 0) + (aw.valuation || 0) + (aw.rs || 0) + (aw.volumeSurge || 0) + (aw.breakout || 0) + (aw.catalyst || 0) + (aw.squeeze || 0) + (aw.earningsMomentum || 0) + (aw.options || 0);
     const grandTotal = baseTotal + aiTotal;
     
     // If all weights are 0, just return unsorted
@@ -1613,9 +1863,177 @@ export default function StockResearchApp() {
         score += (s.valuationScore / 100) * (aw.valuation / grandTotal) * 100;
       }
 
+      // Momentum + options scores (0-100 scales, weights default 0)
+      const simpleContrib = [
+        ['rs', s.rsScore], ['volumeSurge', s.volumeSurgeScore], ['breakout', s.breakoutScore],
+        ['catalyst', s.catalystScore], ['squeeze', s.squeezeScore],
+        ['earningsMomentum', s.earningsMomentumScore], ['options', s.optionsScore],
+      ];
+      for (const [k, v] of simpleContrib) {
+        if ((aw[k] || 0) > 0 && v !== null && v !== undefined) {
+          score += (v / 100) * (aw[k] / grandTotal) * 100;
+        }
+      }
+
       return { ...s, compositeScore: Math.min(100, Math.max(0, score)) };
     }).sort((a, b) => b.compositeScore - a.compositeScore);
   }, []);
+
+  // ============================================
+  // AGENT REGISTRY + GENERIC RUNNER (checkpoint / resume-on-refresh)
+  // ============================================
+  const stocksRef = React.useRef(stocks);
+  useEffect(() => { stocksRef.current = stocks; }, [stocks]);
+  const sessionIdRef = React.useRef(null);
+  useEffect(() => { sessionIdRef.current = currentSessionId; }, [currentSessionId]);
+  const resumeTimerRef = React.useRef(null);
+
+  const [agentRunning, setAgentRunning] = useState(null);
+  const [agentScanCount, setAgentScanCount] = useState(25);
+  const [isComputingMetrics, setIsComputingMetrics] = useState(false);
+  const [resumeBanner, setResumeBanner] = useState(null);
+  const [openScanGroup, setOpenScanGroup] = useState(null);
+
+  // Table column visibility (scan-score columns toggleable via Columns menu)
+  const DEFAULT_COLS = { ext: true, netCash: true, insider: true, sg: true, ex: true, tm: true, pr: true, vl: true, cv: true, ch: true, low52: true, rs: false, vs: false, bo: false, ct: false, sq: false, em: false, op: false };
+  const [colVisible, setColVisible] = useState(DEFAULT_COLS);
+  const [showColumnsMenu, setShowColumnsMenu] = useState(false);
+  useEffect(() => { try { const saved = JSON.parse(localStorage.getItem('singularityhunter_columns') || 'null'); if (saved) setColVisible(prev => ({ ...prev, ...saved })); } catch (e) {} }, []);
+  const toggleColumn = (key) => setColVisible(prev => { const next = { ...prev, [key]: !prev[key] }; try { localStorage.setItem('singularityhunter_columns', JSON.stringify(next)); } catch (e) {} return next; });
+  const COLUMN_LABELS = { ext: 'Extended Hours', netCash: 'Net Cash', insider: 'Insider', sg: 'Singularity', ex: 'Explosive', tm: 'Team', pr: 'Parabolic', vl: 'Valuation', cv: 'Conviction', ch: 'Cup & Handle', low52: '% From 52w Low', rs: 'Relative Strength', vs: 'Volume Surge', bo: 'Breakout', ct: 'Catalyst', sq: 'Squeeze', em: 'Earnings Mom.', op: 'Options Play' };
+  const NEW_SCORE_COLS = [
+    { key: 'rs', field: 'rsScore', label: 'RS', title: 'Relative Strength rank (vs scanned pool)', color: '#fb923c' },
+    { key: 'vs', field: 'volumeSurgeScore', label: 'VS', title: 'Volume Surge score', color: '#67e8f9' },
+    { key: 'bo', field: 'breakoutScore', label: 'Bo', title: 'Breakout Setup score', color: '#fb923c' },
+    { key: 'ct', field: 'catalystScore', label: 'Ct', title: 'Catalyst score', color: '#fbbf24' },
+    { key: 'sq', field: 'squeezeScore', label: 'Sq', title: 'Squeeze score', color: '#f87171' },
+    { key: 'em', field: 'earningsMomentumScore', label: 'EM', title: 'Earnings Momentum score', color: '#34d399' },
+    { key: 'op', field: 'optionsScore', label: 'Op', title: 'Options Play score', color: '#22d3ee' },
+  ];
+
+  const AGENT_REGISTRY = [
+    { id: 'conviction', label: 'Conviction', group: 'value', color: '#34d399', icon: Sparkles, fn: getAIAnalysis, apply: (s, r) => ({ ...s, aiAnalysis: r.analysis, insiderConviction: r.insiderConviction }) },
+    { id: 'technical', label: 'Technical (C&H)', group: 'value', color: '#a5b4fc', icon: Activity, fn: getTechnicalAnalysis, apply: (s, r) => ({ ...s, technicalAnalysis: r.technicalAnalysis, cupHandleScore: r.cupHandleScore }) },
+    { id: 'explosive', label: 'Explosive', group: 'value', color: '#f472b6', icon: Zap, fn: getExplosiveGrowthAnalysis, apply: (s, r) => ({ ...s, explosiveAnalysis: r.explosiveAnalysis, explosiveScore: r.explosiveScore }) },
+    { id: 'team', label: 'Team', group: 'value', color: '#c084fc', icon: Users, fn: getTeamAnalysis, apply: (s, r) => ({ ...s, teamAnalysis: r.teamAnalysis, teamScore: r.teamScore }) },
+    { id: 'parabolic', label: 'Parabolic', group: 'value', color: '#4ade80', icon: TrendingUp, pool: 'gainers', fn: getParabolicAnalysis, apply: (s, r) => ({ ...s, parabolicAnalysis: r.parabolicAnalysis, parabolicScore: r.parabolicScore }) },
+    { id: 'valuation', label: 'Valuation', group: 'value', color: '#38bdf8', icon: DollarSign, fn: getValuationAnalysis, apply: (s, r) => ({ ...s, valuationAnalysis: r.valuationAnalysis, valuationScore: r.valuationScore }) },
+    { id: 'breakout', label: 'Breakout Setup', group: 'momentum', color: '#fb923c', icon: TrendingUp, fn: getBreakoutAnalysis, apply: (s, r) => ({ ...s, breakoutAnalysis: r.breakoutAnalysis, breakoutScore: r.breakoutScore }) },
+    { id: 'catalyst', label: 'Catalyst', group: 'momentum', color: '#fbbf24', icon: Radio, fn: getCatalystAnalysis, apply: (s, r) => ({ ...s, catalystAnalysis: r.catalystAnalysis, catalystScore: r.catalystScore }) },
+    { id: 'squeeze', label: 'Squeeze', group: 'momentum', color: '#f87171', icon: Flame, fn: getSqueezeAnalysis, apply: (s, r) => ({ ...s, squeezeAnalysis: r.squeezeAnalysis, squeezeScore: r.squeezeScore }) },
+    { id: 'earningsMomentum', label: 'Earnings Momentum', group: 'momentum', color: '#34d399', icon: Calendar, fn: getEarningsMomentumAnalysis, apply: (s, r) => ({ ...s, earningsMomentumAnalysis: r.earningsMomentumAnalysis, earningsMomentumScore: r.earningsMomentumScore }) },
+    { id: 'options', label: 'Options Play', group: 'options', color: '#22d3ee', icon: Target, fn: getOptionsPlayAnalysis, apply: (s, r) => ({ ...s, optionsAnalysis: r.optionsAnalysis, optionsScore: r.optionsScore }) },
+  ];
+
+  const CHECKPOINT_KEY = 'singularityhunter_scan_checkpoint';
+  const persistCheckpoint = (data) => { try { localStorage.setItem(CHECKPOINT_KEY, JSON.stringify({ ...data, ts: Date.now() })); } catch (e) {} };
+  const clearCheckpoint = () => { try { localStorage.removeItem(CHECKPOINT_KEY); } catch (e) {} };
+
+  const persistProgressToSession = (sid) => {
+    try {
+      saveSession(sid, stocksRef.current, { phase: 'in-progress', current: 0, total: 0, found: stocksRef.current.length }, `Scan ${new Date().toLocaleDateString()} (${stocksRef.current.length} stocks)`);
+    } catch (e) {}
+  };
+
+  // Runs each agent over the ticker list sequentially, checkpointing after
+  // every stock so a page refresh (or deploy) can resume where it left off.
+  const runAgentQueue = async (agentIds, tickers, completedMap = {}, opts = {}) => {
+    const agents = AGENT_REGISTRY.filter(a => agentIds.includes(a.id));
+    if (agents.length === 0 || tickers.length === 0) return;
+    const model = opts.model || grokModel;
+    const sid = sessionIdRef.current || generateSessionId();
+    if (!sessionIdRef.current) { sessionIdRef.current = sid; setCurrentSessionId(sid); }
+    setIsAnalyzingAI(true);
+    setError(null);
+    let sinceSave = 0;
+
+    for (const agent of agents) {
+      const doneSet = new Set(completedMap[agent.id] || []);
+      const remaining = tickers.filter(t => !doneSet.has(t));
+      if (remaining.length === 0) continue;
+      setAgentRunning(agent.id);
+      if (opts.setPhase) setFullSpectrumPhase(`Running ${agent.label} Scan...`);
+
+      for (let i = 0; i < remaining.length; i++) {
+        const ticker = remaining[i];
+        const idx = tickers.length - remaining.length + i + 1;
+        setAiProgress({ current: idx, total: tickers.length });
+        setStatus({ type: 'loading', msg: `${agent.label}: ${ticker} (${idx}/${tickers.length})...` });
+
+        const stock = stocksRef.current.find(s => s.ticker === ticker);
+        if (stock) {
+          const result = await agent.fn(stock, model);
+          stocksRef.current = stocksRef.current.map(s => (s.ticker === ticker ? agent.apply(s, result) : s));
+          setStocks(prev => prev.map(s => (s.ticker === ticker ? agent.apply(s, result) : s)));
+        }
+
+        doneSet.add(ticker);
+        completedMap[agent.id] = [...doneSet];
+        persistCheckpoint({ kind: 'agents', agentIds, tickers, completed: completedMap, model });
+        if (++sinceSave >= 3 || i === remaining.length - 1) { persistProgressToSession(sid); sinceSave = 0; }
+
+        if (i < remaining.length - 1) await new Promise(r => setTimeout(r, 1200));
+      }
+    }
+
+    stocksRef.current = calcScores(stocksRef.current, weights, aiWeights);
+    setStocks(stocksRef.current);
+    persistProgressToSession(sid);
+    setSessions(getAllSessions());
+    clearCheckpoint();
+    setAgentRunning(null);
+    setIsAnalyzingAI(false);
+    setAiProgress({ current: 0, total: 0 });
+    setStatus({ type: 'live', msg: `${agents.map(a => a.label).join(' + ')} scan complete` });
+  };
+
+  const getCurrentView = () => [...stocksRef.current]
+    .filter(s => matchesCategory(s, sectorFilter))
+    .filter(s => !filters.hideNetCashNegative || (s.netCash !== null && s.netCash >= 0))
+    .filter(s => (s.singularityScore || 0) >= filters.minSingularityScore)
+    .filter(s => singularityGate === 0 || (s.singularityScore || 0) >= singularityGate)
+    .filter(s => !filters.excludeBanks || !s.isBank)
+    .filter(s => !filters.excludeFood || !s.isFood)
+    .filter(s => !filters.excludeHealthcare || !s.isHealthcare)
+    .filter(s => !filters.excludeInsurance || !s.isInsurance)
+    .filter(s => !filters.excludeREIT || !s.isREIT)
+    .sort((a, b) => b.compositeScore - a.compositeScore);
+
+  const launchAgentScan = (agent) => {
+    setOpenScanGroup(null);
+    let pool;
+    if (agent.pool === 'gainers') {
+      pool = [...stocksRef.current]
+        .filter(s => s.change >= topGainersThreshold)
+        .filter(s => singularityGate === 0 || (s.singularityScore || 0) >= singularityGate)
+        .sort((a, b) => (b.change || 0) - (a.change || 0));
+      if (pool.length === 0) { setError(`No stocks with ${topGainersThreshold}%+ gains${singularityGate > 0 ? ` and Singularity ≥ ${singularityGate}` : ''}. Try lowering threshold.`); return; }
+    } else {
+      pool = getCurrentView();
+      if (pool.length === 0) { setError(singularityGate > 0 ? `No stocks with Singularity Score ≥ ${singularityGate}. Run Singularity scan first or lower the gate.` : 'No stocks to scan. Run a base scan first.'); return; }
+    }
+    const count = agentScanCount === 0 ? pool.length : Math.min(agentScanCount, pool.length);
+    runAgentQueue([agent.id], pool.slice(0, count).map(s => s.ticker));
+  };
+
+  const runComputedMetricsScan = async (label) => {
+    setOpenScanGroup(null);
+    const pool = getCurrentView();
+    if (pool.length === 0) { setError('No stocks to compute metrics for. Run a base scan first.'); return; }
+    setIsComputingMetrics(true);
+    setError(null);
+    try {
+      const metrics = await computeMarketMetrics(pool, (done, total) => setStatus({ type: 'loading', msg: `${label}: ${done}/${total} stocks...` }));
+      stocksRef.current = stocksRef.current.map(s => (metrics[s.ticker] ? { ...s, ...metrics[s.ticker] } : s));
+      stocksRef.current = calcScores(stocksRef.current, weights, aiWeights);
+      setStocks(stocksRef.current);
+      if (sessionIdRef.current) persistProgressToSession(sessionIdRef.current);
+      setStatus({ type: 'live', msg: `${label} complete (${pool.length} stocks)` });
+    } catch (e) {
+      setError(`${label} failed: ${e.message}`);
+    }
+    setIsComputingMetrics(false);
+  };
 
   useEffect(() => {
     // Load sessions list
@@ -1634,6 +2052,24 @@ export default function StockResearchApp() {
     } else {
       setStatus({ type: 'ready', msg: 'Click Run Base Scan' });
     }
+
+    // Resume an interrupted agent scan (refresh/deploy mid-scan)
+    try {
+      const cp = JSON.parse(localStorage.getItem(CHECKPOINT_KEY) || 'null');
+      if (cp && cp.kind === 'agents' && cp.tickers?.length && cp.agentIds?.length) {
+        const doneCount = Object.values(cp.completed || {}).reduce((a, arr) => a + arr.length, 0);
+        const totalCount = cp.agentIds.length * cp.tickers.length;
+        if (doneCount < totalCount) {
+          setResumeBanner(`Resuming interrupted scan - ${doneCount}/${totalCount} steps already done. Starting in a moment...`);
+          resumeTimerRef.current = setTimeout(() => {
+            setResumeBanner(null);
+            runAgentQueue(cp.agentIds, cp.tickers, cp.completed || {}, { model: cp.model });
+          }, 2500);
+        } else {
+          localStorage.removeItem(CHECKPOINT_KEY);
+        }
+      }
+    } catch (e) {}
   }, []);
 
   useEffect(() => {
@@ -2600,8 +3036,14 @@ Respond with ONLY a JSON array:
 
       let currentStocks = scoredStocks;
       const scanStats = { phase: 'complete', current: allTickers.length, total: allTickers.length, found: scoredStocks.length };
-      
+
       setIsScanning(false);
+
+      // Persist base-scan results immediately so a refresh mid-spectrum
+      // doesn't lose them
+      sessionIdRef.current = newSessionId;
+      saveSession(newSessionId, currentStocks, scanStats, `Full Spectrum ${new Date().toLocaleDateString()} (${currentStocks.length} stocks)`);
+      setSessions(getAllSessions());
       
       // Phase 2: Singularity Scan
       if (spectrumSettings.singularityEnabled && currentStocks.length > 0) {
@@ -2717,75 +3159,47 @@ Respond with ONLY a JSON array:
         console.log(`Singularity scan complete. Stocks with scores: ${currentStocks.filter(s => s.singularityScore).length}`);
       }
       
-      // Phase 3: AI agent scans - every enabled agent runs over the same
-      // top-N pool, one agent at a time, in the order shown in the sidebar.
-      const spectrumAgents = [
-        { enabled: spectrumSettings.grokEnabled, label: 'Conviction', fn: getAIAnalysis,
-          apply: (s, r) => ({ ...s, aiAnalysis: r.analysis, insiderConviction: r.insiderConviction }) },
-        { enabled: spectrumSettings.technicalEnabled, label: 'Technical', fn: getTechnicalAnalysis,
-          apply: (s, r) => ({ ...s, technicalAnalysis: r.technicalAnalysis, cupHandleScore: r.cupHandleScore }) },
-        { enabled: spectrumSettings.explosiveEnabled, label: 'Explosive Growth', fn: getExplosiveGrowthAnalysis,
-          apply: (s, r) => ({ ...s, explosiveAnalysis: r.explosiveAnalysis, explosiveScore: r.explosiveScore }) },
-        { enabled: spectrumSettings.teamEnabled, label: 'Team', fn: getTeamAnalysis,
-          apply: (s, r) => ({ ...s, teamAnalysis: r.teamAnalysis, teamScore: r.teamScore }) },
-        { enabled: spectrumSettings.parabolicEnabled, label: 'Parabolic', fn: getParabolicAnalysis,
-          apply: (s, r) => ({ ...s, parabolicAnalysis: r.parabolicAnalysis, parabolicScore: r.parabolicScore }) },
-        { enabled: spectrumSettings.valuationEnabled, label: 'Valuation', fn: getValuationAnalysis,
-          apply: (s, r) => ({ ...s, valuationAnalysis: r.valuationAnalysis, valuationScore: r.valuationScore }) },
-      ].filter(a => a.enabled);
+      // Phase 2.5: computed momentum + volatility metrics (free, no AI calls)
+      if (spectrumSettings.computedEnabled !== false && currentStocks.length > 0) {
+        setFullSpectrumPhase('Computing Momentum & Volatility Data...');
+        try {
+          const metrics = await computeMarketMetrics(currentStocks, (done, total) => setStatus({ type: 'loading', msg: `Full Spectrum: market metrics ${done}/${total}...` }));
+          currentStocks = currentStocks.map(s => (metrics[s.ticker] ? { ...s, ...metrics[s.ticker] } : s));
+          stocksRef.current = currentStocks;
+          setStocks(currentStocks);
+        } catch (e) {
+          console.error('Computed metrics phase failed:', e);
+        }
+      }
 
-      if (spectrumAgents.length > 0 && currentStocks.length > 0) {
-        // Pool selection honors the Singularity Gate and the 70+ option
+      // Phase 3: AI agent scans via the generic checkpointing runner -
+      // every enabled agent runs over the same top-N pool, one at a time.
+      const spectrumAgentIds = [
+        spectrumSettings.grokEnabled && 'conviction',
+        spectrumSettings.technicalEnabled && 'technical',
+        spectrumSettings.explosiveEnabled && 'explosive',
+        spectrumSettings.teamEnabled && 'team',
+        spectrumSettings.parabolicEnabled && 'parabolic',
+        spectrumSettings.valuationEnabled && 'valuation',
+        spectrumSettings.breakoutEnabled && 'breakout',
+        spectrumSettings.catalystEnabled && 'catalyst',
+        spectrumSettings.squeezeEnabled && 'squeeze',
+        spectrumSettings.earningsMomentumEnabled && 'earningsMomentum',
+        spectrumSettings.optionsEnabled && 'options',
+      ].filter(Boolean);
+
+      if (spectrumAgentIds.length > 0 && currentStocks.length > 0) {
         let stocksPool = [...currentStocks];
-        if (singularityGate > 0) {
-          stocksPool = stocksPool.filter(s => (s.singularityScore || 0) >= singularityGate);
-        }
-        if (spectrumSettings.grokOnlySingularity70) {
-          stocksPool = stocksPool.filter(s => (s.singularityScore || 0) >= 70);
-        }
+        if (singularityGate > 0) stocksPool = stocksPool.filter(s => (s.singularityScore || 0) >= singularityGate);
+        if (spectrumSettings.grokOnlySingularity70) stocksPool = stocksPool.filter(s => (s.singularityScore || 0) >= 70);
 
         if (stocksPool.length === 0) {
           console.log('No stocks qualify for AI agent scans');
         } else {
-          // grokCount of 0 means "all stocks"
-          const countToAnalyze = spectrumSettings.grokCount === 0
-            ? stocksPool.length
-            : Math.min(spectrumSettings.grokCount, stocksPool.length);
-          const stocksToAnalyze = stocksPool.slice(0, countToAnalyze);
-          setIsAnalyzingAI(true);
-          console.log(`AI agents (${spectrumAgents.map(a => a.label).join(', ')}) will analyze ${stocksToAnalyze.length} stocks:`, stocksToAnalyze.map(s => s.ticker));
-
-          for (const agent of spectrumAgents) {
-            setFullSpectrumPhase(`Running ${agent.label} Scan...`);
-            setAiProgress({ current: 0, total: stocksToAnalyze.length });
-
-            for (let i = 0; i < stocksToAnalyze.length; i++) {
-              setAiProgress({ current: i + 1, total: stocksToAnalyze.length });
-              setStatus({ type: 'loading', msg: `Full Spectrum: ${agent.label} - ${stocksToAnalyze[i].ticker} (${i + 1}/${stocksToAnalyze.length})...` });
-
-              const result = await agent.fn(stocksToAnalyze[i], grokModel);
-
-              // Use functional update to preserve other scan results
-              setStocks(prev => prev.map(s =>
-                s.ticker === stocksToAnalyze[i].ticker ? agent.apply(s, result) : s
-              ));
-              // Also update currentStocks for session saving
-              currentStocks = currentStocks.map(s =>
-                s.ticker === stocksToAnalyze[i].ticker ? agent.apply(s, result) : s
-              );
-
-              if (i < stocksToAnalyze.length - 1) {
-                await new Promise(r => setTimeout(r, 1200));
-              }
-            }
-          }
-
-          // Recalculate scores with all agent results in
-          setStocks(prev => calcScores(prev, weights, aiWeights));
-          currentStocks = calcScores(currentStocks, weights, aiWeights);
-
-          setIsAnalyzingAI(false);
-          setAiProgress({ current: 0, total: 0 });
+          const countToAnalyze = spectrumSettings.grokCount === 0 ? stocksPool.length : Math.min(spectrumSettings.grokCount, stocksPool.length);
+          const tickers = stocksPool.slice(0, countToAnalyze).map(s => s.ticker);
+          await runAgentQueue(spectrumAgentIds, tickers, {}, { setPhase: true });
+          currentStocks = stocksRef.current;
         }
       } else {
         console.log('Skipping AI agent scans - none enabled or no stocks');
@@ -2888,6 +3302,9 @@ Respond with ONLY a JSON array:
       }
       if (sortBy === 'valuationScore') {
         return (b.valuationScore ?? -1) - (a.valuationScore ?? -1);
+      }
+      if (['rsScore','volumeSurgeScore','breakoutScore','catalystScore','squeezeScore','earningsMomentumScore','optionsScore'].includes(sortBy)) {
+        return (b[sortBy] ?? -1) - (a[sortBy] ?? -1);
       }
       if (sortBy === 'fromLow') {
         // Ascending - lowest % from 52w low first (closest to bottom)
@@ -2999,267 +3416,70 @@ Respond with ONLY a JSON array:
                   </div>
                 )}
                 
-                {/* Grok AI Button - Conviction Focus */}
-                <button 
-                  onClick={() => {
-                    const currentView = [...stocks]
-                      .filter(s => matchesCategory(s, sectorFilter))
-                      .filter(s => !filters.hideNetCashNegative || (s.netCash !== null && s.netCash >= 0))
-                      .filter(s => (s.singularityScore || 0) >= filters.minSingularityScore)
-                      .filter(s => singularityGate === 0 || (s.singularityScore || 0) >= singularityGate)
-                      .filter(s => !filters.excludeBanks || !s.isBank)
-                      .filter(s => !filters.excludeFood || !s.isFood)
-                      .filter(s => !filters.excludeHealthcare || !s.isHealthcare)
-                      .filter(s => !filters.excludeInsurance || !s.isInsurance)
-                      .filter(s => !filters.excludeREIT || !s.isREIT)
-                      .sort((a, b) => b.compositeScore - a.compositeScore);
-                    if (singularityGate > 0 && currentView.length === 0) {
-                      setError(`No stocks with Singularity Score ≥ ${singularityGate}. Run Singularity scan first or lower the gate.`);
-                      return;
-                    }
-                    runGrokAnalysis(currentView);
-                  }} 
-                  disabled={isScanning}
-                  className="px-4 py-2.5 rounded-xl text-sm font-medium border flex items-center gap-2"
-                  style={{ 
-                    background: isAnalyzingAI ? 'rgba(16,185,129,0.3)' : 'rgba(16,185,129,0.1)', 
-                    borderColor: 'rgba(16,185,129,0.3)', 
-                    color: '#34d399',
-                    opacity: isScanning ? 0.5 : 1
-                  }}
-                >
-                  {isAnalyzingAI ? (
-                    <><RefreshCw className="w-4 h-4 animate-spin" />Conv {aiProgress.current}/{aiProgress.total}...</>
-                  ) : (
-                    <><Sparkles className="w-4 h-4" />Conviction</>
-                  )}
-                </button>
-                
-                {/* Technical Analysis Button - Cup & Handle */}
-                <button 
-                  onClick={() => {
-                    const currentView = [...stocks]
-                      .filter(s => matchesCategory(s, sectorFilter))
-                      .filter(s => !filters.hideNetCashNegative || (s.netCash !== null && s.netCash >= 0))
-                      .filter(s => (s.singularityScore || 0) >= filters.minSingularityScore)
-                      .filter(s => singularityGate === 0 || (s.singularityScore || 0) >= singularityGate)
-                      .filter(s => !filters.excludeBanks || !s.isBank)
-                      .filter(s => !filters.excludeFood || !s.isFood)
-                      .filter(s => !filters.excludeHealthcare || !s.isHealthcare)
-                      .filter(s => !filters.excludeInsurance || !s.isInsurance)
-                      .filter(s => !filters.excludeREIT || !s.isREIT)
-                      .sort((a, b) => b.compositeScore - a.compositeScore);
-                    if (singularityGate > 0 && currentView.length === 0) {
-                      setError(`No stocks with Singularity Score ≥ ${singularityGate}. Run Singularity scan first or lower the gate.`);
-                      return;
-                    }
-                    runTechnicalAnalysis(currentView);
-                  }} 
-                  disabled={isScanning}
-                  className="px-4 py-2.5 rounded-xl text-sm font-medium border flex items-center gap-2"
-                  style={{ 
-                    background: isAnalyzingTechnical ? 'rgba(99,102,241,0.3)' : 'rgba(99,102,241,0.1)', 
-                    borderColor: 'rgba(99,102,241,0.3)', 
-                    color: '#a5b4fc',
-                    opacity: isScanning ? 0.5 : 1
-                  }}
-                >
-                  {isAnalyzingTechnical ? (
-                    <><RefreshCw className="w-4 h-4 animate-spin" />C&H {technicalProgress.current}/{technicalProgress.total}...</>
-                  ) : (
-                    <><Activity className="w-4 h-4" />Technical</>
-                  )}
-                </button>
-                
-                {/* Upside Scan Button */}
-                <button 
-                  onClick={() => {
-                    const currentView = [...stocks]
-                      .filter(s => matchesCategory(s, sectorFilter))
-                      .filter(s => !filters.hideNetCashNegative || (s.netCash !== null && s.netCash >= 0))
-                      .filter(s => (s.singularityScore || 0) >= filters.minSingularityScore)
-                      .filter(s => singularityGate === 0 || (s.singularityScore || 0) >= singularityGate)
-                      .filter(s => !filters.excludeBanks || !s.isBank)
-                      .filter(s => !filters.excludeFood || !s.isFood)
-                      .filter(s => !filters.excludeHealthcare || !s.isHealthcare)
-                      .filter(s => !filters.excludeInsurance || !s.isInsurance)
-                      .filter(s => !filters.excludeREIT || !s.isREIT)
-                      .sort((a, b) => b.compositeScore - a.compositeScore);
-                    if (singularityGate > 0 && currentView.length === 0) {
-                      setError(`No stocks with Singularity Score ≥ ${singularityGate}. Run Singularity scan first or lower the gate.`);
-                      return;
-                    }
-                    runExplosiveGrowthAnalysis(currentView);
-                  }} 
-                  disabled={isScanning}
-                  className="px-4 py-2.5 rounded-xl text-sm font-medium border flex items-center gap-2"
-                  style={{ 
-                    background: isAnalyzingExplosive ? 'rgba(236,72,153,0.3)' : 'rgba(236,72,153,0.1)', 
-                    borderColor: 'rgba(236,72,153,0.3)', 
-                    color: '#f472b6',
-                    opacity: isScanning ? 0.5 : 1
-                  }}
-                >
-                  {isAnalyzingExplosive ? (
-                    <><RefreshCw className="w-4 h-4 animate-spin" />Explosive {explosiveProgress.current}/{explosiveProgress.total}...</>
-                  ) : (
-                    <><Zap className="w-4 h-4" />Explosive</>
-                  )}
-                </button>
-                
-                {/* Team Analysis Button */}
-                <button 
-                  onClick={() => {
-                    const currentView = [...stocks]
-                      .filter(s => matchesCategory(s, sectorFilter))
-                      .filter(s => !filters.hideNetCashNegative || (s.netCash !== null && s.netCash >= 0))
-                      .filter(s => (s.singularityScore || 0) >= filters.minSingularityScore)
-                      .filter(s => singularityGate === 0 || (s.singularityScore || 0) >= singularityGate)
-                      .filter(s => !filters.excludeBanks || !s.isBank)
-                      .filter(s => !filters.excludeFood || !s.isFood)
-                      .filter(s => !filters.excludeHealthcare || !s.isHealthcare)
-                      .filter(s => !filters.excludeInsurance || !s.isInsurance)
-                      .filter(s => !filters.excludeREIT || !s.isREIT)
-                      .sort((a, b) => b.compositeScore - a.compositeScore);
-                    if (singularityGate > 0 && currentView.length === 0) {
-                      setError(`No stocks with Singularity Score ≥ ${singularityGate}. Run Singularity scan first or lower the gate.`);
-                      return;
-                    }
-                    runTeamAnalysis(currentView);
-                  }} 
-                  disabled={isScanning}
-                  className="px-4 py-2.5 rounded-xl text-sm font-medium border flex items-center gap-2"
-                  style={{ 
-                    background: isAnalyzingTeam ? 'rgba(168,85,247,0.3)' : 'rgba(168,85,247,0.1)', 
-                    borderColor: 'rgba(168,85,247,0.3)', 
-                    color: '#c084fc',
-                    opacity: isScanning ? 0.5 : 1
-                  }}
-                >
-                  {isAnalyzingTeam ? (
-                    <><RefreshCw className="w-4 h-4 animate-spin" />Team {teamProgress.current}/{teamProgress.total}...</>
-                  ) : (
-                    <><Users className="w-4 h-4" />Team</>
-                  )}
-                </button>
-                
-                {/* Parabolic Continuation Button - for top gainers */}
-                <button 
-                  onClick={() => {
-                    const topGainers = [...stocks]
-                      .filter(s => s.change >= topGainersThreshold)
-                      .filter(s => singularityGate === 0 || (s.singularityScore || 0) >= singularityGate)
-                      .sort((a, b) => (b.change || 0) - (a.change || 0));
-                    if (topGainers.length === 0) {
-                      setError(`No stocks with ${topGainersThreshold}%+ gains${singularityGate > 0 ? ` and Singularity ≥ ${singularityGate}` : ''}. Try lowering threshold.`);
-                      return;
-                    }
-                    runParabolicAnalysis(topGainers);
-                  }} 
-                  disabled={isScanning}
-                  className="px-4 py-2.5 rounded-xl text-sm font-medium border flex items-center gap-2"
-                  style={{ 
-                    background: isAnalyzingParabolic ? 'rgba(34,197,94,0.3)' : 'rgba(34,197,94,0.1)', 
-                    borderColor: 'rgba(34,197,94,0.3)', 
-                    color: '#4ade80',
-                    opacity: isScanning ? 0.5 : 1
-                  }}
-                  title="Analyze if top gainers will continue rising"
-                >
-                  {isAnalyzingParabolic ? (
-                    <><RefreshCw className="w-4 h-4 animate-spin" />Parabolic {parabolicProgress.current}/{parabolicProgress.total}...</>
-                  ) : (
-                    <><TrendingUp className="w-4 h-4" />Parabolic</>
-                  )}
-                </button>
-                
-                {/* Valuation Analysis Button */}
-                <button 
-                  onClick={() => {
-                    const currentView = [...stocks]
-                      .filter(s => matchesCategory(s, sectorFilter))
-                      .filter(s => !filters.hideNetCashNegative || (s.netCash !== null && s.netCash >= 0))
-                      .filter(s => (s.singularityScore || 0) >= filters.minSingularityScore)
-                      .filter(s => singularityGate === 0 || (s.singularityScore || 0) >= singularityGate)
-                      .filter(s => !filters.excludeBanks || !s.isBank)
-                      .filter(s => !filters.excludeFood || !s.isFood)
-                      .filter(s => !filters.excludeHealthcare || !s.isHealthcare)
-                      .filter(s => !filters.excludeInsurance || !s.isInsurance)
-                      .filter(s => !filters.excludeREIT || !s.isREIT)
-                      .sort((a, b) => b.compositeScore - a.compositeScore);
-                    if (singularityGate > 0 && currentView.length === 0) {
-                      setError(`No stocks with Singularity Score ≥ ${singularityGate}. Run Singularity scan first or lower the gate.`);
-                      return;
-                    }
-                    runValuationAnalysis(currentView);
-                  }} 
-                  disabled={isScanning}
-                  className="px-4 py-2.5 rounded-xl text-sm font-medium border flex items-center gap-2"
-                  style={{ 
-                    background: isAnalyzingValuation ? 'rgba(14,165,233,0.3)' : 'rgba(14,165,233,0.1)', 
-                    borderColor: 'rgba(14,165,233,0.3)', 
-                    color: '#38bdf8',
-                    opacity: isScanning ? 0.5 : 1
-                  }}
-                  title="Find depressed stocks with catalyst potential (coiled springs)"
-                >
-                  {isAnalyzingValuation ? (
-                    <><RefreshCw className="w-4 h-4 animate-spin" />Valuation {valuationProgress.current}/{valuationProgress.total}...</>
-                  ) : (
-                    <><DollarSign className="w-4 h-4" />Valuation</>
-                  )}
-                </button>
-                
-                {/* Extended Hours Button */}
-                <button 
-                  onClick={refreshPremarketData} 
-                  disabled={isRefreshingPremarket || isScanning}
-                  className="px-4 py-2.5 rounded-xl text-sm font-medium border flex items-center gap-2"
-                  style={{ 
-                    background: isRefreshingPremarket ? 'rgba(34,211,238,0.3)' : 'rgba(34,211,238,0.1)', 
-                    borderColor: 'rgba(34,211,238,0.3)', 
-                    color: '#22d3ee',
-                    opacity: (isRefreshingPremarket || isScanning) ? 0.7 : 1
-                  }}
-                  title="Get Pre-Market or After-Hours data"
-                >
-                  {isRefreshingPremarket ? (
-                    <><RefreshCw className="w-4 h-4 animate-spin" />Extended...</>
-                  ) : (
-                    <><Clock className="w-4 h-4" />Extended</>
-                  )}
-                </button>
-                
-                {/* Supply Chain Scan Button */}
-                <button 
-                  onClick={() => {
-                    const currentView = [...stocks]
-                      .filter(s => matchesCategory(s, sectorFilter))
-                      .filter(s => !filters.hideNetCashNegative || (s.netCash !== null && s.netCash >= 0))
-                      .filter(s => (s.singularityScore || 0) >= filters.minSingularityScore)
-                      .filter(s => !filters.excludeBanks || !s.isBank)
-                      .filter(s => !filters.excludeFood || !s.isFood)
-                      .filter(s => !filters.excludeHealthcare || !s.isHealthcare)
-                      .filter(s => !filters.excludeInsurance || !s.isInsurance)
-                      .filter(s => !filters.excludeREIT || !s.isREIT)
-                      .sort((a, b) => b.compositeScore - a.compositeScore);
-                    runSingularityScan(currentView);
-                  }}
-                  disabled={isScanning}
-                  className="px-4 py-2.5 rounded-xl text-sm font-medium border flex items-center gap-2"
-                  style={{ 
-                    background: isScanningSupplyChain ? 'rgba(245,158,11,0.3)' : 'rgba(245,158,11,0.1)', 
-                    borderColor: 'rgba(245,158,11,0.3)', 
-                    color: '#fbbf24',
-                    opacity: isScanning ? 0.5 : 1
-                  }}
-                >
-                  {isScanningSupplyChain ? (
-                    <><RefreshCw className="w-4 h-4 animate-spin" />Scanning {supplyChainProgress.current}/{supplyChainProgress.total}...</>
-                  ) : (
-                    <><Zap className="w-4 h-4" />Singularity Scan</>
-                  )}
-                </button>
+                {/* Grouped scan menus */}
+                {[
+                  { key: 'value', label: 'Value Scans', color: '#34d399', bg: 'rgba(16,185,129,' },
+                  { key: 'momentum', label: 'Momentum Scans', color: '#fb923c', bg: 'rgba(251,146,60,' },
+                  { key: 'options', label: 'Options Scans', color: '#22d3ee', bg: 'rgba(34,211,238,' },
+                ].map(group => {
+                  const groupAgents = AGENT_REGISTRY.filter(a => a.group === group.key);
+                  const activeAgent = groupAgents.find(a => a.id === agentRunning);
+                  const isOpen = openScanGroup === group.key;
+                  return (
+                    <div key={group.key} className="relative">
+                      <button
+                        onClick={() => setOpenScanGroup(isOpen ? null : group.key)}
+                        disabled={isScanning}
+                        className="px-4 py-2.5 rounded-xl text-sm font-medium border flex items-center gap-2"
+                        style={{ background: activeAgent ? `${group.bg}0.3)` : `${group.bg}0.1)`, borderColor: `${group.bg}0.3)`, color: group.color, opacity: isScanning ? 0.5 : 1 }}
+                      >
+                        {activeAgent ? (
+                          <><RefreshCw className="w-4 h-4 animate-spin" />{activeAgent.label} {aiProgress.current}/{aiProgress.total}...</>
+                        ) : (
+                          <>{group.label}<ChevronDown className="w-3.5 h-3.5" /></>
+                        )}
+                      </button>
+                      {isOpen && (
+                        <div className="absolute right-0 top-full mt-2 w-64 rounded-xl border p-2 z-50 space-y-1" style={{ background: 'rgba(15,23,42,0.98)', borderColor: 'rgba(51,65,85,0.7)', boxShadow: '0 12px 32px rgba(0,0,0,0.5)' }}>
+                          {group.key === 'momentum' && (
+                            <button onClick={() => runComputedMetricsScan('RS & Volume data')} disabled={isComputingMetrics || isAnalyzingAI} className="w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2 hover:bg-slate-800" style={{ color: '#67e8f9', opacity: (isComputingMetrics || isAnalyzingAI) ? 0.5 : 1 }}>
+                              {isComputingMetrics ? <RefreshCw className="w-4 h-4 animate-spin" /> : <BarChart3 className="w-4 h-4" />}RS & Volume Surge<span className="text-xs text-slate-500 ml-auto">free</span>
+                            </button>
+                          )}
+                          {group.key === 'options' && (
+                            <button onClick={() => runComputedMetricsScan('Volatility data')} disabled={isComputingMetrics || isAnalyzingAI} className="w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2 hover:bg-slate-800" style={{ color: '#67e8f9', opacity: (isComputingMetrics || isAnalyzingAI) ? 0.5 : 1 }}>
+                              {isComputingMetrics ? <RefreshCw className="w-4 h-4 animate-spin" /> : <BarChart3 className="w-4 h-4" />}Volatility Profile<span className="text-xs text-slate-500 ml-auto">free</span>
+                            </button>
+                          )}
+                          {groupAgents.map(agent => { const AgentIcon = agent.icon; return (
+                            <button key={agent.id} onClick={() => launchAgentScan(agent)} disabled={isAnalyzingAI || isScanning} className="w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2 hover:bg-slate-800" style={{ color: agent.color, opacity: (isAnalyzingAI || isScanning) ? 0.5 : 1 }}>
+                              {agentRunning === agent.id ? <RefreshCw className="w-4 h-4 animate-spin" /> : <AgentIcon className="w-4 h-4" />}{agent.label}
+                            </button>
+                          ); })}
+                          {group.key === 'value' && (
+                            <>
+                              <button onClick={() => { setOpenScanGroup(null); runSingularityScan(getCurrentView()); }} disabled={isAnalyzingAI || isScanning || isScanningSupplyChain} className="w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2 hover:bg-slate-800" style={{ color: '#fbbf24', opacity: (isAnalyzingAI || isScanning) ? 0.5 : 1 }}>
+                                {isScanningSupplyChain ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}Singularity Scan{isScanningSupplyChain && <span className="text-xs text-slate-500 ml-auto">{supplyChainProgress.current}/{supplyChainProgress.total}</span>}
+                              </button>
+                              <button onClick={() => { setOpenScanGroup(null); refreshPremarketData(); }} disabled={isRefreshingPremarket || isScanning} className="w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2 hover:bg-slate-800" style={{ color: '#22d3ee', opacity: (isRefreshingPremarket || isScanning) ? 0.5 : 1 }}>
+                                {isRefreshingPremarket ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Clock className="w-4 h-4" />}Extended Hours<span className="text-xs text-slate-500 ml-auto">free</span>
+                              </button>
+                            </>
+                          )}
+                          <div className="border-t border-slate-800 pt-2 mt-1 px-3 pb-1 flex items-center justify-between text-xs text-slate-500">
+                            <span>Stocks per scan</span>
+                            <select value={agentScanCount} onChange={e => setAgentScanCount(parseInt(e.target.value))} className="rounded px-1.5 py-0.5 border outline-none" style={{ background: 'rgba(30,41,59,0.8)', borderColor: 'rgba(51,65,85,0.5)', color: '#94a3b8' }}>
+                              <option value={10}>Top 10</option>
+                              <option value={25}>Top 25</option>
+                              <option value={50}>Top 50</option>
+                              <option value={0}>All</option>
+                            </select>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </>
             )}
             
@@ -3385,7 +3605,7 @@ Respond with ONLY a JSON array:
               </div>
               
               {/* Grok only singularity 70+ option */}
-              {(spectrumSettings.grokEnabled || spectrumSettings.technicalEnabled || spectrumSettings.explosiveEnabled || spectrumSettings.teamEnabled || spectrumSettings.parabolicEnabled || spectrumSettings.valuationEnabled) && spectrumSettings.singularityEnabled && (
+              {(spectrumSettings.grokEnabled || spectrumSettings.technicalEnabled || spectrumSettings.explosiveEnabled || spectrumSettings.teamEnabled || spectrumSettings.parabolicEnabled || spectrumSettings.valuationEnabled || spectrumSettings.breakoutEnabled || spectrumSettings.catalystEnabled || spectrumSettings.squeezeEnabled || spectrumSettings.earningsMomentumEnabled || spectrumSettings.optionsEnabled) && spectrumSettings.singularityEnabled && (
                 <div className="flex items-center justify-between p-3 rounded-lg border" style={{ background: 'rgba(139,92,246,0.05)', borderColor: 'rgba(139,92,246,0.2)' }}>
                   <div className="flex items-center gap-2">
                     <Filter className="w-4 h-4 text-violet-400" />
@@ -3401,35 +3621,62 @@ Respond with ONLY a JSON array:
                 </div>
               )}
               
-              <div>
-                <label className="text-sm text-slate-300 mb-2 block">AI Agent Scans</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { key: 'grokEnabled', label: 'Conviction', color: '#f87171' },
-                    { key: 'technicalEnabled', label: 'Technical (C&H)', color: '#38bdf8' },
-                    { key: 'explosiveEnabled', label: 'Explosive', color: '#fb923c' },
-                    { key: 'teamEnabled', label: 'Team', color: '#38bdf8' },
-                    { key: 'parabolicEnabled', label: 'Parabolic', color: '#c084fc' },
-                    { key: 'valuationEnabled', label: 'Valuation', color: '#34d399' },
-                  ].map(agent => (
-                    <button
-                      key={agent.key}
-                      onClick={() => setSpectrumSettings(p => ({...p, [agent.key]: !p[agent.key]}))}
-                      className="flex items-center justify-between px-3 py-2 rounded-lg border text-sm"
-                      style={{
-                        background: spectrumSettings[agent.key] ? 'rgba(16,185,129,0.1)' : 'rgba(30,41,59,0.5)',
-                        borderColor: spectrumSettings[agent.key] ? 'rgba(16,185,129,0.4)' : 'rgba(51,65,85,0.5)',
-                        color: spectrumSettings[agent.key] ? '#e2e8f0' : '#64748b'
-                      }}
-                    >
-                      <span>{agent.label}</span>
-                      <span className="text-xs font-semibold" style={{ color: spectrumSettings[agent.key] ? '#10b981' : '#475569' }}>{spectrumSettings[agent.key] ? 'ON' : 'OFF'}</span>
-                    </button>
-                  ))}
+              <div className="flex items-center justify-between p-3 rounded-lg border" style={{ background: 'rgba(34,211,238,0.05)', borderColor: 'rgba(34,211,238,0.2)' }}>
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4 text-cyan-400" />
+                  <span className="text-sm text-slate-200">Momentum & Volatility Data <span className="text-xs text-slate-500">(free, no AI)</span></span>
                 </div>
+                <button
+                  onClick={() => setSpectrumSettings(p => ({...p, computedEnabled: !p.computedEnabled}))}
+                  className="w-12 h-6 rounded-full transition-colors"
+                  style={{ background: spectrumSettings.computedEnabled ? '#10b981' : 'rgba(51,65,85,0.5)' }}
+                >
+                  <div className="w-5 h-5 rounded-full bg-white transition-transform" style={{ transform: spectrumSettings.computedEnabled ? 'translateX(26px)' : 'translateX(2px)' }} />
+                </button>
               </div>
 
-              {(spectrumSettings.grokEnabled || spectrumSettings.technicalEnabled || spectrumSettings.explosiveEnabled || spectrumSettings.teamEnabled || spectrumSettings.parabolicEnabled || spectrumSettings.valuationEnabled) && (
+              {[
+                { title: 'Value Scans', agents: [
+                  { key: 'grokEnabled', label: 'Conviction' },
+                  { key: 'technicalEnabled', label: 'Technical (C&H)' },
+                  { key: 'explosiveEnabled', label: 'Explosive' },
+                  { key: 'teamEnabled', label: 'Team' },
+                  { key: 'parabolicEnabled', label: 'Parabolic' },
+                  { key: 'valuationEnabled', label: 'Valuation' },
+                ]},
+                { title: 'Momentum Scans', agents: [
+                  { key: 'breakoutEnabled', label: 'Breakout Setup' },
+                  { key: 'catalystEnabled', label: 'Catalyst' },
+                  { key: 'squeezeEnabled', label: 'Squeeze' },
+                  { key: 'earningsMomentumEnabled', label: 'Earnings Mom.' },
+                ]},
+                { title: 'Options Scans', agents: [
+                  { key: 'optionsEnabled', label: 'Options Play' },
+                ]},
+              ].map(group => (
+                <div key={group.title}>
+                  <label className="text-sm text-slate-300 mb-2 block">{group.title}</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {group.agents.map(agent => (
+                      <button
+                        key={agent.key}
+                        onClick={() => setSpectrumSettings(p => ({...p, [agent.key]: !p[agent.key]}))}
+                        className="flex items-center justify-between px-3 py-2 rounded-lg border text-sm"
+                        style={{
+                          background: spectrumSettings[agent.key] ? 'rgba(16,185,129,0.1)' : 'rgba(30,41,59,0.5)',
+                          borderColor: spectrumSettings[agent.key] ? 'rgba(16,185,129,0.4)' : 'rgba(51,65,85,0.5)',
+                          color: spectrumSettings[agent.key] ? '#e2e8f0' : '#64748b'
+                        }}
+                      >
+                        <span>{agent.label}</span>
+                        <span className="text-xs font-semibold" style={{ color: spectrumSettings[agent.key] ? '#10b981' : '#475569' }}>{spectrumSettings[agent.key] ? 'ON' : 'OFF'}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+
+              {(spectrumSettings.grokEnabled || spectrumSettings.technicalEnabled || spectrumSettings.explosiveEnabled || spectrumSettings.teamEnabled || spectrumSettings.parabolicEnabled || spectrumSettings.valuationEnabled || spectrumSettings.breakoutEnabled || spectrumSettings.catalystEnabled || spectrumSettings.squeezeEnabled || spectrumSettings.earningsMomentumEnabled || spectrumSettings.optionsEnabled) && (
                 <div>
                   <label className="text-sm text-slate-300 mb-2 block">AI Agents - Stocks to Analyze (applies to every agent above)</label>
                   <select
@@ -3786,6 +4033,7 @@ Respond with ONLY a JSON array:
 
       <div className="max-w-[1800px] mx-auto px-6 py-6 min-h-screen">
         {error && <div className="mb-4 p-4 rounded-xl border flex items-center gap-3" style={{ background: 'rgba(239,68,68,0.1)', borderColor: 'rgba(239,68,68,0.3)' }}><AlertCircle className="w-5 h-5 text-red-400" /><p className="text-sm text-red-300 flex-1">{error}</p><button onClick={() => setError(null)} className="text-red-400"><X className="w-4 h-4" /></button></div>}
+        {resumeBanner && <div className="mb-4 p-4 rounded-xl border flex items-center gap-3" style={{ background: 'rgba(245,158,11,0.1)', borderColor: 'rgba(245,158,11,0.3)' }}><RefreshCw className="w-5 h-5 text-amber-400 animate-spin" /><p className="text-sm text-amber-300 flex-1">{resumeBanner}</p><button onClick={() => { if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current); clearCheckpoint(); setResumeBanner(null); }} className="px-3 py-1 rounded-lg text-xs border text-amber-400" style={{ borderColor: 'rgba(245,158,11,0.4)' }}>Cancel</button></div>}
 
         {(isScanning || isAnalyzingAI) && (
           <div className="mb-6 p-5 rounded-2xl border" style={{ background: isAnalyzingAI ? 'rgba(239,68,68,0.1)' : 'rgba(99,102,241,0.1)', borderColor: isAnalyzingAI ? 'rgba(239,68,68,0.3)' : 'rgba(99,102,241,0.3)' }}>
@@ -3844,7 +4092,7 @@ Respond with ONLY a JSON array:
           <div className="mb-6 card rounded-2xl border border-slate-800/50 p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold flex items-center gap-2"><Sliders className="w-5 h-5 text-amber-400" />Scoring Weights</h2>
-              <button onClick={() => { setWeights({ pricePosition: 40, insiderActivity: 40, netCash: 20 }); setAiWeights({ conviction: 15, upside: 15, cupHandle: 10, singularity: 30, oracle: 30, explosive: 10, team: 10, parabolic: 10, valuation: 10 }); }} className="text-xs text-slate-400 hover:text-white px-3 py-1.5 rounded-lg border" style={{ background: 'rgba(30,41,59,0.5)', borderColor: 'rgba(51,65,85,0.5)' }}>Reset All</button>
+              <button onClick={() => { setWeights({ pricePosition: 40, insiderActivity: 40, netCash: 20 }); setAiWeights({ conviction: 15, upside: 15, cupHandle: 10, singularity: 30, oracle: 30, explosive: 10, team: 10, parabolic: 10, valuation: 10, rs: 10, volumeSurge: 10, breakout: 10, catalyst: 10, squeeze: 10, earningsMomentum: 10, options: 10 }); }} className="text-xs text-slate-400 hover:text-white px-3 py-1.5 rounded-lg border" style={{ background: 'rgba(30,41,59,0.5)', borderColor: 'rgba(51,65,85,0.5)' }}>Reset All</button>
             </div>
             
             <p className="text-xs text-slate-500 mb-3">Base Scoring (applied to all stocks)</p>
@@ -3895,6 +4143,20 @@ Respond with ONLY a JSON array:
                 <div className="flex items-center gap-2 mb-3"><div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(52,211,153,0.2)' }}><DollarSign className="w-4 h-4 text-emerald-400" /></div><span className="text-sm font-medium text-slate-200">Valuation</span></div>
                 <div className="flex items-center gap-3"><input type="range" min="0" max="50" value={aiWeights.valuation || 0} onChange={e => { const v = parseInt(e.target.value); setAiWeights(p => ({...p, valuation: v})); setStocks(s => calcScores(s, weights, {...aiWeights, valuation: v})); }} className="flex-1" style={{ accentColor: '#34d399' }} /><span className="mono text-sm font-semibold w-8 text-right text-emerald-400">{aiWeights.valuation || 0}</span></div>
               </div>
+              {[
+                { k: 'rs', label: 'Relative Strength', color: '#fb923c' },
+                { k: 'volumeSurge', label: 'Volume Surge', color: '#67e8f9' },
+                { k: 'breakout', label: 'Breakout', color: '#fb923c' },
+                { k: 'catalyst', label: 'Catalyst', color: '#fbbf24' },
+                { k: 'squeeze', label: 'Squeeze', color: '#f87171' },
+                { k: 'earningsMomentum', label: 'Earnings Momentum', color: '#34d399' },
+                { k: 'options', label: 'Options Play', color: '#22d3ee' },
+              ].map(w => (
+                <div key={w.k} className="rounded-xl p-4 border" style={{ background: 'rgba(30,41,59,0.3)', borderColor: 'rgba(51,65,85,0.4)' }}>
+                  <div className="flex items-center gap-2 mb-3"><div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(51,65,85,0.4)' }}><BarChart3 className="w-4 h-4" style={{ color: w.color }} /></div><span className="text-sm font-medium text-slate-200">{w.label}</span></div>
+                  <div className="flex items-center gap-3"><input type="range" min="0" max="50" value={aiWeights[w.k] || 0} onChange={e => { const v = parseInt(e.target.value); setAiWeights(p => ({...p, [w.k]: v})); setStocks(st => calcScores(st, weights, {...aiWeights, [w.k]: v})); }} className="flex-1" style={{ accentColor: w.color }} /><span className="mono text-sm font-semibold w-8 text-right" style={{ color: w.color }}>{aiWeights[w.k] || 0}</span></div>
+                </div>
+              ))}
             </div>
           </div>
         )}
@@ -3978,6 +4240,36 @@ Respond with ONLY a JSON array:
                     <Filter className="w-4 h-4" />
                     Filters {Object.values(filters).filter(v => v === true || v > 0).length > 0 && `(${Object.values(filters).filter(v => v === true || v > 0).length})`}
                   </button>
+
+                  {/* Columns visibility menu */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowColumnsMenu(!showColumnsMenu)}
+                      className="px-3 py-2 rounded-lg text-sm border flex items-center gap-2"
+                      style={{
+                        background: showColumnsMenu ? 'rgba(34,211,238,0.2)' : 'rgba(30,41,59,0.5)',
+                        borderColor: showColumnsMenu ? 'rgba(34,211,238,0.5)' : 'rgba(51,65,85,0.5)',
+                        color: showColumnsMenu ? '#67e8f9' : '#94a3b8'
+                      }}
+                    >
+                      <Sliders className="w-4 h-4" />
+                      Columns
+                    </button>
+                    {showColumnsMenu && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setShowColumnsMenu(false)} />
+                        <div className="absolute left-0 top-full mt-2 w-56 rounded-xl border p-2 z-50 max-h-96 overflow-y-auto" style={{ background: 'rgba(15,23,42,0.98)', borderColor: 'rgba(51,65,85,0.7)', boxShadow: '0 12px 32px rgba(0,0,0,0.5)' }}>
+                          <p className="px-2 py-1 text-[10px] text-slate-500 uppercase">Show columns</p>
+                          {Object.keys(COLUMN_LABELS).map(key => (
+                            <label key={key} className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm text-slate-300 hover:bg-slate-800 cursor-pointer">
+                              <input type="checkbox" checked={!!colVisible[key]} onChange={() => toggleColumn(key)} className="w-3.5 h-3.5 rounded accent-cyan-500" />
+                              {COLUMN_LABELS[key]}
+                            </label>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
                   <select value={sectorFilter} onChange={e => setSectorFilter(e.target.value)} className="rounded-lg px-3 py-2 text-sm border outline-none" style={{ background: 'rgba(30,41,59,0.5)', borderColor: 'rgba(51,65,85,0.5)', color: '#cbd5e1' }}>
                     {Object.entries(STOCK_CATEGORIES).map(([key, cat]) => (
                       <option key={key} value={key}>{cat.name}</option>
@@ -4243,6 +4535,7 @@ Respond with ONLY a JSON array:
                   <div className="w-10 text-center">Rank</div>
                   <div className="flex-1">Ticker / Name</div>
                   <div className="w-24 text-right">Price / MCap</div>
+                  {colVisible.ext && (
                   <div 
                     className="w-14 text-center cursor-pointer hover:text-slate-300 transition-colors flex items-center justify-center gap-1"
                     onClick={() => setSortBy(sortBy === 'extendedChange' ? 'compositeScore' : 'extendedChange')}
@@ -4251,7 +4544,9 @@ Respond with ONLY a JSON array:
                     Ext
                     {sortBy === 'extendedChange' && <span className="text-cyan-400">↓</span>}
                   </div>
-                  <div className="w-16 text-center">Net Cash</div>
+                  )}
+                  {colVisible.netCash && <div className="w-16 text-center">Net Cash</div>}
+                  {colVisible.insider && (
                   <div 
                     className="w-20 text-center cursor-pointer hover:text-slate-300 transition-colors flex items-center justify-center gap-1"
                     onClick={() => setSortBy(sortBy === 'insiderDate' ? 'compositeScore' : 'insiderDate')}
@@ -4259,6 +4554,8 @@ Respond with ONLY a JSON array:
                     Insider
                     {sortBy === 'insiderDate' && <span className="text-emerald-400">↓</span>}
                   </div>
+                  )}
+                  {colVisible.sg && (
                   <div 
                     className="w-10 text-center cursor-pointer hover:text-slate-300 transition-colors flex items-center justify-center gap-1"
                     onClick={() => setSortBy(sortBy === 'singularityScore' ? 'compositeScore' : 'singularityScore')}
@@ -4267,6 +4564,8 @@ Respond with ONLY a JSON array:
                     Sg
                     {sortBy === 'singularityScore' && <span className="text-amber-400">↓</span>}
                   </div>
+                  )}
+                  {colVisible.ex && (
                   <div 
                     className="w-10 text-center cursor-pointer hover:text-slate-300 transition-colors flex items-center justify-center gap-1"
                     onClick={() => setSortBy(sortBy === 'explosiveScore' ? 'compositeScore' : 'explosiveScore')}
@@ -4275,6 +4574,8 @@ Respond with ONLY a JSON array:
                     Ex
                     {sortBy === 'explosiveScore' && <span className="text-pink-400">↓</span>}
                   </div>
+                  )}
+                  {colVisible.tm && (
                   <div 
                     className="w-10 text-center cursor-pointer hover:text-slate-300 transition-colors flex items-center justify-center gap-1"
                     onClick={() => setSortBy(sortBy === 'teamScore' ? 'compositeScore' : 'teamScore')}
@@ -4283,6 +4584,8 @@ Respond with ONLY a JSON array:
                     Tm
                     {sortBy === 'teamScore' && <span className="text-purple-400">↓</span>}
                   </div>
+                  )}
+                  {colVisible.pr && (
                   <div 
                     className="w-10 text-center cursor-pointer hover:text-slate-300 transition-colors flex items-center justify-center gap-1"
                     onClick={() => setSortBy(sortBy === 'parabolicScore' ? 'compositeScore' : 'parabolicScore')}
@@ -4291,6 +4594,8 @@ Respond with ONLY a JSON array:
                     Pr
                     {sortBy === 'parabolicScore' && <span className="text-green-400">↓</span>}
                   </div>
+                  )}
+                  {colVisible.vl && (
                   <div 
                     className="w-10 text-center cursor-pointer hover:text-slate-300 transition-colors flex items-center justify-center gap-1"
                     onClick={() => setSortBy(sortBy === 'valuationScore' ? 'compositeScore' : 'valuationScore')}
@@ -4299,6 +4604,8 @@ Respond with ONLY a JSON array:
                     Vl
                     {sortBy === 'valuationScore' && <span className="text-sky-400">↓</span>}
                   </div>
+                  )}
+                  {colVisible.cv && (
                   <div 
                     className="w-10 text-center cursor-pointer hover:text-slate-300 transition-colors flex items-center justify-center gap-1"
                     onClick={() => setSortBy(sortBy === 'insiderConviction' ? 'compositeScore' : 'insiderConviction')}
@@ -4307,6 +4614,8 @@ Respond with ONLY a JSON array:
                     Cv
                     {sortBy === 'insiderConviction' && <span className="text-emerald-400">↓</span>}
                   </div>
+                  )}
+                  {colVisible.ch && (
                   <div 
                     className="w-10 text-center cursor-pointer hover:text-slate-300 transition-colors flex items-center justify-center gap-1"
                     onClick={() => setSortBy(sortBy === 'cupHandleScore' ? 'compositeScore' : 'cupHandleScore')}
@@ -4315,6 +4624,14 @@ Respond with ONLY a JSON array:
                     CH
                     {sortBy === 'cupHandleScore' && <span className="text-emerald-400">↓</span>}
                   </div>
+                  )}
+                  {NEW_SCORE_COLS.filter(c => colVisible[c.key]).map(c => (
+                    <div key={c.key} className="w-10 text-center cursor-pointer hover:text-slate-300 transition-colors flex items-center justify-center gap-1" onClick={() => setSortBy(sortBy === c.field ? 'compositeScore' : c.field)} title={c.title}>
+                      {c.label}
+                      {sortBy === c.field && <span style={{ color: c.color }}>↓</span>}
+                    </div>
+                  ))}
+                  {colVisible.low52 && (
                   <div 
                     className="w-12 text-center cursor-pointer hover:text-slate-300 transition-colors flex items-center justify-center gap-1"
                     onClick={() => setSortBy(sortBy === 'fromLow' ? 'fromLowDesc' : 'fromLow')}
@@ -4324,6 +4641,7 @@ Respond with ONLY a JSON array:
                     {sortBy === 'fromLow' && <span className="text-emerald-400">↑</span>}
                     {sortBy === 'fromLowDesc' && <span className="text-emerald-400">↓</span>}
                   </div>
+                  )}
                   <div 
                     className="w-14 text-center cursor-pointer hover:text-slate-300 transition-colors flex items-center justify-center gap-1"
                     onClick={() => setSortBy('compositeScore')}
@@ -4410,6 +4728,7 @@ Respond with ONLY a JSON array:
                           <p className="text-xs text-slate-500 truncate">{s.name}</p>
                         </div>
                         <div className="text-right w-24"><p className="mono text-sm font-semibold text-slate-200">${s.price?.toFixed(2)}</p><p className="text-xs text-indigo-400 mono">${s.marketCap}M</p></div>
+                        {colVisible.ext && (<>
                         {/* Extended Hours (Pre-Market or After-Hours) */}
                         <div className="w-14 text-center">
                           {s.preMarketChange !== null && s.preMarketChange !== undefined ? (
@@ -4430,8 +4749,10 @@ Respond with ONLY a JSON array:
                             <span className="text-xs text-slate-600">—</span>
                           )}
                         </div>
-                        <div className="w-16 text-center"><NetCashBadge amount={s.netCash} hasData={s.hasFinancials} /></div>
-                        <div className="w-20 text-center"><InsiderBadge data={s.lastInsiderPurchase} /></div>
+                        </>)}
+                        {colVisible.netCash && <div className="w-16 text-center"><NetCashBadge amount={s.netCash} hasData={s.hasFinancials} /></div>}
+                        {colVisible.insider && <div className="w-20 text-center"><InsiderBadge data={s.lastInsiderPurchase} /></div>}
+                        {colVisible.sg && (<>
                         {/* Singularity Score */}
                         <div className="w-10 text-center">
                           {s.singularityScore !== null && s.singularityScore !== undefined ? (
@@ -4448,6 +4769,8 @@ Respond with ONLY a JSON array:
                             <span className="text-xs text-slate-600">—</span>
                           )}
                         </div>
+                        </>)}
+                        {colVisible.ex && (<>
                         {/* Explosive Growth Score */}
                         <div className="w-10 text-center">
                           {s.explosiveScore !== null && s.explosiveScore !== undefined ? (
@@ -4464,6 +4787,8 @@ Respond with ONLY a JSON array:
                             <span className="text-xs text-slate-600">—</span>
                           )}
                         </div>
+                        </>)}
+                        {colVisible.tm && (<>
                         {/* Team Score */}
                         <div className="w-10 text-center">
                           {s.teamScore !== null && s.teamScore !== undefined ? (
@@ -4480,6 +4805,8 @@ Respond with ONLY a JSON array:
                             <span className="text-xs text-slate-600">—</span>
                           )}
                         </div>
+                        </>)}
+                        {colVisible.pr && (<>
                         {/* Parabolic Score */}
                         <div className="w-10 text-center">
                           {s.parabolicScore !== null && s.parabolicScore !== undefined ? (
@@ -4496,6 +4823,8 @@ Respond with ONLY a JSON array:
                             <span className="text-xs text-slate-600">—</span>
                           )}
                         </div>
+                        </>)}
+                        {colVisible.vl && (<>
                         {/* Valuation Score */}
                         <div className="w-10 text-center">
                           {s.valuationScore !== null && s.valuationScore !== undefined ? (
@@ -4513,6 +4842,8 @@ Respond with ONLY a JSON array:
                             <span className="text-xs text-slate-600">—</span>
                           )}
                         </div>
+                        </>)}
+                        {colVisible.cv && (<>
                         {/* Conviction */}
                         <div className="w-10 text-center">
                           {s.insiderConviction !== null && s.insiderConviction !== undefined ? (
@@ -4529,6 +4860,8 @@ Respond with ONLY a JSON array:
                             <span className="text-xs text-slate-600">—</span>
                           )}
                         </div>
+                        </>)}
+                        {colVisible.ch && (<>
                         {/* Cup & Handle */}
                         <div className="w-10 text-center">
                           {s.cupHandleScore !== null && s.cupHandleScore !== undefined ? (
@@ -4545,9 +4878,21 @@ Respond with ONLY a JSON array:
                             <span className="text-xs text-slate-600">—</span>
                           )}
                         </div>
+                        </>)}
+                        {NEW_SCORE_COLS.filter(c => colVisible[c.key]).map(c => (
+                          <div key={c.key} className="w-10 text-center">
+                            {s[c.field] !== null && s[c.field] !== undefined ? (
+                              <span className="text-[10px] font-bold mono px-1 py-0.5 rounded" style={{ background: s[c.field] >= 70 ? c.color + '33' : s[c.field] >= 50 ? c.color + '22' : 'rgba(100,116,139,0.2)', color: s[c.field] >= 50 ? c.color : '#94a3b8' }}>{s[c.field]}</span>
+                            ) : (
+                              <span className="text-xs text-slate-600">—</span>
+                            )}
+                          </div>
+                        ))}
+                        {colVisible.low52 && (<>
                         <div className="w-12 text-center">
                           <div className="mono text-[10px] font-semibold" style={{ color: s.fromLow < 20 ? '#34d399' : s.fromLow < 50 ? '#fbbf24' : '#f87171' }}>{s.fromLow?.toFixed(1)}%</div>
                         </div>
+                        </>)}
                         <div className="w-14"><div className="flex items-center justify-between mb-1"><span className="mono text-xs font-bold text-indigo-400">{s.compositeScore.toFixed(1)}</span></div><div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(30,41,59,0.5)' }}><div className="h-full rounded-full" style={{ width: `${s.compositeScore}%`, background: 'linear-gradient(90deg, #6366f1, #8b5cf6)' }} /></div></div>
                         <div className="w-6">{selected?.ticker === s.ticker ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}</div>
                       </div>
@@ -4671,6 +5016,39 @@ Respond with ONLY a JSON array:
                                 )}
                               </h4>
                               <p className="text-sm text-slate-200 leading-relaxed whitespace-pre-wrap">{s.valuationAnalysis}</p>
+                            </div>
+                          )}
+
+                          {/* Momentum + Options analysis details */}
+                          {[
+                            { field: 'breakoutAnalysis', scoreField: 'breakoutScore', title: 'Breakout Setup Analysis', color: '#fb923c', bg: 'rgba(251,146,60,' },
+                            { field: 'catalystAnalysis', scoreField: 'catalystScore', title: 'Catalyst Analysis', color: '#fbbf24', bg: 'rgba(245,158,11,' },
+                            { field: 'squeezeAnalysis', scoreField: 'squeezeScore', title: 'Squeeze Analysis', color: '#f87171', bg: 'rgba(239,68,68,' },
+                            { field: 'earningsMomentumAnalysis', scoreField: 'earningsMomentumScore', title: 'Earnings Momentum Analysis', color: '#34d399', bg: 'rgba(16,185,129,' },
+                            { field: 'optionsAnalysis', scoreField: 'optionsScore', title: 'Options Play Analysis', color: '#22d3ee', bg: 'rgba(34,211,238,' },
+                          ].map(d => s[d.field] ? (
+                            <div key={d.field} className="mb-4 p-4 rounded-xl border" style={{ background: `${d.bg}0.08)`, borderColor: `${d.bg}0.3)` }}>
+                              <h4 className="text-sm font-semibold mb-2 flex items-center gap-2" style={{ color: d.color }}>
+                                <BarChart3 className="w-4 h-4" />
+                                {d.title}
+                                {s[d.scoreField] !== null && s[d.scoreField] !== undefined && (
+                                  <span className="ml-2 px-2 py-0.5 rounded text-xs font-bold" style={{ background: `${d.bg}0.2)`, color: d.color }}>{s[d.scoreField]}/100</span>
+                                )}
+                              </h4>
+                              <p className="text-sm text-slate-200 leading-relaxed whitespace-pre-wrap">{s[d.field]}</p>
+                            </div>
+                          ) : null)}
+
+                          {/* Momentum / volatility computed metrics */}
+                          {(s.rsScore !== undefined || s.realizedVol !== undefined) && (
+                            <div className="mb-4 p-3 rounded-xl border flex flex-wrap gap-2 text-xs" style={{ background: 'rgba(34,211,238,0.05)', borderColor: 'rgba(34,211,238,0.2)' }}>
+                              {s.rsScore !== undefined && s.rsScore !== null && <span className="px-2 py-1 rounded" style={{ background: 'rgba(251,146,60,0.15)', color: '#fb923c' }}>RS rank {s.rsScore}/100</span>}
+                              {s.pct21d !== undefined && s.pct21d !== null && <span className="px-2 py-1 rounded bg-slate-800/60 text-slate-300">1mo {s.pct21d >= 0 ? '+' : ''}{s.pct21d.toFixed(1)}%</span>}
+                              {s.pct63d !== undefined && s.pct63d !== null && <span className="px-2 py-1 rounded bg-slate-800/60 text-slate-300">3mo {s.pct63d >= 0 ? '+' : ''}{s.pct63d.toFixed(1)}%</span>}
+                              {s.volumeSurge !== undefined && s.volumeSurge !== null && <span className="px-2 py-1 rounded" style={{ background: 'rgba(103,232,249,0.12)', color: '#67e8f9' }}>Vol {s.volumeSurge.toFixed(1)}x avg</span>}
+                              {s.realizedVol !== undefined && s.realizedVol !== null && <span className="px-2 py-1 rounded bg-slate-800/60 text-slate-300">RVol {s.realizedVol.toFixed(0)}%</span>}
+                              {s.atrPct !== undefined && s.atrPct !== null && <span className="px-2 py-1 rounded bg-slate-800/60 text-slate-300">ATR {s.atrPct.toFixed(1)}%/d</span>}
+                              {s.volContraction !== undefined && s.volContraction !== null && <span className="px-2 py-1 rounded bg-slate-800/60 text-slate-300">{s.volContraction < 0.8 ? 'Vol contracting' : s.volContraction > 1.2 ? 'Vol expanding' : 'Vol stable'}</span>}
                             </div>
                           )}
                           
