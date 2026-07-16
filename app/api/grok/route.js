@@ -86,41 +86,76 @@ INSIDER_CONVICTION: [0-100]`;
       maxTokens = 1500;
     }
 
-    const body = {
-      model: grokModel,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: prompt }
-      ],
-      max_tokens: maxTokens,
-      temperature: jsonMode ? 0.1 : 0.3
-    };
-    if (jsonMode) {
-      body.response_format = { type: 'json_object' };
-    }
+    let text = '';
+
     if (liveSearch) {
-      // xAI Live Search: lets the model pull current news/filings for
-      // catalyst-sensitive scans
-      body.search_parameters = { mode: 'auto' };
+      // Agent Tools API (/v1/responses): the model can search the web and X
+      // for current news, filings, hires, and social chatter
+      const response = await fetch("https://api.x.ai/v1/responses", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${GROK_KEY}`
+        },
+        body: JSON.stringify({
+          model: grokModel,
+          input: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: prompt }
+          ],
+          tools: [{ type: "web_search" }, { type: "x_search" }],
+          max_output_tokens: Math.max(maxTokens, 2500)
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Grok responses API error:', response.status, errorText);
+        return Response.json({ error: `Grok API error: ${response.status}`, analysis: errorText }, { status: response.status });
+      }
+
+      const data = await response.json();
+      for (const item of data.output || []) {
+        if (item.type === 'message') {
+          for (const c of item.content || []) {
+            if ((c.type === 'output_text' || c.type === 'text') && c.text) text += c.text;
+          }
+        }
+      }
+      // Strip citation link markup like [[1]](https://...)
+      text = text.replace(/\[\[\d+\]\]\([^)]*\)/g, '').trim();
+    } else {
+      const body = {
+        model: grokModel,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: prompt }
+        ],
+        max_tokens: maxTokens,
+        temperature: jsonMode ? 0.1 : 0.3
+      };
+      if (jsonMode) {
+        body.response_format = { type: 'json_object' };
+      }
+
+      const response = await fetch("https://api.x.ai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${GROK_KEY}`
+        },
+        body: JSON.stringify(body)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Grok API error:', response.status, errorText);
+        return Response.json({ error: `Grok API error: ${response.status}`, analysis: errorText }, { status: response.status });
+      }
+
+      const data = await response.json();
+      text = data.choices?.[0]?.message?.content || '';
     }
-
-    const response = await fetch("https://api.x.ai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${GROK_KEY}`
-      },
-      body: JSON.stringify(body)
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Grok API error:', response.status, errorText);
-      return Response.json({ error: `Grok API error: ${response.status}`, analysis: errorText }, { status: response.status });
-    }
-
-    const data = await response.json();
-    let text = data.choices?.[0]?.message?.content || '';
 
     // JSON mode: return the raw model output untouched so the client can parse it
     if (jsonMode) {

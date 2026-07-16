@@ -1324,6 +1324,222 @@ End with: OPTIONS_SCORE: [0-100]`;
 }
 
 // ============================================
+// PARABOLIC GROWTH - merged Explosive + Parabolic scan
+// ============================================
+async function getParabolicGrowthAnalysis(stock, model = 'grok-4.5') {
+  try {
+    const prompt = `Evaluate PARABOLIC GROWTH potential for ${stock.ticker} (${stock.name}), sector: ${stock.sector || 'Unknown'}, price $${stock.price?.toFixed(2)}, market cap $${stock.marketCap ? Math.round(stock.marketCap / 1000000) + 'M' : 'unknown'}${stock.change != null ? `, today ${stock.change >= 0 ? '+' : ''}${stock.change.toFixed(1)}%` : ''}.
+
+Assess BOTH angles in one verdict:
+1. EXPLOSIVE DEMAND: could this company land singularity-scale contracts or demand inflections (AI infrastructure, robotics, energy) that step-change revenue? Who would the customers be and how big?
+2. PRICE CONTINUATION: if the stock is already moving, does the move have fuel left (float, volume character, narrative strength, upcoming catalysts) or is it exhausted?
+
+Score 0-100 where 80+ = high probability of parabolic growth ahead.
+End with: PARABOLIC_GROWTH_SCORE: [0-100]`;
+
+    const text = await callAgentGrok(prompt, model);
+    const { score, cleaned } = extractScore(text, 'PARABOLIC_GROWTH_SCORE');
+    return { parabolicGrowthAnalysis: cleaned, parabolicGrowthScore: score };
+  } catch (e) {
+    return { parabolicGrowthAnalysis: `Error: ${e.message}`, parabolicGrowthScore: null };
+  }
+}
+
+// ============================================
+// MOMENTUM - one stat from 3 sub-scans:
+// chart quality, continuation odds, market room + moat
+// ============================================
+async function getMomentumAnalysis(stock, model = 'grok-4.5') {
+  try {
+    // Shared price context for the sub-scans
+    let chartBlock = 'No price history available.';
+    let metricsLine = '';
+    try {
+      const bars = await fetchDailyBars(stock.ticker, 130);
+      if (bars.length >= 20) {
+        chartBlock = bars.slice(-60).map(p => `${new Date(p.t).toISOString().split('T')[0]}: O=${p.o.toFixed(2)} H=${p.h.toFixed(2)} L=${p.l.toFixed(2)} C=${p.c.toFixed(2)} V=${Math.round(p.v / 1000)}K`).join('\n');
+        const m = computeBarMetrics(bars);
+        if (m) metricsLine = `1mo ${m.pct21d != null ? (m.pct21d >= 0 ? '+' : '') + m.pct21d.toFixed(1) + '%' : 'n/a'} | 3mo ${m.pct63d != null ? (m.pct63d >= 0 ? '+' : '') + m.pct63d.toFixed(1) + '%' : 'n/a'} | volume ${m.volumeSurge != null ? m.volumeSurge.toFixed(1) + 'x avg' : 'n/a'} | realized vol ${m.realizedVol != null ? m.realizedVol.toFixed(0) + '%' : 'n/a'}`;
+      }
+    } catch (e) {}
+    const base = `${stock.ticker} (${stock.name}), sector ${stock.sector || 'Unknown'}, price $${stock.price?.toFixed(2)}, market cap $${stock.marketCap ? Math.round(stock.marketCap / 1000000) + 'M' : 'unknown'}.`;
+
+    // Sub-scan 1: chart momentum quality (last couple of months)
+    const chartPrompt = `Analyze the CHART MOMENTUM of ${base}
+${metricsLine ? `Computed stats: ${metricsLine}` : ''}
+DAILY BARS (last 60 days):
+${chartBlock}
+
+Judge trend structure, higher lows/highs, volume confirmation, pullback behavior, and whether this is early, mid, or late in the move. Score 0-100 where 80+ = strong healthy momentum.
+End with: CHART_SCORE: [0-100]`;
+
+    // Sub-scan 2: continuation odds (news/catalyst driven)
+    const contPrompt = `Assess the odds that MOMENTUM CONTINUES for ${base}
+Search for what has been driving the stock recently and what is coming: catalysts, earnings, sector flows, analyst/insider activity, narrative strength vs exhaustion signs.
+Score 0-100 where 80+ = momentum very likely to continue over the next 1-3 months.
+End with: CONTINUATION_SCORE: [0-100]`;
+
+    // Sub-scan 3: market room + moat durability
+    const roomPrompt = `Assess GROWTH ROOM and MOAT for ${base}
+Two questions: (1) Market conditions - how large is the opportunity relative to its current size; does it have a lot of space to grow into, and are sector conditions favorable? (2) Moat - what protects this company (technology, contracts, switching costs, regulation) so its momentum is durable rather than easily competed away?
+Score 0-100 where 80+ = big open market AND a defensible moat.
+End with: ROOM_MOAT_SCORE: [0-100]`;
+
+    const [chartText, contText, roomText] = [
+      await callAgentGrok(chartPrompt, model),
+      await callAgentGrok(contPrompt, model, { liveSearch: true }),
+      await callAgentGrok(roomPrompt, model, { liveSearch: true }),
+    ];
+
+    const chart = extractScore(chartText, 'CHART_SCORE');
+    const cont = extractScore(contText, 'CONTINUATION_SCORE');
+    const room = extractScore(roomText, 'ROOM_MOAT_SCORE');
+    const parts = [chart.score, cont.score, room.score].filter(v => v !== null);
+    const momentumScore = parts.length > 0
+      ? Math.round((chart.score ?? 50) * 0.35 + (cont.score ?? 50) * 0.35 + (room.score ?? 50) * 0.30)
+      : null;
+
+    const analysis = [
+      `CHART (${chart.score ?? 'n/a'}/100)\n${chart.cleaned}`,
+      `CONTINUATION (${cont.score ?? 'n/a'}/100)\n${cont.cleaned}`,
+      `MARKET ROOM & MOAT (${room.score ?? 'n/a'}/100)\n${room.cleaned}`,
+    ].join('\n\n');
+
+    return { momentumAnalysis: analysis, momentumScore, momentumChartScore: chart.score, momentumContinuationScore: cont.score, momentumRoomMoatScore: room.score };
+  } catch (e) {
+    return { momentumAnalysis: `Error: ${e.message}`, momentumScore: null };
+  }
+}
+
+// ============================================
+// BUYOUT - acquisition-likelihood score from multiple angles,
+// with a conditional deep-dive on key people
+// ============================================
+async function getBuyoutAnalysis(stock, model = 'grok-4.5') {
+  try {
+    const base = `${stock.ticker} (${stock.name}), sector ${stock.sector || 'Unknown'}, price $${stock.price?.toFixed(2)}, market cap $${stock.marketCap ? Math.round(stock.marketCap / 1000000) + 'M' : 'unknown'}.`;
+
+    // Angle 1: people/hires - executives and hires whose skillsets suggest
+    // positioning for a sale
+    const peoplePrompt = `Investigate RECENT HIRES AND EXECUTIVE APPOINTMENTS at ${base}
+Search for board changes, new CFO/CEO/corp-dev hires, retained advisors or bankers. Flag people whose backgrounds suggest positioning for a sale: M&A experience, prior exits, investment banking, "strategic alternatives" specialists.
+Score 0-100 for how much the people signal points to a potential buyout.
+If specific individuals deserve a deeper background check, end with DIG_DEEPER: yes and KEY_PEOPLE: [names, semicolon-separated]. Otherwise DIG_DEEPER: no.
+End with: PEOPLE_SCORE: [0-100]`;
+    const peopleText = await callAgentGrok(peoplePrompt, model, { liveSearch: true });
+    const people = extractScore(peopleText, 'PEOPLE_SCORE');
+    let peopleScore = people.score;
+    let peopleDeepText = null;
+
+    // Conditional follow-up: dig into the specific people
+    const dig = /DIG_DEEPER[:\s]*yes/i.test(peopleText);
+    const keyPeople = peopleText.match(/KEY_PEOPLE[:\s]*([^\n]+)/i)?.[1]?.trim();
+    if (dig && keyPeople) {
+      const deepPrompt = `Deep background check on these people at ${stock.ticker} (${stock.name}): ${keyPeople}
+Search their career history: companies they helped sell or take private, M&A deals they led, banking/PE backgrounds, patterns of joining companies shortly before an exit.
+How strongly does their presence suggest ${stock.ticker} is being positioned for a buyout? Score 0-100.
+End with: PEOPLE_DEEP_SCORE: [0-100]`;
+      const deep = extractScore(await callAgentGrok(deepPrompt, model, { liveSearch: true }), 'PEOPLE_DEEP_SCORE');
+      peopleDeepText = deep.cleaned;
+      if (deep.score !== null) peopleScore = Math.round(((people.score ?? 50) + deep.score * 2) / 3);
+    }
+
+    // Angle 2: stated intent - has the company signaled it wants to sell
+    const intentPrompt = `Search for signals that ${base} is SEEKING OR OPEN TO A BUYOUT.
+Look for: "exploring strategic alternatives" language, retained financial advisors, activist investors pushing a sale, going-private chatter, management commentary about consolidation, prior rejected offers.
+Score 0-100 where 80+ = company has clearly signaled openness to a sale.
+End with: INTENT_SCORE: [0-100]`;
+
+    // Angle 3: social/StockTwits buzz
+    const buzzPrompt = `Search StockTwits, X/Twitter, Reddit and financial media for BUYOUT BUZZ about ${base}
+Distinguish substantive chatter (unusual options activity tied to deal speculation, credible rumor reporting, repeated acquirer names) from meme noise.
+Score 0-100 for the level of credible buyout speculation right now.
+End with: BUZZ_SCORE: [0-100]`;
+
+    // Angle 4: strategic fit - would anyone actually want to buy it
+    const fitPrompt = `Assess STRATEGIC FIT of ${base} as an acquisition target.
+Consider: is its sector consolidating; which specific acquirers (strategic or PE) would want its technology, contracts, or market position and why; is its valuation attractive to a buyer; float/insider ownership that would ease or block a deal.
+Name the most likely acquirers. Score 0-100 for target attractiveness.
+End with: FIT_SCORE: [0-100]`;
+
+    const intent = extractScore(await callAgentGrok(intentPrompt, model, { liveSearch: true }), 'INTENT_SCORE');
+    const buzz = extractScore(await callAgentGrok(buzzPrompt, model, { liveSearch: true }), 'BUZZ_SCORE');
+    const fit = extractScore(await callAgentGrok(fitPrompt, model, { liveSearch: true }), 'FIT_SCORE');
+
+    const have = [peopleScore, intent.score, buzz.score, fit.score].filter(v => v !== null);
+    const buyoutScore = have.length > 0
+      ? Math.round((peopleScore ?? 50) * 0.25 + (intent.score ?? 50) * 0.30 + (buzz.score ?? 50) * 0.15 + (fit.score ?? 50) * 0.30)
+      : null;
+
+    const sections = [
+      `PEOPLE & HIRES (${peopleScore ?? 'n/a'}/100)\n${people.cleaned.replace(/DIG_DEEPER[:\s]*(yes|no)/gi, '').replace(/KEY_PEOPLE[:\s]*[^\n]+/gi, '').trim()}`,
+    ];
+    if (peopleDeepText) sections.push(`KEY PEOPLE DEEP-DIVE\n${peopleDeepText}`);
+    sections.push(`STATED INTENT (${intent.score ?? 'n/a'}/100)\n${intent.cleaned}`);
+    sections.push(`SOCIAL BUZZ (${buzz.score ?? 'n/a'}/100)\n${buzz.cleaned}`);
+    sections.push(`STRATEGIC FIT (${fit.score ?? 'n/a'}/100)\n${fit.cleaned}`);
+
+    return {
+      buyoutAnalysis: sections.join('\n\n'),
+      buyoutScore,
+      buyoutPeopleScore: peopleScore,
+      buyoutIntentScore: intent.score,
+      buyoutBuzzScore: buzz.score,
+      buyoutFitScore: fit.score,
+    };
+  } catch (e) {
+    return { buyoutAnalysis: `Error: ${e.message}`, buyoutScore: null };
+  }
+}
+
+// ============================================
+// PASSION - leadership passion score from 3 sub-scans:
+// CEO quality/commitment, public communication, interview vibes
+// ============================================
+async function getPassionAnalysis(stock, model = 'grok-4.5') {
+  try {
+    const base = `${stock.ticker} (${stock.name}), sector ${stock.sector || 'Unknown'}, market cap $${stock.marketCap ? Math.round(stock.marketCap / 1000000) + 'M' : 'unknown'}.`;
+
+    // Sub-scan 1: CEO quality and commitment to the business
+    const ceoPrompt = `Investigate the CEO (and founding team) of ${base}
+Search for who leads the company and judge: founder-led or hired gun; skin in the game (ownership, insider buys); track record of execution; whether they are focused on THIS business or spread across ventures; technical depth in their domain.
+Score 0-100 where 80+ = an exceptional, deeply committed operator.
+End with: CEO_SCORE: [0-100]`;
+
+    // Sub-scan 2: how public/communicative leadership is
+    const publicPrompt = `Investigate how PUBLIC and COMMUNICATIVE the leadership of ${base} is.
+Search for: frequency of shareholder updates and letters, interviews, podcasts, conference appearances, X/Twitter activity, earnings-call accessibility, direct engagement with investors.
+Score 0-100 where 80+ = highly transparent leadership that communicates constantly and candidly.
+End with: PUBLIC_SCORE: [0-100]`;
+
+    // Sub-scan 3: the vibes of that content - passion, conviction, authenticity
+    const vibesPrompt = `Find recent INTERVIEWS, PODCASTS, or PUBLIC APPEARANCES by executives of ${base}
+Read/watch coverage of what they actually said and judge the VIBES: genuine passion and command of detail vs scripted promotion; conviction about the mission; energy; candor about challenges; whether employees/customers echo that energy. Use any unique angles needed to find real content (X posts, YouTube, transcripts, local press).
+Score 0-100 where 80+ = electric, mission-driven leadership energy.
+End with: VIBES_SCORE: [0-100]`;
+
+    const ceo = extractScore(await callAgentGrok(ceoPrompt, model, { liveSearch: true }), 'CEO_SCORE');
+    const pub = extractScore(await callAgentGrok(publicPrompt, model, { liveSearch: true }), 'PUBLIC_SCORE');
+    const vibes = extractScore(await callAgentGrok(vibesPrompt, model, { liveSearch: true }), 'VIBES_SCORE');
+
+    const have = [ceo.score, pub.score, vibes.score].filter(v => v !== null);
+    const passionScore = have.length > 0
+      ? Math.round((ceo.score ?? 50) * 0.40 + (pub.score ?? 50) * 0.25 + (vibes.score ?? 50) * 0.35)
+      : null;
+
+    const analysis = [
+      `CEO QUALITY (${ceo.score ?? 'n/a'}/100)\n${ceo.cleaned}`,
+      `PUBLIC PRESENCE (${pub.score ?? 'n/a'}/100)\n${pub.cleaned}`,
+      `INTERVIEW VIBES (${vibes.score ?? 'n/a'}/100)\n${vibes.cleaned}`,
+    ].join('\n\n');
+
+    return { passionAnalysis: analysis, passionScore, passionCeoScore: ceo.score, passionPublicScore: pub.score, passionVibesScore: vibes.score };
+  } catch (e) {
+    return { passionAnalysis: `Error: ${e.message}`, passionScore: null };
+  }
+}
+
+// ============================================
 // ORACLE ANALYSIS - The Singularity Capitalist
 // ============================================
 async function getOracleAnalysis(stock) {
@@ -1675,15 +1891,12 @@ export default function StockResearchApp() {
     computedEnabled: true,      // free momentum/volatility metrics from price data
     grokEnabled: true,          // Conviction (insider) scan
     technicalEnabled: true,     // Cup & Handle scan
-    explosiveEnabled: true,
     teamEnabled: true,
-    parabolicEnabled: true,
     valuationEnabled: true,
-    breakoutEnabled: false,     // momentum group - off by default
-    catalystEnabled: false,
-    squeezeEnabled: false,
-    earningsMomentumEnabled: false,
-    optionsEnabled: false,      // options group - off by default
+    parabolicGrowthEnabled: true,
+    momentumEnabled: false,     // 3 AI calls per stock - opt in
+    buyoutEnabled: false,       // 4-5 AI calls per stock - opt in
+    passionEnabled: false,      // 3 AI calls per stock - opt in
     grokCount: 25,              // shared "stocks to analyze" count for all AI agent scans
     grokOnlySingularity70: false  // Only analyze stocks with singularity >= 70
   });
@@ -1748,21 +1961,14 @@ export default function StockResearchApp() {
   
   const [aiWeights, setAiWeights] = useState({
     conviction: 15,
-    upside: 15,
     cupHandle: 10,
-    singularity: 30,
-    oracle: 30,
-    explosive: 10,
+    singularity: 20,
     team: 10,
-    parabolic: 10,
     valuation: 10,
-    rs: 10,
-    volumeSurge: 10,
-    breakout: 10,
-    catalyst: 10,
-    squeeze: 10,
-    earningsMomentum: 10,
-    options: 10
+    parabolicGrowth: 10,
+    momentum: 15,
+    buyout: 15,
+    passion: 10
   });
   const [fullSpectrumPhase, setFullSpectrumPhase] = useState('');
 
@@ -1771,7 +1977,7 @@ export default function StockResearchApp() {
     
     // Calculate total weight (base + AI)
     const baseTotal = Object.values(w).reduce((a, b) => a + b, 0);
-    const aiTotal = (aw.conviction || 0) + (aw.upside || 0) + (aw.cupHandle || 0) + (aw.singularity || 0) + (aw.oracle || 0) + (aw.explosive || 0) + (aw.team || 0) + (aw.parabolic || 0) + (aw.valuation || 0) + (aw.rs || 0) + (aw.volumeSurge || 0) + (aw.breakout || 0) + (aw.catalyst || 0) + (aw.squeeze || 0) + (aw.earningsMomentum || 0) + (aw.options || 0);
+    const aiTotal = (aw.conviction || 0) + (aw.cupHandle || 0) + (aw.singularity || 0) + (aw.team || 0) + (aw.valuation || 0) + (aw.parabolicGrowth || 0) + (aw.momentum || 0) + (aw.buyout || 0) + (aw.passion || 0);
     const grandTotal = baseTotal + aiTotal;
     
     // If all weights are 0, just return unsorted
@@ -1802,12 +2008,6 @@ export default function StockResearchApp() {
         score += (s.insiderConviction / 100) * (aw.conviction / grandTotal) * 100;
       }
       
-      // AI scores - Upside (normalize: 100%+ upside = max score)
-      if (aw.upside > 0 && s.upsidePct !== null && s.upsidePct !== undefined) {
-        const upsideNormalized = Math.max(0, Math.min(s.upsidePct / 100, 1));
-        score += upsideNormalized * (aw.upside / grandTotal) * 100;
-      }
-      
       // AI scores - Cup & Handle (0-100 scale)
       if (aw.cupHandle > 0 && s.cupHandleScore !== null && s.cupHandleScore !== undefined) {
         score += (s.cupHandleScore / 100) * (aw.cupHandle / grandTotal) * 100;
@@ -1833,29 +2033,9 @@ export default function StockResearchApp() {
         }
       }
 
-      // AI scores - Oracle Conviction (0-100 scale)
-      if (aw.oracle > 0 && s.oracleConviction !== null && s.oracleConviction !== undefined) {
-        // Boost for BULLISH prediction
-        let oracleMultiplier = 1;
-        if (s.prediction === 'BULLISH') oracleMultiplier = 1.2;
-        else if (s.prediction === 'BEARISH') oracleMultiplier = 0.5;
-
-        score += (s.oracleConviction / 100) * oracleMultiplier * (aw.oracle / grandTotal) * 100;
-      }
-
-      // AI scores - Explosive Growth (0-100 scale)
-      if (aw.explosive > 0 && s.explosiveScore !== null && s.explosiveScore !== undefined) {
-        score += (s.explosiveScore / 100) * (aw.explosive / grandTotal) * 100;
-      }
-
       // AI scores - Team quality (0-100 scale)
       if (aw.team > 0 && s.teamScore !== null && s.teamScore !== undefined) {
         score += (s.teamScore / 100) * (aw.team / grandTotal) * 100;
-      }
-
-      // AI scores - Parabolic potential (0-100 scale)
-      if (aw.parabolic > 0 && s.parabolicScore !== null && s.parabolicScore !== undefined) {
-        score += (s.parabolicScore / 100) * (aw.parabolic / grandTotal) * 100;
       }
 
       // AI scores - Valuation (0-100 scale, high = undervalued)
@@ -1865,9 +2045,7 @@ export default function StockResearchApp() {
 
       // Momentum + options scores (0-100 scales, weights default 0)
       const simpleContrib = [
-        ['rs', s.rsScore], ['volumeSurge', s.volumeSurgeScore], ['breakout', s.breakoutScore],
-        ['catalyst', s.catalystScore], ['squeeze', s.squeezeScore],
-        ['earningsMomentum', s.earningsMomentumScore], ['options', s.optionsScore],
+        ['parabolicGrowth', s.parabolicGrowthScore], ['momentum', s.momentumScore], ['buyout', s.buyoutScore], ['passion', s.passionScore],
       ];
       for (const [k, v] of simpleContrib) {
         if ((aw[k] || 0) > 0 && v !== null && v !== undefined) {
@@ -1895,34 +2073,28 @@ export default function StockResearchApp() {
   const [openScanGroup, setOpenScanGroup] = useState(null);
 
   // Table column visibility (scan-score columns toggleable via Columns menu)
-  const DEFAULT_COLS = { ext: true, netCash: true, insider: true, sg: true, ex: true, tm: true, pr: true, vl: true, cv: true, ch: true, low52: true, rs: false, vs: false, bo: false, ct: false, sq: false, em: false, op: false };
+  const DEFAULT_COLS = { netCash: true, insider: true, sg: true, tm: true, vl: true, cv: true, ch: true, low52: true, pg: true, mo: true, by: true, pa: true };
   const [colVisible, setColVisible] = useState(DEFAULT_COLS);
   const [showColumnsMenu, setShowColumnsMenu] = useState(false);
   useEffect(() => { try { const saved = JSON.parse(localStorage.getItem('singularityhunter_columns') || 'null'); if (saved) setColVisible(prev => ({ ...prev, ...saved })); } catch (e) {} }, []);
   const toggleColumn = (key) => setColVisible(prev => { const next = { ...prev, [key]: !prev[key] }; try { localStorage.setItem('singularityhunter_columns', JSON.stringify(next)); } catch (e) {} return next; });
-  const COLUMN_LABELS = { ext: 'Extended Hours', netCash: 'Net Cash', insider: 'Insider', sg: 'Singularity', ex: 'Explosive', tm: 'Team', pr: 'Parabolic', vl: 'Valuation', cv: 'Conviction', ch: 'Cup & Handle', low52: '% From 52w Low', rs: 'Relative Strength', vs: 'Volume Surge', bo: 'Breakout', ct: 'Catalyst', sq: 'Squeeze', em: 'Earnings Mom.', op: 'Options Play' };
+  const COLUMN_LABELS = { netCash: 'Net Cash', insider: 'Insider', sg: 'Singularity', tm: 'Team', vl: 'Valuation', cv: 'Conviction', ch: 'Cup & Handle', low52: '% From 52w Low', pg: 'Parabolic Growth', mo: 'Momentum', by: 'Buyout', pa: 'Passion' };
   const NEW_SCORE_COLS = [
-    { key: 'rs', field: 'rsScore', label: 'RS', title: 'Relative Strength rank (vs scanned pool)', color: '#fb923c' },
-    { key: 'vs', field: 'volumeSurgeScore', label: 'VS', title: 'Volume Surge score', color: '#67e8f9' },
-    { key: 'bo', field: 'breakoutScore', label: 'Bo', title: 'Breakout Setup score', color: '#fb923c' },
-    { key: 'ct', field: 'catalystScore', label: 'Ct', title: 'Catalyst score', color: '#fbbf24' },
-    { key: 'sq', field: 'squeezeScore', label: 'Sq', title: 'Squeeze score', color: '#f87171' },
-    { key: 'em', field: 'earningsMomentumScore', label: 'EM', title: 'Earnings Momentum score', color: '#34d399' },
-    { key: 'op', field: 'optionsScore', label: 'Op', title: 'Options Play score', color: '#22d3ee' },
+    { key: 'pg', field: 'parabolicGrowthScore', label: 'PG', title: 'Parabolic Growth score', color: '#4ade80' },
+    { key: 'mo', field: 'momentumScore', label: 'Mo', title: 'Momentum score (chart + continuation + room/moat)', color: '#fb923c' },
+    { key: 'by', field: 'buyoutScore', label: 'By', title: 'Buyout likelihood (people + intent + buzz + fit)', color: '#fbbf24' },
+    { key: 'pa', field: 'passionScore', label: 'Pa', title: 'Passion (CEO + public presence + interview vibes)', color: '#f472b6' },
   ];
 
   const AGENT_REGISTRY = [
-    { id: 'conviction', label: 'Conviction', group: 'value', color: '#34d399', icon: Sparkles, fn: getAIAnalysis, apply: (s, r) => ({ ...s, aiAnalysis: r.analysis, insiderConviction: r.insiderConviction }) },
-    { id: 'technical', label: 'Technical (C&H)', group: 'value', color: '#a5b4fc', icon: Activity, fn: getTechnicalAnalysis, apply: (s, r) => ({ ...s, technicalAnalysis: r.technicalAnalysis, cupHandleScore: r.cupHandleScore }) },
-    { id: 'explosive', label: 'Explosive', group: 'value', color: '#f472b6', icon: Zap, fn: getExplosiveGrowthAnalysis, apply: (s, r) => ({ ...s, explosiveAnalysis: r.explosiveAnalysis, explosiveScore: r.explosiveScore }) },
-    { id: 'team', label: 'Team', group: 'value', color: '#c084fc', icon: Users, fn: getTeamAnalysis, apply: (s, r) => ({ ...s, teamAnalysis: r.teamAnalysis, teamScore: r.teamScore }) },
-    { id: 'parabolic', label: 'Parabolic', group: 'value', color: '#4ade80', icon: TrendingUp, pool: 'gainers', fn: getParabolicAnalysis, apply: (s, r) => ({ ...s, parabolicAnalysis: r.parabolicAnalysis, parabolicScore: r.parabolicScore }) },
-    { id: 'valuation', label: 'Valuation', group: 'value', color: '#38bdf8', icon: DollarSign, fn: getValuationAnalysis, apply: (s, r) => ({ ...s, valuationAnalysis: r.valuationAnalysis, valuationScore: r.valuationScore }) },
-    { id: 'breakout', label: 'Breakout Setup', group: 'momentum', color: '#fb923c', icon: TrendingUp, fn: getBreakoutAnalysis, apply: (s, r) => ({ ...s, breakoutAnalysis: r.breakoutAnalysis, breakoutScore: r.breakoutScore }) },
-    { id: 'catalyst', label: 'Catalyst', group: 'momentum', color: '#fbbf24', icon: Radio, fn: getCatalystAnalysis, apply: (s, r) => ({ ...s, catalystAnalysis: r.catalystAnalysis, catalystScore: r.catalystScore }) },
-    { id: 'squeeze', label: 'Squeeze', group: 'momentum', color: '#f87171', icon: Flame, fn: getSqueezeAnalysis, apply: (s, r) => ({ ...s, squeezeAnalysis: r.squeezeAnalysis, squeezeScore: r.squeezeScore }) },
-    { id: 'earningsMomentum', label: 'Earnings Momentum', group: 'momentum', color: '#34d399', icon: Calendar, fn: getEarningsMomentumAnalysis, apply: (s, r) => ({ ...s, earningsMomentumAnalysis: r.earningsMomentumAnalysis, earningsMomentumScore: r.earningsMomentumScore }) },
-    { id: 'options', label: 'Options Play', group: 'options', color: '#22d3ee', icon: Target, fn: getOptionsPlayAnalysis, apply: (s, r) => ({ ...s, optionsAnalysis: r.optionsAnalysis, optionsScore: r.optionsScore }) },
+    { id: 'conviction', label: 'Conviction', group: 'core', color: '#34d399', icon: Sparkles, fn: getAIAnalysis, apply: (s, r) => ({ ...s, aiAnalysis: r.analysis, insiderConviction: r.insiderConviction }) },
+    { id: 'technical', label: 'Technical (C&H)', group: 'core', color: '#a5b4fc', icon: Activity, fn: getTechnicalAnalysis, apply: (s, r) => ({ ...s, technicalAnalysis: r.technicalAnalysis, cupHandleScore: r.cupHandleScore }) },
+    { id: 'team', label: 'Team', group: 'core', color: '#c084fc', icon: Users, fn: getTeamAnalysis, apply: (s, r) => ({ ...s, teamAnalysis: r.teamAnalysis, teamScore: r.teamScore }) },
+    { id: 'valuation', label: 'Valuation', group: 'core', color: '#38bdf8', icon: DollarSign, fn: getValuationAnalysis, apply: (s, r) => ({ ...s, valuationAnalysis: r.valuationAnalysis, valuationScore: r.valuationScore }) },
+    { id: 'parabolicGrowth', label: 'Parabolic Growth', group: 'core', color: '#4ade80', icon: TrendingUp, fn: getParabolicGrowthAnalysis, apply: (s, r) => ({ ...s, parabolicGrowthAnalysis: r.parabolicGrowthAnalysis, parabolicGrowthScore: r.parabolicGrowthScore }) },
+    { id: 'momentum', label: 'Momentum (3-part)', group: 'core', color: '#fb923c', icon: Flame, fn: getMomentumAnalysis, apply: (s, r) => ({ ...s, momentumAnalysis: r.momentumAnalysis, momentumScore: r.momentumScore, momentumChartScore: r.momentumChartScore, momentumContinuationScore: r.momentumContinuationScore, momentumRoomMoatScore: r.momentumRoomMoatScore }) },
+    { id: 'buyout', label: 'Buyout Likelihood', group: 'core', color: '#fbbf24', icon: Banknote, fn: getBuyoutAnalysis, apply: (s, r) => ({ ...s, buyoutAnalysis: r.buyoutAnalysis, buyoutScore: r.buyoutScore, buyoutPeopleScore: r.buyoutPeopleScore, buyoutIntentScore: r.buyoutIntentScore, buyoutBuzzScore: r.buyoutBuzzScore, buyoutFitScore: r.buyoutFitScore }) },
+    { id: 'passion', label: 'Passion (3-part)', group: 'core', color: '#f472b6', icon: Radio, fn: getPassionAnalysis, apply: (s, r) => ({ ...s, passionAnalysis: r.passionAnalysis, passionScore: r.passionScore, passionCeoScore: r.passionCeoScore, passionPublicScore: r.passionPublicScore, passionVibesScore: r.passionVibesScore }) },
   ];
 
   const CHECKPOINT_KEY = 'singularityhunter_scan_checkpoint';
@@ -1945,7 +2117,6 @@ export default function StockResearchApp() {
     if (!sessionIdRef.current) { sessionIdRef.current = sid; setCurrentSessionId(sid); }
     setIsAnalyzingAI(true);
     setError(null);
-    let sinceSave = 0;
 
     for (const agent of agents) {
       const doneSet = new Set(completedMap[agent.id] || []);
@@ -1969,8 +2140,10 @@ export default function StockResearchApp() {
 
         doneSet.add(ticker);
         completedMap[agent.id] = [...doneSet];
+        // Save results BEFORE marking the stock complete in the checkpoint,
+        // so a refresh can never lose a scanned stock
+        persistProgressToSession(sid);
         persistCheckpoint({ kind: 'agents', agentIds, tickers, completed: completedMap, model });
-        if (++sinceSave >= 3 || i === remaining.length - 1) { persistProgressToSession(sid); sinceSave = 0; }
 
         if (i < remaining.length - 1) await new Promise(r => setTimeout(r, 1200));
       }
@@ -3177,15 +3350,12 @@ Respond with ONLY a JSON array:
       const spectrumAgentIds = [
         spectrumSettings.grokEnabled && 'conviction',
         spectrumSettings.technicalEnabled && 'technical',
-        spectrumSettings.explosiveEnabled && 'explosive',
         spectrumSettings.teamEnabled && 'team',
-        spectrumSettings.parabolicEnabled && 'parabolic',
         spectrumSettings.valuationEnabled && 'valuation',
-        spectrumSettings.breakoutEnabled && 'breakout',
-        spectrumSettings.catalystEnabled && 'catalyst',
-        spectrumSettings.squeezeEnabled && 'squeeze',
-        spectrumSettings.earningsMomentumEnabled && 'earningsMomentum',
-        spectrumSettings.optionsEnabled && 'options',
+        spectrumSettings.parabolicGrowthEnabled && 'parabolicGrowth',
+        spectrumSettings.momentumEnabled && 'momentum',
+        spectrumSettings.buyoutEnabled && 'buyout',
+        spectrumSettings.passionEnabled && 'passion',
       ].filter(Boolean);
 
       if (spectrumAgentIds.length > 0 && currentStocks.length > 0) {
@@ -3303,7 +3473,7 @@ Respond with ONLY a JSON array:
       if (sortBy === 'valuationScore') {
         return (b.valuationScore ?? -1) - (a.valuationScore ?? -1);
       }
-      if (['rsScore','volumeSurgeScore','breakoutScore','catalystScore','squeezeScore','earningsMomentumScore','optionsScore'].includes(sortBy)) {
+      if (['parabolicGrowthScore','momentumScore','buyoutScore','passionScore'].includes(sortBy)) {
         return (b[sortBy] ?? -1) - (a[sortBy] ?? -1);
       }
       if (sortBy === 'fromLow') {
@@ -3418,9 +3588,7 @@ Respond with ONLY a JSON array:
                 
                 {/* Grouped scan menus */}
                 {[
-                  { key: 'value', label: 'Value Scans', color: '#34d399', bg: 'rgba(16,185,129,' },
-                  { key: 'momentum', label: 'Momentum Scans', color: '#fb923c', bg: 'rgba(251,146,60,' },
-                  { key: 'options', label: 'Options Scans', color: '#22d3ee', bg: 'rgba(34,211,238,' },
+                  { key: 'core', label: 'Scans', color: '#34d399', bg: 'rgba(16,185,129,' },
                 ].map(group => {
                   const groupAgents = AGENT_REGISTRY.filter(a => a.group === group.key);
                   const activeAgent = groupAgents.find(a => a.id === agentRunning);
@@ -3441,31 +3609,17 @@ Respond with ONLY a JSON array:
                       </button>
                       {isOpen && (
                         <div className="absolute right-0 top-full mt-2 w-64 rounded-xl border p-2 z-50 space-y-1" style={{ background: 'rgba(15,23,42,0.98)', borderColor: 'rgba(51,65,85,0.7)', boxShadow: '0 12px 32px rgba(0,0,0,0.5)' }}>
-                          {group.key === 'momentum' && (
-                            <button onClick={() => runComputedMetricsScan('RS & Volume data')} disabled={isComputingMetrics || isAnalyzingAI} className="w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2 hover:bg-slate-800" style={{ color: '#67e8f9', opacity: (isComputingMetrics || isAnalyzingAI) ? 0.5 : 1 }}>
-                              {isComputingMetrics ? <RefreshCw className="w-4 h-4 animate-spin" /> : <BarChart3 className="w-4 h-4" />}RS & Volume Surge<span className="text-xs text-slate-500 ml-auto">free</span>
-                            </button>
-                          )}
-                          {group.key === 'options' && (
-                            <button onClick={() => runComputedMetricsScan('Volatility data')} disabled={isComputingMetrics || isAnalyzingAI} className="w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2 hover:bg-slate-800" style={{ color: '#67e8f9', opacity: (isComputingMetrics || isAnalyzingAI) ? 0.5 : 1 }}>
-                              {isComputingMetrics ? <RefreshCw className="w-4 h-4 animate-spin" /> : <BarChart3 className="w-4 h-4" />}Volatility Profile<span className="text-xs text-slate-500 ml-auto">free</span>
-                            </button>
-                          )}
+                          <button onClick={() => runComputedMetricsScan('Market data')} disabled={isComputingMetrics || isAnalyzingAI} className="w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2 hover:bg-slate-800" style={{ color: '#67e8f9', opacity: (isComputingMetrics || isAnalyzingAI) ? 0.5 : 1 }}>
+                            {isComputingMetrics ? <RefreshCw className="w-4 h-4 animate-spin" /> : <BarChart3 className="w-4 h-4" />}Market Data (RS / Vol / ATR)<span className="text-xs text-slate-500 ml-auto">free</span>
+                          </button>
                           {groupAgents.map(agent => { const AgentIcon = agent.icon; return (
                             <button key={agent.id} onClick={() => launchAgentScan(agent)} disabled={isAnalyzingAI || isScanning} className="w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2 hover:bg-slate-800" style={{ color: agent.color, opacity: (isAnalyzingAI || isScanning) ? 0.5 : 1 }}>
                               {agentRunning === agent.id ? <RefreshCw className="w-4 h-4 animate-spin" /> : <AgentIcon className="w-4 h-4" />}{agent.label}
                             </button>
                           ); })}
-                          {group.key === 'value' && (
-                            <>
-                              <button onClick={() => { setOpenScanGroup(null); runSingularityScan(getCurrentView()); }} disabled={isAnalyzingAI || isScanning || isScanningSupplyChain} className="w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2 hover:bg-slate-800" style={{ color: '#fbbf24', opacity: (isAnalyzingAI || isScanning) ? 0.5 : 1 }}>
-                                {isScanningSupplyChain ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}Singularity Scan{isScanningSupplyChain && <span className="text-xs text-slate-500 ml-auto">{supplyChainProgress.current}/{supplyChainProgress.total}</span>}
-                              </button>
-                              <button onClick={() => { setOpenScanGroup(null); refreshPremarketData(); }} disabled={isRefreshingPremarket || isScanning} className="w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2 hover:bg-slate-800" style={{ color: '#22d3ee', opacity: (isRefreshingPremarket || isScanning) ? 0.5 : 1 }}>
-                                {isRefreshingPremarket ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Clock className="w-4 h-4" />}Extended Hours<span className="text-xs text-slate-500 ml-auto">free</span>
-                              </button>
-                            </>
-                          )}
+                          <button onClick={() => { setOpenScanGroup(null); runSingularityScan(getCurrentView()); }} disabled={isAnalyzingAI || isScanning || isScanningSupplyChain} className="w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2 hover:bg-slate-800" style={{ color: '#fbbf24', opacity: (isAnalyzingAI || isScanning) ? 0.5 : 1 }}>
+                            {isScanningSupplyChain ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}Singularity Scan{isScanningSupplyChain && <span className="text-xs text-slate-500 ml-auto">{supplyChainProgress.current}/{supplyChainProgress.total}</span>}
+                          </button>
                           <div className="border-t border-slate-800 pt-2 mt-1 px-3 pb-1 flex items-center justify-between text-xs text-slate-500">
                             <span>Stocks per scan</span>
                             <select value={agentScanCount} onChange={e => setAgentScanCount(parseInt(e.target.value))} className="rounded px-1.5 py-0.5 border outline-none" style={{ background: 'rgba(30,41,59,0.8)', borderColor: 'rgba(51,65,85,0.5)', color: '#94a3b8' }}>
@@ -3572,7 +3726,7 @@ Respond with ONLY a JSON array:
               <button onClick={() => setShowFullSpectrumModal(false)} className="text-slate-400 hover:text-white"><X className="w-5 h-5" /></button>
             </div>
             
-            <p className="text-sm text-slate-400 mb-6">Runs everything in sequence: Base Scan → Singularity Scan → each enabled AI agent below (Conviction, Technical, Explosive, Team, Parabolic, Valuation)</p>
+            <p className="text-sm text-slate-400 mb-6">Runs everything in sequence: Base Scan → Singularity Scan → each enabled AI agent below. Momentum runs 3 AI calls per stock and Buyout runs 4-5, so they're off by default.</p>
             
             <div className="space-y-4 mb-6">
               <div>
@@ -3605,7 +3759,7 @@ Respond with ONLY a JSON array:
               </div>
               
               {/* Grok only singularity 70+ option */}
-              {(spectrumSettings.grokEnabled || spectrumSettings.technicalEnabled || spectrumSettings.explosiveEnabled || spectrumSettings.teamEnabled || spectrumSettings.parabolicEnabled || spectrumSettings.valuationEnabled || spectrumSettings.breakoutEnabled || spectrumSettings.catalystEnabled || spectrumSettings.squeezeEnabled || spectrumSettings.earningsMomentumEnabled || spectrumSettings.optionsEnabled) && spectrumSettings.singularityEnabled && (
+              {(spectrumSettings.grokEnabled || spectrumSettings.technicalEnabled || spectrumSettings.teamEnabled || spectrumSettings.valuationEnabled || spectrumSettings.parabolicGrowthEnabled || spectrumSettings.momentumEnabled || spectrumSettings.buyoutEnabled || spectrumSettings.passionEnabled) && spectrumSettings.singularityEnabled && (
                 <div className="flex items-center justify-between p-3 rounded-lg border" style={{ background: 'rgba(139,92,246,0.05)', borderColor: 'rgba(139,92,246,0.2)' }}>
                   <div className="flex items-center gap-2">
                     <Filter className="w-4 h-4 text-violet-400" />
@@ -3636,22 +3790,15 @@ Respond with ONLY a JSON array:
               </div>
 
               {[
-                { title: 'Value Scans', agents: [
+                { title: 'AI Agent Scans', agents: [
                   { key: 'grokEnabled', label: 'Conviction' },
                   { key: 'technicalEnabled', label: 'Technical (C&H)' },
-                  { key: 'explosiveEnabled', label: 'Explosive' },
                   { key: 'teamEnabled', label: 'Team' },
-                  { key: 'parabolicEnabled', label: 'Parabolic' },
                   { key: 'valuationEnabled', label: 'Valuation' },
-                ]},
-                { title: 'Momentum Scans', agents: [
-                  { key: 'breakoutEnabled', label: 'Breakout Setup' },
-                  { key: 'catalystEnabled', label: 'Catalyst' },
-                  { key: 'squeezeEnabled', label: 'Squeeze' },
-                  { key: 'earningsMomentumEnabled', label: 'Earnings Mom.' },
-                ]},
-                { title: 'Options Scans', agents: [
-                  { key: 'optionsEnabled', label: 'Options Play' },
+                  { key: 'parabolicGrowthEnabled', label: 'Parabolic Growth' },
+                  { key: 'momentumEnabled', label: 'Momentum (3x AI)' },
+                  { key: 'buyoutEnabled', label: 'Buyout (5x AI)' },
+                  { key: 'passionEnabled', label: 'Passion (3x AI)' },
                 ]},
               ].map(group => (
                 <div key={group.title}>
@@ -3676,7 +3823,7 @@ Respond with ONLY a JSON array:
                 </div>
               ))}
 
-              {(spectrumSettings.grokEnabled || spectrumSettings.technicalEnabled || spectrumSettings.explosiveEnabled || spectrumSettings.teamEnabled || spectrumSettings.parabolicEnabled || spectrumSettings.valuationEnabled || spectrumSettings.breakoutEnabled || spectrumSettings.catalystEnabled || spectrumSettings.squeezeEnabled || spectrumSettings.earningsMomentumEnabled || spectrumSettings.optionsEnabled) && (
+              {(spectrumSettings.grokEnabled || spectrumSettings.technicalEnabled || spectrumSettings.teamEnabled || spectrumSettings.valuationEnabled || spectrumSettings.parabolicGrowthEnabled || spectrumSettings.momentumEnabled || spectrumSettings.buyoutEnabled || spectrumSettings.passionEnabled) && (
                 <div>
                   <label className="text-sm text-slate-300 mb-2 block">AI Agents - Stocks to Analyze (applies to every agent above)</label>
                   <select
@@ -3745,105 +3892,7 @@ Respond with ONLY a JSON array:
             {/* Scan Settings Section */}
             <div className="mb-6 p-4 rounded-xl border" style={{ background: 'rgba(99,102,241,0.05)', borderColor: 'rgba(99,102,241,0.2)' }}>
               <h3 className="text-sm font-semibold text-indigo-400 mb-3">AI Scan Counts</h3>
-              
-              <div className="grid grid-cols-3 gap-4 mb-4">
-                <div>
-                  <label className="text-xs text-slate-400 mb-1 block">Conviction Scan</label>
-                  <select 
-                    value={convictionCount} 
-                    onChange={e => setConvictionCount(parseInt(e.target.value))}
-                    className="w-full rounded-lg px-3 py-2 text-sm border outline-none"
-                    style={{ background: 'rgba(30,41,59,0.5)', borderColor: 'rgba(16,185,129,0.3)', color: '#34d399' }}
-                  >
-                    <option value={5}>5 stocks</option>
-                    <option value={10}>10 stocks</option>
-                    <option value={25}>25 stocks</option>
-                    <option value={50}>50 stocks</option>
-                    <option value={100}>100 stocks</option>
-                    <option value={0}>All stocks</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs text-slate-400 mb-1 block">C&H Technical Scan</label>
-                  <select 
-                    value={technicalCount} 
-                    onChange={e => setTechnicalCount(parseInt(e.target.value))}
-                    className="w-full rounded-lg px-3 py-2 text-sm border outline-none"
-                    style={{ background: 'rgba(30,41,59,0.5)', borderColor: 'rgba(99,102,241,0.3)', color: '#a5b4fc' }}
-                  >
-                    <option value={5}>5 stocks</option>
-                    <option value={10}>10 stocks</option>
-                    <option value={25}>25 stocks</option>
-                    <option value={50}>50 stocks</option>
-                    <option value={100}>100 stocks</option>
-                    <option value={0}>All stocks</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs text-slate-400 mb-1 block">Explosive Growth Scan</label>
-                  <select 
-                    value={explosiveCount} 
-                    onChange={e => setExplosiveCount(parseInt(e.target.value))}
-                    className="w-full rounded-lg px-3 py-2 text-sm border outline-none"
-                    style={{ background: 'rgba(30,41,59,0.5)', borderColor: 'rgba(236,72,153,0.3)', color: '#f472b6' }}
-                  >
-                    <option value={5}>5 stocks</option>
-                    <option value={10}>10 stocks</option>
-                    <option value={25}>25 stocks</option>
-                    <option value={50}>50 stocks</option>
-                    <option value={100}>100 stocks</option>
-                    <option value={0}>All stocks</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs text-slate-400 mb-1 block">Team Analysis Scan</label>
-                  <select 
-                    value={teamCount} 
-                    onChange={e => setTeamCount(parseInt(e.target.value))}
-                    className="w-full rounded-lg px-3 py-2 text-sm border outline-none"
-                    style={{ background: 'rgba(30,41,59,0.5)', borderColor: 'rgba(168,85,247,0.3)', color: '#c084fc' }}
-                  >
-                    <option value={5}>5 stocks</option>
-                    <option value={10}>10 stocks</option>
-                    <option value={25}>25 stocks</option>
-                    <option value={50}>50 stocks</option>
-                    <option value={100}>100 stocks</option>
-                    <option value={0}>All stocks</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs text-slate-400 mb-1 block">Parabolic Scan</label>
-                  <select 
-                    value={parabolicCount} 
-                    onChange={e => setParabolicCount(parseInt(e.target.value))}
-                    className="w-full rounded-lg px-3 py-2 text-sm border outline-none"
-                    style={{ background: 'rgba(30,41,59,0.5)', borderColor: 'rgba(34,197,94,0.3)', color: '#4ade80' }}
-                  >
-                    <option value={5}>5 stocks</option>
-                    <option value={10}>10 stocks</option>
-                    <option value={25}>25 stocks</option>
-                    <option value={50}>50 stocks</option>
-                    <option value={100}>100 stocks</option>
-                    <option value={0}>All stocks</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs text-slate-400 mb-1 block">Valuation Scan</label>
-                  <select 
-                    value={valuationCount} 
-                    onChange={e => setValuationCount(parseInt(e.target.value))}
-                    className="w-full rounded-lg px-3 py-2 text-sm border outline-none"
-                    style={{ background: 'rgba(30,41,59,0.5)', borderColor: 'rgba(14,165,233,0.3)', color: '#38bdf8' }}
-                  >
-                    <option value={5}>5 stocks</option>
-                    <option value={10}>10 stocks</option>
-                    <option value={25}>25 stocks</option>
-                    <option value={50}>50 stocks</option>
-                    <option value={100}>100 stocks</option>
-                    <option value={0}>All stocks</option>
-                  </select>
-                </div>
-              </div>
+              <p className="text-xs text-slate-500 mb-4">Per-scan stock counts moved to the Scans dropdown ("Stocks per scan").</p>
               
               {/* Singularity Batch Size */}
               <div className="mb-4 p-3 rounded-lg border" style={{ background: 'rgba(245,158,11,0.05)', borderColor: 'rgba(245,158,11,0.2)' }}>
@@ -4092,7 +4141,7 @@ Respond with ONLY a JSON array:
           <div className="mb-6 card rounded-2xl border border-slate-800/50 p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold flex items-center gap-2"><Sliders className="w-5 h-5 text-amber-400" />Scoring Weights</h2>
-              <button onClick={() => { setWeights({ pricePosition: 40, insiderActivity: 40, netCash: 20 }); setAiWeights({ conviction: 15, upside: 15, cupHandle: 10, singularity: 30, oracle: 30, explosive: 10, team: 10, parabolic: 10, valuation: 10, rs: 10, volumeSurge: 10, breakout: 10, catalyst: 10, squeeze: 10, earningsMomentum: 10, options: 10 }); }} className="text-xs text-slate-400 hover:text-white px-3 py-1.5 rounded-lg border" style={{ background: 'rgba(30,41,59,0.5)', borderColor: 'rgba(51,65,85,0.5)' }}>Reset All</button>
+              <button onClick={() => { setWeights({ pricePosition: 40, insiderActivity: 40, netCash: 20 }); setAiWeights({ conviction: 15, cupHandle: 10, singularity: 20, team: 10, valuation: 10, parabolicGrowth: 10, momentum: 15, buyout: 15, passion: 10 }); }} className="text-xs text-slate-400 hover:text-white px-3 py-1.5 rounded-lg border" style={{ background: 'rgba(30,41,59,0.5)', borderColor: 'rgba(51,65,85,0.5)' }}>Reset All</button>
             </div>
             
             <p className="text-xs text-slate-500 mb-3">Base Scoring (applied to all stocks)</p>
@@ -4112,10 +4161,6 @@ Respond with ONLY a JSON array:
                 <div className="flex items-center gap-3"><input type="range" min="0" max="50" value={aiWeights.conviction} onChange={e => { const v = parseInt(e.target.value); setAiWeights(p => ({...p, conviction: v})); setStocks(s => calcScores(s, weights, {...aiWeights, conviction: v})); }} className="flex-1" style={{ accentColor: '#f87171' }} /><span className="mono text-sm font-semibold w-8 text-right text-red-400">+{aiWeights.conviction}</span></div>
               </div>
               <div className="rounded-xl p-4 border" style={{ background: 'rgba(239,68,68,0.05)', borderColor: 'rgba(239,68,68,0.2)' }}>
-                <div className="flex items-center gap-2 mb-3"><div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(239,68,68,0.2)' }}><TrendingUp className="w-4 h-4 text-red-400" /></div><span className="text-sm font-medium text-slate-200">Upside %</span></div>
-                <div className="flex items-center gap-3"><input type="range" min="0" max="50" value={aiWeights.upside} onChange={e => { const v = parseInt(e.target.value); setAiWeights(p => ({...p, upside: v})); setStocks(s => calcScores(s, weights, {...aiWeights, upside: v})); }} className="flex-1" style={{ accentColor: '#f87171' }} /><span className="mono text-sm font-semibold w-8 text-right text-red-400">+{aiWeights.upside}</span></div>
-              </div>
-              <div className="rounded-xl p-4 border" style={{ background: 'rgba(239,68,68,0.05)', borderColor: 'rgba(239,68,68,0.2)' }}>
                 <div className="flex items-center gap-2 mb-3"><div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(239,68,68,0.2)' }}><BarChart3 className="w-4 h-4 text-red-400" /></div><span className="text-sm font-medium text-slate-200">Cup & Handle</span></div>
                 <div className="flex items-center gap-3"><input type="range" min="0" max="50" value={aiWeights.cupHandle} onChange={e => { const v = parseInt(e.target.value); setAiWeights(p => ({...p, cupHandle: v})); setStocks(s => calcScores(s, weights, {...aiWeights, cupHandle: v})); }} className="flex-1" style={{ accentColor: '#f87171' }} /><span className="mono text-sm font-semibold w-8 text-right text-red-400">{aiWeights.cupHandle}</span></div>
               </div>
@@ -4123,34 +4168,19 @@ Respond with ONLY a JSON array:
                 <div className="flex items-center gap-2 mb-3"><div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(245,158,11,0.2)' }}><Zap className="w-4 h-4 text-amber-400" /></div><span className="text-sm font-medium text-slate-200">Singularity</span></div>
                 <div className="flex items-center gap-3"><input type="range" min="0" max="50" value={aiWeights.singularity || 0} onChange={e => { const v = parseInt(e.target.value); setAiWeights(p => ({...p, singularity: v})); setStocks(s => calcScores(s, weights, {...aiWeights, singularity: v})); }} className="flex-1" style={{ accentColor: '#f59e0b' }} /><span className="mono text-sm font-semibold w-8 text-right text-amber-400">{aiWeights.singularity || 0}</span></div>
               </div>
-              <div className="rounded-xl p-4 border" style={{ background: 'rgba(245,158,11,0.05)', borderColor: 'rgba(245,158,11,0.2)' }}>
-                <div className="flex items-center gap-2 mb-3"><div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(245,158,11,0.2)' }}><Eye className="w-4 h-4 text-amber-400" /></div><span className="text-sm font-medium text-slate-200">Oracle</span></div>
-                <div className="flex items-center gap-3"><input type="range" min="0" max="50" value={aiWeights.oracle || 0} onChange={e => { const v = parseInt(e.target.value); setAiWeights(p => ({...p, oracle: v})); setStocks(s => calcScores(s, weights, {...aiWeights, oracle: v})); }} className="flex-1" style={{ accentColor: '#f59e0b' }} /><span className="mono text-sm font-semibold w-8 text-right text-amber-400">{aiWeights.oracle || 0}</span></div>
-              </div>
-              <div className="rounded-xl p-4 border" style={{ background: 'rgba(251,146,60,0.05)', borderColor: 'rgba(251,146,60,0.2)' }}>
-                <div className="flex items-center gap-2 mb-3"><div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(251,146,60,0.2)' }}><Flame className="w-4 h-4 text-orange-400" /></div><span className="text-sm font-medium text-slate-200">Explosive</span></div>
-                <div className="flex items-center gap-3"><input type="range" min="0" max="50" value={aiWeights.explosive || 0} onChange={e => { const v = parseInt(e.target.value); setAiWeights(p => ({...p, explosive: v})); setStocks(s => calcScores(s, weights, {...aiWeights, explosive: v})); }} className="flex-1" style={{ accentColor: '#fb923c' }} /><span className="mono text-sm font-semibold w-8 text-right text-orange-400">{aiWeights.explosive || 0}</span></div>
-              </div>
               <div className="rounded-xl p-4 border" style={{ background: 'rgba(56,189,248,0.05)', borderColor: 'rgba(56,189,248,0.2)' }}>
                 <div className="flex items-center gap-2 mb-3"><div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(56,189,248,0.2)' }}><Users className="w-4 h-4 text-sky-400" /></div><span className="text-sm font-medium text-slate-200">Team</span></div>
                 <div className="flex items-center gap-3"><input type="range" min="0" max="50" value={aiWeights.team || 0} onChange={e => { const v = parseInt(e.target.value); setAiWeights(p => ({...p, team: v})); setStocks(s => calcScores(s, weights, {...aiWeights, team: v})); }} className="flex-1" style={{ accentColor: '#38bdf8' }} /><span className="mono text-sm font-semibold w-8 text-right text-sky-400">{aiWeights.team || 0}</span></div>
-              </div>
-              <div className="rounded-xl p-4 border" style={{ background: 'rgba(192,132,252,0.05)', borderColor: 'rgba(192,132,252,0.2)' }}>
-                <div className="flex items-center gap-2 mb-3"><div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(192,132,252,0.2)' }}><Activity className="w-4 h-4 text-purple-400" /></div><span className="text-sm font-medium text-slate-200">Parabolic</span></div>
-                <div className="flex items-center gap-3"><input type="range" min="0" max="50" value={aiWeights.parabolic || 0} onChange={e => { const v = parseInt(e.target.value); setAiWeights(p => ({...p, parabolic: v})); setStocks(s => calcScores(s, weights, {...aiWeights, parabolic: v})); }} className="flex-1" style={{ accentColor: '#c084fc' }} /><span className="mono text-sm font-semibold w-8 text-right text-purple-400">{aiWeights.parabolic || 0}</span></div>
               </div>
               <div className="rounded-xl p-4 border" style={{ background: 'rgba(52,211,153,0.05)', borderColor: 'rgba(52,211,153,0.2)' }}>
                 <div className="flex items-center gap-2 mb-3"><div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(52,211,153,0.2)' }}><DollarSign className="w-4 h-4 text-emerald-400" /></div><span className="text-sm font-medium text-slate-200">Valuation</span></div>
                 <div className="flex items-center gap-3"><input type="range" min="0" max="50" value={aiWeights.valuation || 0} onChange={e => { const v = parseInt(e.target.value); setAiWeights(p => ({...p, valuation: v})); setStocks(s => calcScores(s, weights, {...aiWeights, valuation: v})); }} className="flex-1" style={{ accentColor: '#34d399' }} /><span className="mono text-sm font-semibold w-8 text-right text-emerald-400">{aiWeights.valuation || 0}</span></div>
               </div>
               {[
-                { k: 'rs', label: 'Relative Strength', color: '#fb923c' },
-                { k: 'volumeSurge', label: 'Volume Surge', color: '#67e8f9' },
-                { k: 'breakout', label: 'Breakout', color: '#fb923c' },
-                { k: 'catalyst', label: 'Catalyst', color: '#fbbf24' },
-                { k: 'squeeze', label: 'Squeeze', color: '#f87171' },
-                { k: 'earningsMomentum', label: 'Earnings Momentum', color: '#34d399' },
-                { k: 'options', label: 'Options Play', color: '#22d3ee' },
+                { k: 'parabolicGrowth', label: 'Parabolic Growth', color: '#4ade80' },
+                { k: 'momentum', label: 'Momentum', color: '#fb923c' },
+                { k: 'buyout', label: 'Buyout', color: '#fbbf24' },
+                { k: 'passion', label: 'Passion', color: '#f472b6' },
               ].map(w => (
                 <div key={w.k} className="rounded-xl p-4 border" style={{ background: 'rgba(30,41,59,0.3)', borderColor: 'rgba(51,65,85,0.4)' }}>
                   <div className="flex items-center gap-2 mb-3"><div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(51,65,85,0.4)' }}><BarChart3 className="w-4 h-4" style={{ color: w.color }} /></div><span className="text-sm font-medium text-slate-200">{w.label}</span></div>
@@ -4535,16 +4565,6 @@ Respond with ONLY a JSON array:
                   <div className="w-10 text-center">Rank</div>
                   <div className="flex-1">Ticker / Name</div>
                   <div className="w-24 text-right">Price / MCap</div>
-                  {colVisible.ext && (
-                  <div 
-                    className="w-14 text-center cursor-pointer hover:text-slate-300 transition-colors flex items-center justify-center gap-1"
-                    onClick={() => setSortBy(sortBy === 'extendedChange' ? 'compositeScore' : 'extendedChange')}
-                    title="Pre-Market or After-Hours Change %"
-                  >
-                    Ext
-                    {sortBy === 'extendedChange' && <span className="text-cyan-400">↓</span>}
-                  </div>
-                  )}
                   {colVisible.netCash && <div className="w-16 text-center">Net Cash</div>}
                   {colVisible.insider && (
                   <div 
@@ -4565,16 +4585,6 @@ Respond with ONLY a JSON array:
                     {sortBy === 'singularityScore' && <span className="text-amber-400">↓</span>}
                   </div>
                   )}
-                  {colVisible.ex && (
-                  <div 
-                    className="w-10 text-center cursor-pointer hover:text-slate-300 transition-colors flex items-center justify-center gap-1"
-                    onClick={() => setSortBy(sortBy === 'explosiveScore' ? 'compositeScore' : 'explosiveScore')}
-                    title="Explosive Growth Potential"
-                  >
-                    Ex
-                    {sortBy === 'explosiveScore' && <span className="text-pink-400">↓</span>}
-                  </div>
-                  )}
                   {colVisible.tm && (
                   <div 
                     className="w-10 text-center cursor-pointer hover:text-slate-300 transition-colors flex items-center justify-center gap-1"
@@ -4583,16 +4593,6 @@ Respond with ONLY a JSON array:
                   >
                     Tm
                     {sortBy === 'teamScore' && <span className="text-purple-400">↓</span>}
-                  </div>
-                  )}
-                  {colVisible.pr && (
-                  <div 
-                    className="w-10 text-center cursor-pointer hover:text-slate-300 transition-colors flex items-center justify-center gap-1"
-                    onClick={() => setSortBy(sortBy === 'parabolicScore' ? 'compositeScore' : 'parabolicScore')}
-                    title="Parabolic Continuation Score"
-                  >
-                    Pr
-                    {sortBy === 'parabolicScore' && <span className="text-green-400">↓</span>}
                   </div>
                   )}
                   {colVisible.vl && (
@@ -4728,28 +4728,6 @@ Respond with ONLY a JSON array:
                           <p className="text-xs text-slate-500 truncate">{s.name}</p>
                         </div>
                         <div className="text-right w-24"><p className="mono text-sm font-semibold text-slate-200">${s.price?.toFixed(2)}</p><p className="text-xs text-indigo-400 mono">${s.marketCap}M</p></div>
-                        {colVisible.ext && (<>
-                        {/* Extended Hours (Pre-Market or After-Hours) */}
-                        <div className="w-14 text-center">
-                          {s.preMarketChange !== null && s.preMarketChange !== undefined ? (
-                            <div>
-                              <span className="text-xs font-bold mono" style={{ color: s.preMarketChange >= 0 ? '#22d3ee' : '#f87171' }}>
-                                {s.preMarketChange >= 0 ? '+' : ''}{s.preMarketChange.toFixed(1)}%
-                              </span>
-                              <p className="text-[9px] text-slate-500">PRE</p>
-                            </div>
-                          ) : s.afterHoursChange !== null && s.afterHoursChange !== undefined ? (
-                            <div>
-                              <span className="text-xs font-bold mono" style={{ color: s.afterHoursChange >= 0 ? '#22d3ee' : '#f87171' }}>
-                                {s.afterHoursChange >= 0 ? '+' : ''}{s.afterHoursChange.toFixed(1)}%
-                              </span>
-                              <p className="text-[9px] text-slate-500">AH</p>
-                            </div>
-                          ) : (
-                            <span className="text-xs text-slate-600">—</span>
-                          )}
-                        </div>
-                        </>)}
                         {colVisible.netCash && <div className="w-16 text-center"><NetCashBadge amount={s.netCash} hasData={s.hasFinancials} /></div>}
                         {colVisible.insider && <div className="w-20 text-center"><InsiderBadge data={s.lastInsiderPurchase} /></div>}
                         {colVisible.sg && (<>
@@ -4770,24 +4748,6 @@ Respond with ONLY a JSON array:
                           )}
                         </div>
                         </>)}
-                        {colVisible.ex && (<>
-                        {/* Explosive Growth Score */}
-                        <div className="w-10 text-center">
-                          {s.explosiveScore !== null && s.explosiveScore !== undefined ? (
-                            <span 
-                              className="text-[10px] font-bold mono px-1 py-0.5 rounded"
-                              style={{ 
-                                background: s.explosiveScore >= 70 ? 'rgba(236,72,153,0.3)' : s.explosiveScore >= 50 ? 'rgba(236,72,153,0.2)' : 'rgba(100,116,139,0.2)',
-                                color: s.explosiveScore >= 70 ? '#f472b6' : s.explosiveScore >= 50 ? '#f9a8d4' : '#94a3b8'
-                              }}
-                            >
-                              {s.explosiveScore}
-                            </span>
-                          ) : (
-                            <span className="text-xs text-slate-600">—</span>
-                          )}
-                        </div>
-                        </>)}
                         {colVisible.tm && (<>
                         {/* Team Score */}
                         <div className="w-10 text-center">
@@ -4800,24 +4760,6 @@ Respond with ONLY a JSON array:
                               }}
                             >
                               {s.teamScore}
-                            </span>
-                          ) : (
-                            <span className="text-xs text-slate-600">—</span>
-                          )}
-                        </div>
-                        </>)}
-                        {colVisible.pr && (<>
-                        {/* Parabolic Score */}
-                        <div className="w-10 text-center">
-                          {s.parabolicScore !== null && s.parabolicScore !== undefined ? (
-                            <span 
-                              className="text-[10px] font-bold mono px-1 py-0.5 rounded"
-                              style={{ 
-                                background: s.parabolicScore >= 70 ? 'rgba(34,197,94,0.3)' : s.parabolicScore >= 50 ? 'rgba(34,197,94,0.2)' : s.parabolicScore >= 30 ? 'rgba(245,158,11,0.2)' : 'rgba(239,68,68,0.2)',
-                                color: s.parabolicScore >= 70 ? '#4ade80' : s.parabolicScore >= 50 ? '#86efac' : s.parabolicScore >= 30 ? '#fbbf24' : '#f87171'
-                              }}
-                            >
-                              {s.parabolicScore}
                             </span>
                           ) : (
                             <span className="text-xs text-slate-600">—</span>
@@ -5019,21 +4961,29 @@ Respond with ONLY a JSON array:
                             </div>
                           )}
 
-                          {/* Momentum + Options analysis details */}
+                          {/* Parabolic Growth / Momentum / Buyout details */}
                           {[
-                            { field: 'breakoutAnalysis', scoreField: 'breakoutScore', title: 'Breakout Setup Analysis', color: '#fb923c', bg: 'rgba(251,146,60,' },
-                            { field: 'catalystAnalysis', scoreField: 'catalystScore', title: 'Catalyst Analysis', color: '#fbbf24', bg: 'rgba(245,158,11,' },
-                            { field: 'squeezeAnalysis', scoreField: 'squeezeScore', title: 'Squeeze Analysis', color: '#f87171', bg: 'rgba(239,68,68,' },
-                            { field: 'earningsMomentumAnalysis', scoreField: 'earningsMomentumScore', title: 'Earnings Momentum Analysis', color: '#34d399', bg: 'rgba(16,185,129,' },
-                            { field: 'optionsAnalysis', scoreField: 'optionsScore', title: 'Options Play Analysis', color: '#22d3ee', bg: 'rgba(34,211,238,' },
+                            { field: 'parabolicGrowthAnalysis', scoreField: 'parabolicGrowthScore', title: 'Parabolic Growth Analysis', color: '#4ade80', bg: 'rgba(74,222,128,', subs: [] },
+                            { field: 'momentumAnalysis', scoreField: 'momentumScore', title: 'Momentum Analysis (3-part)', color: '#fb923c', bg: 'rgba(251,146,60,', subs: [
+                              { label: 'Chart', f: 'momentumChartScore' }, { label: 'Continuation', f: 'momentumContinuationScore' }, { label: 'Room+Moat', f: 'momentumRoomMoatScore' },
+                            ]},
+                            { field: 'buyoutAnalysis', scoreField: 'buyoutScore', title: 'Buyout Likelihood Analysis', color: '#fbbf24', bg: 'rgba(251,191,36,', subs: [
+                              { label: 'People', f: 'buyoutPeopleScore' }, { label: 'Intent', f: 'buyoutIntentScore' }, { label: 'Buzz', f: 'buyoutBuzzScore' }, { label: 'Fit', f: 'buyoutFitScore' },
+                            ]},
+                            { field: 'passionAnalysis', scoreField: 'passionScore', title: 'Passion Analysis (3-part)', color: '#f472b6', bg: 'rgba(244,114,182,', subs: [
+                              { label: 'CEO', f: 'passionCeoScore' }, { label: 'Public', f: 'passionPublicScore' }, { label: 'Vibes', f: 'passionVibesScore' },
+                            ]},
                           ].map(d => s[d.field] ? (
                             <div key={d.field} className="mb-4 p-4 rounded-xl border" style={{ background: `${d.bg}0.08)`, borderColor: `${d.bg}0.3)` }}>
-                              <h4 className="text-sm font-semibold mb-2 flex items-center gap-2" style={{ color: d.color }}>
+                              <h4 className="text-sm font-semibold mb-2 flex items-center gap-2 flex-wrap" style={{ color: d.color }}>
                                 <BarChart3 className="w-4 h-4" />
                                 {d.title}
                                 {s[d.scoreField] !== null && s[d.scoreField] !== undefined && (
                                   <span className="ml-2 px-2 py-0.5 rounded text-xs font-bold" style={{ background: `${d.bg}0.2)`, color: d.color }}>{s[d.scoreField]}/100</span>
                                 )}
+                                {d.subs.filter(sub => s[sub.f] !== null && s[sub.f] !== undefined).map(sub => (
+                                  <span key={sub.f} className="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-800/70 text-slate-300">{sub.label} {s[sub.f]}</span>
+                                ))}
                               </h4>
                               <p className="text-sm text-slate-200 leading-relaxed whitespace-pre-wrap">{s[d.field]}</p>
                             </div>
@@ -5054,7 +5004,7 @@ Respond with ONLY a JSON array:
                           
                           {!s.aiAnalysis && !s.explosiveAnalysis && !s.teamAnalysis && !s.technicalAnalysis && !s.parabolicAnalysis && !s.valuationAnalysis && i < 10 && (
                             <div className="mb-4 p-3 rounded-xl border" style={{ background: 'rgba(99,102,241,0.05)', borderColor: 'rgba(99,102,241,0.2)' }}>
-                              <p className="text-sm text-slate-400 flex items-center gap-2"><Sparkles className="w-4 h-4 text-indigo-400" />Run AI scans (Conviction, Explosive, Team, C&H, Parabolic, Valuation) to analyze</p>
+                              <p className="text-sm text-slate-400 flex items-center gap-2"><Sparkles className="w-4 h-4 text-indigo-400" />Run AI scans (Conviction, C&H, Team, Valuation, Parabolic Growth, Momentum, Buyout) to analyze</p>
                             </div>
                           )}
                           
