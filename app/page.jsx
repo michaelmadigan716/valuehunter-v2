@@ -1956,10 +1956,8 @@ export default function StockResearchApp() {
   const [parabolicCount, setParabolicCount] = useState(0);
   const [valuationCount, setValuationCount] = useState(0);
   const FALLBACK_MODELS = [
-    { id: 'grok-4.6', label: 'Grok 4.6 (Smartest)' },
-    { id: 'grok-4.3', label: 'Grok 4.3 (Balanced)' },
-    { id: 'grok-4.20', label: 'Grok 4.20 (Fast)' },
-    { id: 'grok-4.20-non-reasoning', label: 'Grok 4.20 Lite (Fastest)' },
+    { id: 'grok-4.6', label: 'Smartest (grok-4.6)' },
+    { id: 'grok-4.3', label: 'Fastest (grok-4.3)' },
   ];
   const [availableModels, setAvailableModels] = useState(null);
   const [grokModel, setGrokModel] = useState('grok-4.6');
@@ -4179,6 +4177,48 @@ Respond with ONLY a JSON array:
       <div className="max-w-[1800px] mx-auto px-6 py-6 min-h-screen">
         {error && <div className="mb-4 p-4 rounded-xl border flex items-center gap-3" style={{ background: 'rgba(239,68,68,0.1)', borderColor: 'rgba(239,68,68,0.3)' }}><AlertCircle className="w-5 h-5 text-red-400" /><p className="text-sm text-red-300 flex-1">{error}</p><button onClick={() => setError(null)} className="text-red-400"><X className="w-4 h-4" /></button></div>}
         {resumeBanner && <div className="mb-4 p-4 rounded-xl border flex items-center gap-3" style={{ background: 'rgba(245,158,11,0.1)', borderColor: 'rgba(245,158,11,0.3)' }}><RefreshCw className="w-5 h-5 text-amber-400 animate-spin" /><p className="text-sm text-amber-300 flex-1">{resumeBanner}</p><button onClick={() => { if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current); clearCheckpoint(); setResumeBanner(null); }} className="px-3 py-1 rounded-lg text-xs border text-amber-400" style={{ borderColor: 'rgba(245,158,11,0.4)' }}>Cancel</button></div>}
+
+        {/* Floating scan activity panel */}
+        {(isScanning || isScanningSupplyChain || isAnalyzingAI || isComputingMetrics || pausedRun) && (
+          <div className="fixed bottom-4 right-4 z-50 w-80 rounded-xl border p-3 space-y-3" style={{ background: 'rgba(15,23,42,0.97)', borderColor: 'rgba(51,65,85,0.7)', boxShadow: '0 12px 32px rgba(0,0,0,0.5)' }}>
+            <p className="text-[10px] uppercase tracking-wide text-slate-500 font-semibold">Scan Activity</p>
+            {isScanning && (
+              <div>
+                <div className="flex justify-between text-xs mb-1"><span className="text-indigo-300">Base Scan</span><span className="text-slate-500 mono">{scanProgress.current}/{scanProgress.total || '...'}</span></div>
+                <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(30,41,59,0.8)' }}><div className="h-full rounded-full transition-all" style={{ width: `${scanProgress.total ? (scanProgress.current / scanProgress.total) * 100 : 5}%`, background: 'linear-gradient(90deg, #6366f1, #8b5cf6)' }} /></div>
+                {scanProgress.phase && <p className="text-[10px] text-slate-500 mt-1 truncate">{scanProgress.phase}</p>}
+              </div>
+            )}
+            {isScanningSupplyChain && (
+              <div>
+                <div className="flex justify-between text-xs mb-1"><span className="text-amber-300">Singularity Scan</span><span className="text-slate-500 mono">{supplyChainProgress.current}/{supplyChainProgress.total || '...'}</span></div>
+                <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(30,41,59,0.8)' }}><div className="h-full rounded-full transition-all" style={{ width: `${supplyChainProgress.total ? (supplyChainProgress.current / supplyChainProgress.total) * 100 : 5}%`, background: 'linear-gradient(90deg, #f59e0b, #f97316)' }} /></div>
+              </div>
+            )}
+            {isAnalyzingAI && agentRunning && (() => { const ag = AGENT_REGISTRY.find(a => a.id === agentRunning); return (
+              <div>
+                <div className="flex justify-between text-xs mb-1"><span style={{ color: ag?.color || '#34d399' }}>{ag?.label || 'AI Scan'}</span><span className="text-slate-500 mono">{aiProgress.current}/{aiProgress.total}</span></div>
+                <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(30,41,59,0.8)' }}><div className="h-full rounded-full transition-all" style={{ width: `${aiProgress.total ? (aiProgress.current / aiProgress.total) * 100 : 5}%`, background: ag?.color || '#34d399' }} /></div>
+                <div className="flex gap-2 mt-2">
+                  <button onClick={() => { scanControlRef.current = 'pause'; setStatus({ type: 'loading', msg: 'Pausing after current stock...' }); }} className="flex-1 px-2 py-1 rounded text-[10px] font-semibold border" style={{ borderColor: 'rgba(245,158,11,0.4)', color: '#fbbf24' }}>Pause</button>
+                  <button onClick={() => { scanControlRef.current = 'cancel'; setStatus({ type: 'loading', msg: 'Cancelling after current stock...' }); }} className="flex-1 px-2 py-1 rounded text-[10px] font-semibold border" style={{ borderColor: 'rgba(239,68,68,0.4)', color: '#f87171' }}>Cancel</button>
+                </div>
+              </div>
+            ); })()}
+            {isComputingMetrics && (
+              <div className="flex items-center gap-2 text-xs text-cyan-300"><RefreshCw className="w-3 h-3 animate-spin" />Computing market data...</div>
+            )}
+            {pausedRun && !isAnalyzingAI && (
+              <div>
+                <div className="flex justify-between text-xs mb-1"><span className="text-slate-300">Paused scan</span><span className="text-slate-500 mono">{Object.values(pausedRun.completed || {}).reduce((a, arr) => a + arr.length, 0)}/{pausedRun.agentIds.length * pausedRun.tickers.length}</span></div>
+                <div className="flex gap-2 mt-1">
+                  <button onClick={() => { const pr = pausedRun; setPausedRun(null); runAgentQueue(pr.agentIds, pr.tickers, pr.completed, { model: pr.model }); }} className="flex-1 px-2 py-1 rounded text-[10px] font-semibold border" style={{ borderColor: 'rgba(16,185,129,0.4)', color: '#34d399' }}>Resume</button>
+                  <button onClick={() => { clearCheckpoint(); setPausedRun(null); setStatus({ type: 'live', msg: 'Paused scan discarded' }); }} className="flex-1 px-2 py-1 rounded text-[10px] font-semibold border" style={{ borderColor: 'rgba(239,68,68,0.4)', color: '#f87171' }}>Discard</button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {(isScanning || isAnalyzingAI) && (
           <div className="mb-6 p-5 rounded-2xl border" style={{ background: isAnalyzingAI ? 'rgba(239,68,68,0.1)' : 'rgba(99,102,241,0.1)', borderColor: isAnalyzingAI ? 'rgba(239,68,68,0.3)' : 'rgba(99,102,241,0.3)' }}>

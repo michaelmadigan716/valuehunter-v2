@@ -13,18 +13,24 @@ export async function GET() {
     });
     if (!res.ok) return Response.json({ models: [] });
     const data = await res.json();
-    const models = (data.models || [])
-      .filter(m => /^grok-\d/.test(m.id) && !/imagine|multi-agent|build|code/.test(m.id))
+    const candidates = (data.models || [])
+      .filter(m => /^grok-\d/.test(m.id) && !/imagine|multi-agent|build|code|non-reasoning/.test(m.id))
       .map(m => {
-        const clean = (m.aliases || []).filter(a => /^grok-[\d.]+(-non-reasoning)?$/.test(a)).sort((a, b) => a.length - b.length)[0] || m.id;
-        const out = m.completion_text_token_price || 0;
-        const tier = out >= 60000 ? 'Smartest' : /non-reasoning/.test(clean) ? 'Fastest' : 'Fast';
-        return { id: clean, label: `${clean} (${tier})`, out };
-      })
-      .sort((a, b) => b.out - a.out || b.id.localeCompare(a.id));
-    // de-dupe by id
+        const clean = (m.aliases || []).filter(a => /^grok-[\d.]+$/.test(a)).sort((a, b) => a.length - b.length)[0] || m.id;
+        return { id: clean, out: m.completion_text_token_price || 0 };
+      });
+    // De-dupe, then pick exactly two: the priciest (smartest) and the
+    // cheapest reasoning model (fastest) - two clear choices, auto-upgrading
     const seen = new Set();
-    return Response.json({ models: models.filter(m => !seen.has(m.id) && seen.add(m.id)) });
+    const unique = candidates.filter(m => !seen.has(m.id) && seen.add(m.id));
+    const byVersion = (a, b) => parseFloat(b.id.replace('grok-', '')) - parseFloat(a.id.replace('grok-', ''));
+    const smartest = [...unique].sort((a, b) => b.out - a.out || byVersion(a, b))[0];
+    const fastest = [...unique].filter(m => m.id !== smartest?.id).sort((a, b) => a.out - b.out || byVersion(a, b))[0];
+    const models = [
+      smartest && { id: smartest.id, label: `Smartest (${smartest.id})` },
+      fastest && { id: fastest.id, label: `Fastest (${fastest.id})` },
+    ].filter(Boolean);
+    return Response.json({ models });
   } catch (e) {
     return Response.json({ models: [] });
   }
