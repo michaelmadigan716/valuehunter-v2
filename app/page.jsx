@@ -52,6 +52,21 @@ const analysisAgents = [
 // ============================================
 
 async function getFilteredTickers(stockLimit = 0) {
+  // Prefer the daily-refreshed cloud universe (new listings in, delisted out);
+  // fall back to live Polygon pagination if it isn't available.
+  try {
+    const res = await fetch('/api/main-session?universe=1');
+    if (res.ok) {
+      const data = await res.json();
+      const uni = data.universe;
+      if (uni && uni.tickers && Object.keys(uni.tickers).length > 1000) {
+        const list = Object.keys(uni.tickers).sort().map(t => ({ ticker: t, name: uni.tickers[t].name }));
+        console.log(`Universe from cloud: ${list.length} tickers (prices ${uni.prices_date || 'n/a'})`);
+        return stockLimit > 0 ? list.slice(0, stockLimit) : list;
+      }
+    }
+  } catch (e) { console.warn('Cloud universe unavailable, falling back to Polygon pagination'); }
+
   const tickers = [];
   let nextUrl = `https://api.polygon.io/v3/reference/tickers?market=stocks&active=true&limit=1000&apiKey=${POLYGON_KEY}`;
   let pageCount = 0;
@@ -2104,6 +2119,64 @@ export default function StockResearchApp() {
   const [agentRunning, setAgentRunning] = useState(null);
   const scanControlRef = React.useRef(null); // null | 'pause' | 'cancel'
   const [pausedRun, setPausedRun] = useState(null);
+
+  // Main Session (cloud) - one canonical session in KV, synced across devices
+  const [useMainSession, setUseMainSession] = useState(true);
+  const useMainSessionRef = React.useRef(true);
+  useEffect(() => {
+    try { const v = localStorage.getItem('singularityhunter_use_cloud'); if (v !== null) { setUseMainSession(v === '1'); useMainSessionRef.current = v === '1'; } } catch (e) {}
+  }, []);
+  const toggleMainSession = () => setUseMainSession(prev => {
+    const next = !prev; useMainSessionRef.current = next;
+    try { localStorage.setItem('singularityhunter_use_cloud', next ? '1' : '0'); } catch (e) {}
+    return next;
+  });
+  const [universeMeta, setUniverseMeta] = useState(null);
+  const [isRefreshingData, setIsRefreshingData] = useState(false);
+  const lastCloudSyncRef = React.useRef(0);
+
+  const syncMainToCloud = (force = false) => {
+    if (!useMainSessionRef.current) return;
+    const now = Date.now();
+    if (!force && now - lastCloudSyncRef.current < 60000) return;
+    lastCloudSyncRef.current = now;
+    try {
+      fetch('/api/main-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stocks: stocksRef.current, weights, aiWeights }),
+      }).catch(() => {});
+    } catch (e) {}
+  };
+
+  const refreshMarketData = async () => {
+    if (isRefreshingData) return;
+    setIsRefreshingData(true);
+    setStatus({ type: 'loading', msg: 'Refreshing market data (universe, prices, insiders)...' });
+    try {
+      for (let hop = 0; hop < 12; hop++) {
+        const res = await fetch('/api/refresh', { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || res.status);
+        if (data.running) { await new Promise(r => setTimeout(r, 15000)); continue; }
+        setStatus({ type: 'loading', msg: `Refreshing market data... stage: ${data.now_at_stage}` });
+        if (data.done) break;
+      }
+      const meta = await fetch('/api/main-session').then(r => r.json()).catch(() => null);
+      if (meta?.universe_meta) setUniverseMeta(meta.universe_meta);
+      if (meta?.session && useMainSessionRef.current) {
+        stocksRef.current = calcScores(meta.session.stocks, weights, aiWeights);
+        setStocks(stocksRef.current);
+        setCurrentSessionId('main');
+        sessionIdRef.current = 'main';
+      }
+      setStatus({ type: 'live', msg: 'Market data refreshed' });
+    } catch (e) {
+      setError(`Data refresh failed: ${e.message}`);
+      setStatus({ type: 'error', msg: 'Refresh failed' });
+    }
+    setIsRefreshingData(false);
+  };
   const [agentScanCount, setAgentScanCount] = useState(25);
   const [isComputingMetrics, setIsComputingMetrics] = useState(false);
   const [resumeBanner, setResumeBanner] = useState(null);
@@ -2142,6 +2215,7 @@ export default function StockResearchApp() {
     try {
       saveSession(sid, stocksRef.current, { phase: 'in-progress', current: 0, total: 0, found: stocksRef.current.length }, `Scan ${new Date().toLocaleDateString()} (${stocksRef.current.length} stocks)`);
     } catch (e) {}
+    syncMainToCloud();
   };
 
   // Runs each agent over the ticker list sequentially, checkpointing after
@@ -2213,6 +2287,7 @@ export default function StockResearchApp() {
     }
     clearCheckpoint();
     setPausedRun(null);
+    syncMainToCloud(true);
     setStatus({ type: 'live', msg: `${agents.map(a => a.label).join(' + ')} scan complete` });
     return 'done';
   };
@@ -2282,6 +2357,31 @@ export default function StockResearchApp() {
     } else {
       setStatus({ type: 'ready', msg: 'Click Run Base Scan' });
     }
+
+    // Load the cloud Main Session (overrides local cache when enabled)
+    (async () => {
+      try {
+        if (localStorage.getItem('singularityhunter_use_cloud') === '0') return;
+        if (localStorage.getItem(CHECKPOINT_KEY)) return; // don't clobber a resumable scan
+        const res = await fetch('/api/main-session');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.universe_meta) setUniverseMeta(data.universe_meta);
+        if (!data.session || !Array.isArray(data.session.stocks) || data.session.stocks.length === 0) {
+          // No cloud session yet - seed it from the local one
+          setTimeout(() => { if (stocksRef.current.length > 0) syncMainToCloud(true); }, 3000);
+        }
+        if (data.session && Array.isArray(data.session.stocks) && data.session.stocks.length > 0) {
+          stocksRef.current = calcScores(data.session.stocks, weights, aiWeights);
+          setStocks(stocksRef.current);
+          setCurrentSessionId('main');
+          sessionIdRef.current = 'main';
+          setLastUpdate(new Date(data.session.timestamp));
+          setCacheAge(Date.now() - data.session.timestamp);
+          setStatus({ type: 'cached', msg: `${data.session.stocks.length} stocks (Main Session)` });
+        }
+      } catch (e) {}
+    })();
 
     // Resume an interrupted agent scan (refresh/deploy mid-scan)
     try {
@@ -3156,6 +3256,7 @@ Respond with ONLY a JSON array:
       // Save to session
       const sessionName = `${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()} (${scoredStocks.length} stocks)`;
       saveSession(newSessionId, scoredStocks, scanStats, sessionName);
+      syncMainToCloud(true);
       setSessions(getAllSessions());
       
       setLastUpdate(new Date());
@@ -3450,6 +3551,7 @@ Respond with ONLY a JSON array:
       const finalScanStats = { phase: 'complete', current: allTickers.length, total: allTickers.length, found: currentStocks.length };
       const sessionName = `Full Spectrum ${new Date().toLocaleDateString()} (${currentStocks.length} stocks)`;
       saveSession(newSessionId, currentStocks, finalScanStats, sessionName);
+      syncMainToCloud(true);
       setSessions(getAllSessions());
       
       setLastUpdate(new Date());
@@ -4052,6 +4154,36 @@ Respond with ONLY a JSON array:
                 </div>
               </div>
               
+              {/* Cloud Main Session + daily data refresh */}
+              <div className="mb-3 p-3 rounded-lg border" style={{ background: 'rgba(34,211,238,0.05)', borderColor: 'rgba(34,211,238,0.2)' }}>
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <span className="text-sm text-slate-200">Main Session (cloud)</span>
+                    <p className="text-xs text-slate-500">One shared session synced to the cloud. OFF = classic local sessions only.</p>
+                  </div>
+                  <button
+                    onClick={toggleMainSession}
+                    className="w-12 h-6 rounded-full transition-colors"
+                    style={{ background: useMainSession ? '#10b981' : 'rgba(51,65,85,0.5)' }}
+                  >
+                    <div className="w-5 h-5 rounded-full bg-white transition-transform" style={{ transform: useMainSession ? 'translateX(26px)' : 'translateX(2px)' }} />
+                  </button>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs text-slate-500">
+                    {universeMeta ? `Universe: ${universeMeta.count?.toLocaleString?.() || universeMeta.count} tickers - prices ${universeMeta.prices_date || 'n/a'} - auto-refreshes daily` : 'No universe data yet - run a refresh to build it'}
+                  </p>
+                  <button
+                    onClick={refreshMarketData}
+                    disabled={isRefreshingData}
+                    className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold border flex items-center gap-1.5"
+                    style={{ background: 'rgba(34,211,238,0.12)', borderColor: 'rgba(34,211,238,0.4)', color: '#67e8f9', opacity: isRefreshingData ? 0.6 : 1 }}
+                  >
+                    {isRefreshingData ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" />Refreshing...</> : <><RefreshCw className="w-3.5 h-3.5" />Refresh now</>}
+                  </button>
+                </div>
+              </div>
+
               {/* Market Cap Settings */}
               <div className="flex items-center justify-between p-3 rounded-lg border mb-3" style={{ background: 'rgba(16,185,129,0.05)', borderColor: 'rgba(16,185,129,0.2)' }}>
                 <div>
