@@ -466,7 +466,7 @@ async function getOptionsSentiment(ticker) {
 // ============================================
 // GROK AI ANALYSIS - Insider Conviction Focus
 // ============================================
-async function getAIAnalysis(stock, model = 'grok-4.5') {
+async function getAIAnalysis(stock, model = 'grok-4.6') {
   console.log(`Starting Grok Conviction analysis for ${stock.ticker} with ${model}...`);
   
   try {
@@ -525,7 +525,7 @@ INSIDER_CONVICTION: [number from 0 to 100]`;
 // ============================================
 // TECHNICAL ANALYSIS - Cup and Handle Deep Dive
 // ============================================
-async function getTechnicalAnalysis(stock, model = 'grok-4.5') {
+async function getTechnicalAnalysis(stock, model = 'grok-4.6') {
   console.log(`Starting Technical Analysis for ${stock.ticker} with ${model}...`);
   
   try {
@@ -702,7 +702,7 @@ CUP_HANDLE_SCORE: [0-100]`;
 // ============================================
 // EXPLOSIVE GROWTH SCAN - Singularity Contract/Demand Potential
 // ============================================
-async function getExplosiveGrowthAnalysis(stock, model = 'grok-4.5') {
+async function getExplosiveGrowthAnalysis(stock, model = 'grok-4.6') {
   console.log(`Running Explosive Growth Scan for ${stock.ticker} with ${model}...`);
   
   try {
@@ -794,7 +794,7 @@ EXPLOSIVE_SCORE: [0-100]`;
 // ============================================
 // TEAM ANALYSIS - Management & Leadership Evaluation
 // ============================================
-async function getTeamAnalysis(stock, model = 'grok-4.5') {
+async function getTeamAnalysis(stock, model = 'grok-4.6') {
   console.log(`Running Team Analysis for ${stock.ticker} with ${model}...`);
   
   try {
@@ -890,7 +890,7 @@ TEAM_SCORE: [0-100]`;
 // ============================================
 // PARABOLIC CONTINUATION SCAN - Accumulation vs Pump & Dump
 // ============================================
-async function getParabolicAnalysis(stock, model = 'grok-4.5') {
+async function getParabolicAnalysis(stock, model = 'grok-4.6') {
   console.log(`Running Parabolic Continuation Scan for ${stock.ticker} with ${model}...`);
   
   try {
@@ -978,7 +978,7 @@ PARABOLIC_SCORE: [0-100]`;
 // ============================================
 // VALUATION ANALYSIS - Depressed Stock + Catalyst Potential
 // ============================================
-async function getValuationAnalysis(stock, model = 'grok-4.5') {
+async function getValuationAnalysis(stock, model = 'grok-4.6') {
   console.log(`Running Valuation Analysis for ${stock.ticker} with ${model}...`);
   
   try {
@@ -1213,7 +1213,7 @@ async function computeMarketMetrics(stockList, onProgress) {
 // ============================================
 // NEW AI AGENT SCANS - Momentum + Options groups
 // ============================================
-async function getBreakoutAnalysis(stock, model = 'grok-4.5') {
+async function getBreakoutAnalysis(stock, model = 'grok-4.6') {
   try {
     const bars = await fetchDailyBars(stock.ticker, 200);
     if (bars.length < 30) return { breakoutAnalysis: 'Insufficient price history', breakoutScore: null };
@@ -1237,7 +1237,7 @@ End with: BREAKOUT_SCORE: [0-100]`;
   }
 }
 
-async function getCatalystAnalysis(stock, model = 'grok-4.5') {
+async function getCatalystAnalysis(stock, model = 'grok-4.6') {
   try {
     const prompt = `Identify RECENT and UPCOMING CATALYSTS for ${stock.ticker} (${stock.name}), sector: ${stock.sector || 'Unknown'}, price $${stock.price?.toFixed(2)}, market cap $${stock.marketCap ? Math.round(stock.marketCap / 1000000) + 'M' : 'unknown'}.
 Search for: earnings dates and results, contract wins, FDA/regulatory decisions, product launches, analyst actions, sector momentum, index inclusion, insider/institutional buying news.
@@ -1252,7 +1252,7 @@ End with: CATALYST_SCORE: [0-100]`;
   }
 }
 
-async function getSqueezeAnalysis(stock, model = 'grok-4.5') {
+async function getSqueezeAnalysis(stock, model = 'grok-4.6') {
   try {
     let floatInfo = '';
     try {
@@ -1280,7 +1280,7 @@ End with: SQUEEZE_SCORE: [0-100]`;
   }
 }
 
-async function getEarningsMomentumAnalysis(stock, model = 'grok-4.5') {
+async function getEarningsMomentumAnalysis(stock, model = 'grok-4.6') {
   try {
     let surprises = '';
     try {
@@ -1306,7 +1306,7 @@ End with: EARNINGS_MOMENTUM_SCORE: [0-100]`;
   }
 }
 
-async function getOptionsPlayAnalysis(stock, model = 'grok-4.5') {
+async function getOptionsPlayAnalysis(stock, model = 'grok-4.6') {
   try {
     // Volatility context: reuse computed metrics when present, else compute
     let vol = { realizedVol: stock.realizedVol, atrPct: stock.atrPct, volContraction: stock.volContraction };
@@ -1337,7 +1337,7 @@ End with: OPTIONS_SCORE: [0-100]`;
 // ============================================
 // PARABOLIC GROWTH - merged Explosive + Parabolic scan
 // ============================================
-async function getParabolicGrowthAnalysis(stock, model = 'grok-4.5') {
+async function getParabolicGrowthAnalysis(stock, model = 'grok-4.6') {
   try {
     const prompt = `Evaluate PARABOLIC GROWTH potential for ${stock.ticker} (${stock.name}), sector: ${stock.sector || 'Unknown'}, price $${stock.price?.toFixed(2)}, market cap $${stock.marketCap ? Math.round(stock.marketCap / 1000000) + 'M' : 'unknown'}${stock.change != null ? `, today ${stock.change >= 0 ? '+' : ''}${stock.change.toFixed(1)}%` : ''}.
 
@@ -1360,7 +1360,7 @@ End with: PARABOLIC_GROWTH_SCORE: [0-100]`;
 // MOMENTUM - one stat from 3 sub-scans:
 // chart quality, continuation odds, market room + moat
 // ============================================
-async function getMomentumAnalysis(stock, model = 'grok-4.5') {
+async function getMomentumAnalysis(stock, model = 'grok-4.6') {
   try {
     // Shared price context for the sub-scans
     let chartBlock = 'No price history available.';
@@ -1427,7 +1427,7 @@ End with: ROOM_MOAT_SCORE: [0-100]`;
 // BUYOUT - acquisition-likelihood score from multiple angles,
 // with a conditional deep-dive on key people
 // ============================================
-async function getBuyoutAnalysis(stock, model = 'grok-4.5') {
+async function getBuyoutAnalysis(stock, model = 'grok-4.6') {
   try {
     const base = `${stock.ticker} (${stock.name}), sector ${stock.sector || 'Unknown'}, price $${stock.price?.toFixed(2)}, market cap $${stock.marketCap ? Math.round(stock.marketCap / 1000000) + 'M' : 'unknown'}.`;
 
@@ -1515,7 +1515,7 @@ End with: PEOPLE_DEEP_SCORE: [0-100]`;
 // PASSION - leadership passion score from 3 sub-scans:
 // CEO quality/commitment, public communication, interview vibes
 // ============================================
-async function getPassionAnalysis(stock, model = 'grok-4.5') {
+async function getPassionAnalysis(stock, model = 'grok-4.6') {
   try {
     const base = `${stock.ticker} (${stock.name}), sector ${stock.sector || 'Unknown'}, market cap $${stock.marketCap ? Math.round(stock.marketCap / 1000000) + 'M' : 'unknown'}.`;
 
@@ -1955,7 +1955,19 @@ export default function StockResearchApp() {
   const [teamCount, setTeamCount] = useState(0);
   const [parabolicCount, setParabolicCount] = useState(0);
   const [valuationCount, setValuationCount] = useState(0);
-  const [grokModel, setGrokModel] = useState('grok-4.5');
+  const FALLBACK_MODELS = [
+    { id: 'grok-4.6', label: 'Grok 4.6 (Smartest)' },
+    { id: 'grok-4.3', label: 'Grok 4.3 (Balanced)' },
+    { id: 'grok-4.20', label: 'Grok 4.20 (Fast)' },
+    { id: 'grok-4.20-non-reasoning', label: 'Grok 4.20 Lite (Fastest)' },
+  ];
+  const [availableModels, setAvailableModels] = useState(null);
+  const [grokModel, setGrokModel] = useState('grok-4.6');
+  useEffect(() => {
+    fetch('/api/grok').then(r => r.ok ? r.json() : null).then(d => {
+      if (d?.models?.length) setAvailableModels(d.models);
+    }).catch(() => {});
+  }, []);
   const [singularityBatchSize, setSingularityBatchSize] = useState(15);
   
   // Singularity Gate - minimum singularity score required for AI scans to run on a stock
@@ -3067,8 +3079,9 @@ Respond with ONLY a JSON array:
       const qualifiedTickers = [];
       
       // Use global settings for market cap or defaults
-      const minMC = globalSettings.useCustomMarketCap ? globalSettings.minMarketCap * 1_000_000 : MIN_MARKET_CAP;
-      const maxMC = globalSettings.useCustomMarketCap ? globalSettings.maxMarketCap * 1_000_000 : MAX_MARKET_CAP;
+      // Toggle OFF = scan every market cap; ON = user's custom range
+      const minMC = globalSettings.useCustomMarketCap ? globalSettings.minMarketCap * 1_000_000 : 0;
+      const maxMC = globalSettings.useCustomMarketCap ? globalSettings.maxMarketCap * 1_000_000 : Infinity;
       
       for (let i = 0; i < allTickers.length; i++) {
         const t = allTickers[i];
@@ -3202,8 +3215,9 @@ Respond with ONLY a JSON array:
       const batchSize = 50;
       
       // Use global settings for market cap or defaults
-      const minMC = globalSettings.useCustomMarketCap ? globalSettings.minMarketCap * 1_000_000 : MIN_MARKET_CAP;
-      const maxMC = globalSettings.useCustomMarketCap ? globalSettings.maxMarketCap * 1_000_000 : MAX_MARKET_CAP;
+      // Toggle OFF = scan every market cap; ON = user's custom range
+      const minMC = globalSettings.useCustomMarketCap ? globalSettings.minMarketCap * 1_000_000 : 0;
+      const maxMC = globalSettings.useCustomMarketCap ? globalSettings.maxMarketCap * 1_000_000 : Infinity;
       
       for (let i = 0; i < allTickers.length; i += batchSize) {
         const batch = allTickers.slice(i, i + batchSize);
@@ -3963,10 +3977,11 @@ Respond with ONLY a JSON array:
                   className="w-full rounded-lg px-3 py-2 text-sm border outline-none"
                   style={{ background: 'rgba(30,41,59,0.5)', borderColor: 'rgba(245,158,11,0.3)', color: '#fbbf24' }}
                 >
-                  <option value="grok-4.5">Grok 4.5 (Smartest)</option>
-                  <option value="grok-4.20">Grok 4.20 (Faster)</option>
+                  {(availableModels || FALLBACK_MODELS).map(m => (
+                    <option key={m.id} value={m.id}>{m.label}</option>
+                  ))}
                 </select>
-                <p className="text-xs text-slate-500 mt-1">Grok 4 is more thorough, Fast Reasoning is quicker but may be less detailed</p>
+                <p className="text-xs text-slate-500 mt-1">List updates automatically as xAI releases new models. Smartest = best analysis, Fastest = cheapest/quickest.</p>
               </div>
             </div>
             
@@ -4041,8 +4056,8 @@ Respond with ONLY a JSON array:
               {/* Market Cap Settings */}
               <div className="flex items-center justify-between p-3 rounded-lg border mb-3" style={{ background: 'rgba(16,185,129,0.05)', borderColor: 'rgba(16,185,129,0.2)' }}>
                 <div>
-                  <span className="text-sm text-slate-200">Custom Market Cap Range</span>
-                  <p className="text-xs text-slate-500">Default: $40M - $400M</p>
+                  <span className="text-sm text-slate-200">Market Cap Filter</span>
+                  <p className="text-xs text-slate-500">OFF = all market caps scanned. ON = only your custom range.</p>
                 </div>
                 <button 
                   onClick={() => setGlobalSettings(p => ({...p, useCustomMarketCap: !p.useCustomMarketCap}))}

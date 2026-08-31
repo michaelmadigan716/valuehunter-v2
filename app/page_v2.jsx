@@ -13,7 +13,7 @@ const SESSIONS_KEY = 'singularity_finder_v2_sessions';
 // Bulk JSON extraction rounds: fast non-reasoning model.
 // Deep per-stock analysis and research: flagship reasoning model.
 const SCAN_MODEL = 'grok-4.20-non-reasoning';
-const DEEP_MODEL = 'grok-4.5';
+const DEEP_MODEL = 'grok-4.6';
 
 // ============================================
 // MEGA STOCKS - Core Singularity Players

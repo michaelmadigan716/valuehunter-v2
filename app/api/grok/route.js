@@ -3,9 +3,37 @@
 
 const DEFAULT_MODEL = 'grok-4.3';
 
+// GET /api/grok - current chat-capable models for the Settings dropdown
+export async function GET() {
+  try {
+    const GROK_KEY = process.env.GROK_API_KEY || process.env.NEXT_PUBLIC_GROK_KEY;
+    if (!GROK_KEY) return Response.json({ models: [] });
+    const res = await fetch('https://api.x.ai/v1/language-models', {
+      headers: { Authorization: `Bearer ${GROK_KEY}` }
+    });
+    if (!res.ok) return Response.json({ models: [] });
+    const data = await res.json();
+    const models = (data.models || [])
+      .filter(m => /^grok-\d/.test(m.id) && !/imagine|multi-agent|build|code/.test(m.id))
+      .map(m => {
+        const clean = (m.aliases || []).filter(a => /^grok-[\d.]+(-non-reasoning)?$/.test(a)).sort((a, b) => a.length - b.length)[0] || m.id;
+        const out = m.completion_text_token_price || 0;
+        const tier = out >= 60000 ? 'Smartest' : /non-reasoning/.test(clean) ? 'Fastest' : 'Fast';
+        return { id: clean, label: `${clean} (${tier})`, out };
+      })
+      .sort((a, b) => b.out - a.out || b.id.localeCompare(a.id));
+    // de-dupe by id
+    const seen = new Set();
+    return Response.json({ models: models.filter(m => !seen.has(m.id) && seen.add(m.id)) });
+  } catch (e) {
+    return Response.json({ models: [] });
+  }
+}
+
 // Retired model names still floating around in old clients/sessions
 const LEGACY_MODELS = {
-  'grok-4': 'grok-4.5',
+  'grok-4': 'grok-4.6',
+  'grok-4.5': 'grok-4.6',
   'grok-4-fast-reasoning': 'grok-4.20',
   'grok-3-mini': 'grok-4.20-non-reasoning',
   'grok-3': 'grok-4.3',
