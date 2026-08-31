@@ -3622,6 +3622,7 @@ Respond with ONLY a JSON array:
               <h1 className="text-2xl font-bold"><span style={{ background: 'linear-gradient(90deg, #f59e0b, #ef4444)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>SingularityHunter</span></h1>
               <p className="text-xs text-slate-500">Hidden Suppliers to AGI • Robotics • Infinite Energy</p>
             </div>
+            <a href="/swing" className="ml-4 px-3 py-1.5 rounded-lg text-xs font-medium border" style={{ background: 'rgba(30,41,59,0.5)', borderColor: 'rgba(51,65,85,0.5)', color: '#94a3b8' }} title="Your trade history - positions, executions, realized P&L">Swing Trade Hunter ↗</a>
           </div>
           <div className="flex items-center gap-3 flex-wrap">
             <div className="flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg border" style={{ 
