@@ -1580,6 +1580,65 @@ End with: VIBES_SCORE: [0-100]`;
 }
 
 // ============================================
+// PLAYBOOKS - the user's proven winning circumstances, scored per stock
+// ============================================
+const DEFAULT_PLAYBOOKS = [
+  {
+    id: 'buyoutSeeker',
+    name: 'Buyout Seeker',
+    description: 'The company is positioning itself to be acquired: recent executive/board hires with M&A, investment banking, or prior-exit backgrounds; management hinting at strategic alternatives or openness to a sale in interviews or filings; sector actively consolidating with a clean, named strategic acquirer who would want their tech, contracts, or market position.',
+  },
+  {
+    id: 'nicheMonopoly',
+    name: 'Niche Monopoly',
+    description: 'The company is the only credible player in a small but real market - a de facto monopoly niche with pricing power, sticky customers, or exclusive technology/regulatory position - and that niche is about to matter much more (new demand wave, regulation, or technology shift).',
+  },
+  {
+    id: 'netCashRecovery',
+    name: 'Net-Cash Recovery',
+    description: 'The stock is stupidly undervalued relative to its net cash position (trading near or below cash minus debt). The business has problems, but management is publicly AWARE of the dire situation and actively executing a recovery plan (cost cuts, pivots, buybacks, new leadership). Any stabilization re-rates the stock multiples higher.',
+  },
+];
+
+async function getPlaybookAnalysis(stock, model = 'grok-4.6', playbooks = DEFAULT_PLAYBOOKS) {
+  try {
+    const pbList = playbooks.map((p, i) => `PLAYBOOK ${i + 1} - ${p.name} [id: ${p.id}]:\n${p.description}`).join('\n\n');
+    const prompt = `Evaluate ${stock.ticker} (${stock.name}), sector ${stock.sector || 'Unknown'}, price $${stock.price?.toFixed(2)}, market cap $${stock.marketCap ? Math.round(stock.marketCap) + 'M' : 'unknown'}${stock.netCash != null ? `, net cash $${(stock.netCash / 1e6).toFixed(1)}M` : ''} against these proven winning setups. Search for current evidence (news, filings, interviews, hires, sector moves) for each.
+
+${pbList}
+
+Historical guardrails from the owner's actual wins: the best entries were under ~$12/share in small caps, and winners took 16+ days to play out - weigh cheap, early-stage setups higher than extended ones.
+
+For EACH playbook give a score 0-100 for how well this stock matches TODAY, with the strongest evidence. Then name the single best-matching playbook.
+End with EXACTLY these lines:
+${playbooks.map(p => `SCORE_${p.id}: [0-100]`).join('\n')}
+BEST_PLAYBOOK: [id]`;
+
+    const text = await callAgentGrok(prompt, model, { liveSearch: true });
+    const scores = {};
+    let best = null, bestScore = null;
+    for (const p of playbooks) {
+      const { score } = extractScore(text, `SCORE_${p.id}`);
+      scores[p.name] = score;
+      if (score !== null && (bestScore === null || score > bestScore)) { bestScore = score; best = p.name; }
+    }
+    const bestMatch = text.match(/BEST_PLAYBOOK[:\s]*([A-Za-z]+)/i)?.[1];
+    const bestPb = playbooks.find(p => p.id.toLowerCase() === (bestMatch || '').toLowerCase());
+    let cleaned = text;
+    for (const p of playbooks) cleaned = cleaned.replace(new RegExp(`SCORE_${p.id}[:\\s]*\\d+`, 'gi'), '');
+    cleaned = cleaned.replace(/BEST_PLAYBOOK[:\s]*[A-Za-z]+/gi, '').trim();
+    return {
+      playbookAnalysis: cleaned,
+      playbookScore: bestScore,
+      playbookBest: bestPb ? bestPb.name : best,
+      playbookScores: scores,
+    };
+  } catch (e) {
+    return { playbookAnalysis: `Error: ${e.message}`, playbookScore: null };
+  }
+}
+
+// ============================================
 // ORACLE ANALYSIS - The Singularity Capitalist
 // ============================================
 async function getOracleAnalysis(stock) {
@@ -1937,6 +1996,7 @@ export default function StockResearchApp() {
     momentumEnabled: false,     // 3 AI calls per stock - opt in
     buyoutEnabled: false,       // 4-5 AI calls per stock - opt in
     passionEnabled: false,      // 3 AI calls per stock - opt in
+    playbookEnabled: false,     // 1 live-search AI call per stock - opt in
     grokCount: 25,              // shared "stocks to analyze" count for all AI agent scans
     grokOnlySingularity70: false  // Only analyze stocks with singularity >= 70
   });
@@ -2018,7 +2078,8 @@ export default function StockResearchApp() {
     parabolicGrowth: 10,
     momentum: 15,
     buyout: 15,
-    passion: 10
+    passion: 10,
+    playbook: 15
   });
   const [fullSpectrumPhase, setFullSpectrumPhase] = useState('');
 
@@ -2027,7 +2088,7 @@ export default function StockResearchApp() {
     
     // Calculate total weight (base + AI)
     const baseTotal = Object.values(w).reduce((a, b) => a + b, 0);
-    const aiTotal = (aw.conviction || 0) + (aw.cupHandle || 0) + (aw.singularity || 0) + (aw.team || 0) + (aw.valuation || 0) + (aw.parabolicGrowth || 0) + (aw.momentum || 0) + (aw.buyout || 0) + (aw.passion || 0);
+    const aiTotal = (aw.conviction || 0) + (aw.cupHandle || 0) + (aw.singularity || 0) + (aw.team || 0) + (aw.valuation || 0) + (aw.parabolicGrowth || 0) + (aw.momentum || 0) + (aw.buyout || 0) + (aw.passion || 0) + (aw.playbook || 0);
     const grandTotal = baseTotal + aiTotal;
     
     // If all weights are 0, just return unsorted
@@ -2095,7 +2156,7 @@ export default function StockResearchApp() {
 
       // Momentum + options scores (0-100 scales, weights default 0)
       const simpleContrib = [
-        ['parabolicGrowth', s.parabolicGrowthScore], ['momentum', s.momentumScore], ['buyout', s.buyoutScore], ['passion', s.passionScore],
+        ['parabolicGrowth', s.parabolicGrowthScore], ['momentum', s.momentumScore], ['buyout', s.buyoutScore], ['passion', s.passionScore], ['playbook', s.playbookScore],
       ];
       for (const [k, v] of simpleContrib) {
         if ((aw[k] || 0) > 0 && v !== null && v !== undefined) {
@@ -2119,6 +2180,62 @@ export default function StockResearchApp() {
   const [agentRunning, setAgentRunning] = useState(null);
   const scanControlRef = React.useRef(null); // null | 'pause' | 'cancel'
   const [pausedRun, setPausedRun] = useState(null);
+
+  // Playbooks - editable winning-circumstance definitions
+  const [playbooks, setPlaybooks] = useState(DEFAULT_PLAYBOOKS);
+  const playbooksRef = React.useRef(DEFAULT_PLAYBOOKS);
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('singularityhunter_playbooks') || 'null');
+      if (Array.isArray(saved) && saved.length > 0) { setPlaybooks(saved); playbooksRef.current = saved; }
+    } catch (e) {}
+  }, []);
+  const updatePlaybook = (id, description) => setPlaybooks(prev => {
+    const next = prev.map(p => (p.id === id ? { ...p, description } : p));
+    playbooksRef.current = next;
+    try { localStorage.setItem('singularityhunter_playbooks', JSON.stringify(next)); } catch (e) {}
+    return next;
+  });
+
+  // Research team feed
+  const [researchFeed, setResearchFeed] = useState([]);
+  const [researchConfig, setResearchConfig] = useState({ n: 10, model: 'grok-4.3' });
+  const [showResearch, setShowResearch] = useState(false);
+  const [isRunningResearch, setIsRunningResearch] = useState(false);
+  const [feedViewedAt, setFeedViewedAt] = useState(0);
+  useEffect(() => {
+    try { setFeedViewedAt(parseInt(localStorage.getItem('singularityhunter_feed_viewed') || '0')); } catch (e) {}
+    fetch('/api/research?feed=1').then(r => r.ok ? r.json() : null).then(d => {
+      if (d) { setResearchFeed(d.feed || []); if (d.config) setResearchConfig(d.config); }
+    }).catch(() => {});
+  }, []);
+  const openResearch = () => {
+    setShowResearch(s => !s);
+    const now = Date.now();
+    setFeedViewedAt(now);
+    try { localStorage.setItem('singularityhunter_feed_viewed', String(now)); } catch (e) {}
+  };
+  const runResearchNow = async () => {
+    if (isRunningResearch) return;
+    setIsRunningResearch(true);
+    try {
+      for (let hop = 0; hop < 8; hop++) {
+        const res = await fetch('/api/research', { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || res.status);
+        if (data.running) { await new Promise(r => setTimeout(r, 15000)); continue; }
+        if (data.done || data.note) break;
+      }
+      const d = await fetch('/api/research?feed=1').then(r => r.json());
+      setResearchFeed(d.feed || []);
+    } catch (e) { setError(`Research pass failed: ${e.message}`); }
+    setIsRunningResearch(false);
+  };
+  const saveResearchConfig = (cfg) => {
+    setResearchConfig(cfg);
+    fetch('/api/research', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ config: cfg }) }).catch(() => {});
+  };
+  const unreadResearch = researchFeed.filter(f => f.ts > feedViewedAt).length;
 
   // Main Session (cloud) - one canonical session in KV, synced across devices
   const [useMainSession, setUseMainSession] = useState(true);
@@ -2183,17 +2300,18 @@ export default function StockResearchApp() {
   const [openScanGroup, setOpenScanGroup] = useState(null);
 
   // Table column visibility (scan-score columns toggleable via Columns menu)
-  const DEFAULT_COLS = { netCash: true, insider: true, sg: true, tm: true, vl: true, cv: true, ch: true, low52: true, pg: true, mo: true, by: true, pa: true };
+  const DEFAULT_COLS = { netCash: true, insider: true, sg: true, tm: true, vl: true, cv: true, ch: true, low52: true, pg: true, mo: true, by: true, pa: true, pk: true };
   const [colVisible, setColVisible] = useState(DEFAULT_COLS);
   const [showColumnsMenu, setShowColumnsMenu] = useState(false);
   useEffect(() => { try { const saved = JSON.parse(localStorage.getItem('singularityhunter_columns') || 'null'); if (saved) setColVisible(prev => ({ ...prev, ...saved })); } catch (e) {} }, []);
   const toggleColumn = (key) => setColVisible(prev => { const next = { ...prev, [key]: !prev[key] }; try { localStorage.setItem('singularityhunter_columns', JSON.stringify(next)); } catch (e) {} return next; });
-  const COLUMN_LABELS = { netCash: 'Net Cash', insider: 'Insider', sg: 'Singularity', tm: 'Team', vl: 'Valuation', cv: 'Conviction', ch: 'Cup & Handle', low52: '% From 52w Low', pg: 'Parabolic Growth', mo: 'Momentum', by: 'Buyout', pa: 'Passion' };
+  const COLUMN_LABELS = { netCash: 'Net Cash', insider: 'Insider', sg: 'Singularity', tm: 'Team', vl: 'Valuation', cv: 'Conviction', ch: 'Cup & Handle', low52: '% From 52w Low', pg: 'Parabolic Growth', mo: 'Momentum', by: 'Buyout', pa: 'Passion', pk: 'Playbook' };
   const NEW_SCORE_COLS = [
     { key: 'pg', field: 'parabolicGrowthScore', label: 'PG', title: 'Parabolic Growth score', color: '#4ade80' },
     { key: 'mo', field: 'momentumScore', label: 'Mo', title: 'Momentum score (chart + continuation + room/moat)', color: '#fb923c' },
     { key: 'by', field: 'buyoutScore', label: 'By', title: 'Buyout likelihood (people + intent + buzz + fit)', color: '#fbbf24' },
     { key: 'pa', field: 'passionScore', label: 'Pa', title: 'Passion (CEO + public presence + interview vibes)', color: '#f472b6' },
+    { key: 'pk', field: 'playbookScore', label: 'Pk', title: 'Playbook match (best of your winning setups)', color: '#a78bfa' },
   ];
 
   const AGENT_REGISTRY = [
@@ -2205,6 +2323,7 @@ export default function StockResearchApp() {
     { id: 'momentum', label: 'Momentum (3-part)', group: 'core', color: '#fb923c', icon: Flame, fn: getMomentumAnalysis, apply: (s, r) => ({ ...s, momentumAnalysis: r.momentumAnalysis, momentumScore: r.momentumScore, momentumChartScore: r.momentumChartScore, momentumContinuationScore: r.momentumContinuationScore, momentumRoomMoatScore: r.momentumRoomMoatScore }) },
     { id: 'buyout', label: 'Buyout Likelihood', group: 'core', color: '#fbbf24', icon: Banknote, fn: getBuyoutAnalysis, apply: (s, r) => ({ ...s, buyoutAnalysis: r.buyoutAnalysis, buyoutScore: r.buyoutScore, buyoutPeopleScore: r.buyoutPeopleScore, buyoutIntentScore: r.buyoutIntentScore, buyoutBuzzScore: r.buyoutBuzzScore, buyoutFitScore: r.buyoutFitScore }) },
     { id: 'passion', label: 'Passion (3-part)', group: 'core', color: '#f472b6', icon: Radio, fn: getPassionAnalysis, apply: (s, r) => ({ ...s, passionAnalysis: r.passionAnalysis, passionScore: r.passionScore, passionCeoScore: r.passionCeoScore, passionPublicScore: r.passionPublicScore, passionVibesScore: r.passionVibesScore }) },
+    { id: 'playbook', label: 'Playbook Match', group: 'core', color: '#a78bfa', icon: Target, fn: (s, m) => getPlaybookAnalysis(s, m, playbooksRef.current), apply: (s, r) => ({ ...s, playbookAnalysis: r.playbookAnalysis, playbookScore: r.playbookScore, playbookBest: r.playbookBest, playbookScores: r.playbookScores }) },
   ];
 
   const CHECKPOINT_KEY = 'singularityhunter_scan_checkpoint';
@@ -2213,7 +2332,7 @@ export default function StockResearchApp() {
 
   const persistProgressToSession = (sid) => {
     try {
-      saveSession(sid, stocksRef.current, { phase: 'in-progress', current: 0, total: 0, found: stocksRef.current.length }, `Scan ${new Date().toLocaleDateString()} (${stocksRef.current.length} stocks)`);
+      saveSession(sid, stocksRef.current, { phase: 'in-progress', current: 0, total: 0, found: stocksRef.current.length }, 'Main Session');
     } catch (e) {}
     syncMainToCloud();
   };
@@ -2224,7 +2343,7 @@ export default function StockResearchApp() {
     const agents = AGENT_REGISTRY.filter(a => agentIds.includes(a.id));
     if (agents.length === 0 || tickers.length === 0) return;
     const model = opts.model || grokModel;
-    const sid = sessionIdRef.current || generateSessionId();
+    const sid = 'main';
     if (!sessionIdRef.current) { sessionIdRef.current = sid; setCurrentSessionId(sid); }
     setIsAnalyzingAI(true);
     setError(null);
@@ -3155,7 +3274,7 @@ Respond with ONLY a JSON array:
     }
 
     // Start new session
-    const newSessionId = generateSessionId();
+    const newSessionId = 'main';
     setCurrentSessionId(newSessionId);
     
     setIsScanning(true);
@@ -3254,7 +3373,7 @@ Respond with ONLY a JSON array:
       const scanStats = { phase: 'complete', current: allTickers.length, total: allTickers.length, found: scoredStocks.length };
       
       // Save to session
-      const sessionName = `${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()} (${scoredStocks.length} stocks)`;
+      const sessionName = 'Main Session';
       saveSession(newSessionId, scoredStocks, scanStats, sessionName);
       syncMainToCloud(true);
       setSessions(getAllSessions());
@@ -3293,7 +3412,7 @@ Respond with ONLY a JSON array:
       setStockLimit(spectrumSettings.baseStockLimit);
       
       // Start new session
-      const newSessionId = generateSessionId();
+      const newSessionId = 'main';
       setCurrentSessionId(newSessionId);
       setIsScanning(true);
       setError(null);
@@ -3379,7 +3498,7 @@ Respond with ONLY a JSON array:
       // Persist base-scan results immediately so a refresh mid-spectrum
       // doesn't lose them
       sessionIdRef.current = newSessionId;
-      saveSession(newSessionId, currentStocks, scanStats, `Full Spectrum ${new Date().toLocaleDateString()} (${currentStocks.length} stocks)`);
+      saveSession(newSessionId, currentStocks, scanStats, 'Main Session');
       setSessions(getAllSessions());
       
       // Phase 2: Singularity Scan
@@ -3520,6 +3639,7 @@ Respond with ONLY a JSON array:
         spectrumSettings.momentumEnabled && 'momentum',
         spectrumSettings.buyoutEnabled && 'buyout',
         spectrumSettings.passionEnabled && 'passion',
+        spectrumSettings.playbookEnabled && 'playbook',
       ].filter(Boolean);
 
       if (spectrumAgentIds.length > 0 && currentStocks.length > 0) {
@@ -3536,7 +3656,7 @@ Respond with ONLY a JSON array:
           currentStocks = stocksRef.current;
           if (runResult === 'cancelled' || runResult === 'paused') {
             // Save what we have and stop the spectrum here
-            saveSession(newSessionId, currentStocks, scanStats, `Full Spectrum ${new Date().toLocaleDateString()} (${currentStocks.length} stocks)`);
+            saveSession(newSessionId, currentStocks, scanStats, 'Main Session');
             setSessions(getAllSessions());
             setIsRunningFullSpectrum(false);
             setFullSpectrumPhase('');
@@ -3549,7 +3669,7 @@ Respond with ONLY a JSON array:
       
       // Save final session
       const finalScanStats = { phase: 'complete', current: allTickers.length, total: allTickers.length, found: currentStocks.length };
-      const sessionName = `Full Spectrum ${new Date().toLocaleDateString()} (${currentStocks.length} stocks)`;
+      const sessionName = 'Main Session';
       saveSession(newSessionId, currentStocks, finalScanStats, sessionName);
       syncMainToCloud(true);
       setSessions(getAllSessions());
@@ -3646,7 +3766,7 @@ Respond with ONLY a JSON array:
       if (sortBy === 'valuationScore') {
         return (b.valuationScore ?? -1) - (a.valuationScore ?? -1);
       }
-      if (['parabolicGrowthScore','momentumScore','buyoutScore','passionScore'].includes(sortBy)) {
+      if (['parabolicGrowthScore','momentumScore','buyoutScore','passionScore','playbookScore'].includes(sortBy)) {
         return (b[sortBy] ?? -1) - (a[sortBy] ?? -1);
       }
       if (sortBy === 'fromLow') {
@@ -3759,6 +3879,55 @@ Respond with ONLY a JSON array:
               </>
             )}
             
+            {/* Research Feed Button */}
+            <div className="relative">
+              <button onClick={openResearch} className="px-4 py-2.5 rounded-xl text-sm font-medium border flex items-center gap-2" style={{ background: showResearch ? 'rgba(167,139,250,0.2)' : 'rgba(30,41,59,0.5)', borderColor: 'rgba(51,65,85,0.5)', color: showResearch ? '#a78bfa' : '#94a3b8' }}>
+                <Radar className="w-4 h-4" />Research
+                {unreadResearch > 0 && <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold" style={{ background: 'rgba(167,139,250,0.25)', color: '#c4b5fd' }}>{unreadResearch}</span>}
+              </button>
+              {showResearch && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowResearch(false)} />
+                  <div className="absolute right-0 top-full mt-2 w-[420px] max-h-[70vh] overflow-y-auto rounded-xl border p-3 z-50" style={{ background: 'rgba(15,23,42,0.98)', borderColor: 'rgba(51,65,85,0.7)', boxShadow: '0 12px 32px rgba(0,0,0,0.5)' }}>
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">Research Team Feed</p>
+                      <div className="flex items-center gap-2">
+                        <select value={researchConfig.n} onChange={e => saveResearchConfig({ ...researchConfig, n: parseInt(e.target.value) })} className="rounded px-1.5 py-1 text-[11px] border outline-none" style={{ background: 'rgba(30,41,59,0.8)', borderColor: 'rgba(51,65,85,0.5)', color: '#94a3b8' }} title="How many top stocks the daily research pass watches">
+                          <option value={5}>Top 5</option>
+                          <option value={10}>Top 10</option>
+                          <option value={25}>Top 25</option>
+                        </select>
+                        <button onClick={runResearchNow} disabled={isRunningResearch} className="px-2.5 py-1 rounded-lg text-[11px] font-semibold border flex items-center gap-1" style={{ background: 'rgba(167,139,250,0.12)', borderColor: 'rgba(167,139,250,0.4)', color: '#a78bfa', opacity: isRunningResearch ? 0.6 : 1 }}>
+                          {isRunningResearch ? <><RefreshCw className="w-3 h-3 animate-spin" />Working...</> : 'Run pass now'}
+                        </button>
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-slate-600 mb-2">Watches your top {researchConfig.n} stocks daily for new info. Suggestions only - it never changes your scan scores.</p>
+                    {researchFeed.length === 0 && <p className="text-xs text-slate-500 py-4 text-center">No findings yet. The daily pass runs automatically, or hit "Run pass now".</p>}
+                    {researchFeed.slice(0, 60).map((f, i) => {
+                      const sigColor = f.significance >= 70 ? '#f87171' : f.significance >= 40 ? '#fbbf24' : '#64748b';
+                      const agent = AGENT_REGISTRY.find(a => a.id === f.suggest);
+                      return (
+                        <div key={i} className="mb-2 p-2.5 rounded-lg border" style={{ background: 'rgba(30,41,59,0.4)', borderColor: f.ts > feedViewedAt ? 'rgba(167,139,250,0.4)' : 'rgba(51,65,85,0.4)' }}>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="mono font-bold text-sm text-slate-100">{f.ticker}</span>
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold" style={{ background: sigColor + '22', color: sigColor }}>sig {f.significance}</span>
+                            <span className="text-[10px] text-slate-600 ml-auto">{new Date(f.ts).toLocaleDateString()} {new Date(f.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                          </div>
+                          <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap">{f.summary}</p>
+                          {agent && f.significance >= 40 && (
+                            <button onClick={() => { setShowResearch(false); runAgentQueue([agent.id], [f.ticker]); }} className="mt-1.5 px-2 py-1 rounded text-[10px] font-semibold border" style={{ borderColor: agent.color + '66', color: agent.color }}>
+                              Re-run {agent.label} on {f.ticker}
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
+
             {/* Sessions Button */}
             <button onClick={() => setShowSessions(!showSessions)} className="px-4 py-2.5 rounded-xl text-sm font-medium border flex items-center gap-2" style={{ background: showSessions ? 'rgba(139,92,246,0.2)' : 'rgba(30,41,59,0.5)', borderColor: 'rgba(51,65,85,0.5)', color: showSessions ? '#a78bfa' : '#94a3b8' }}><Clock className="w-4 h-4" />Sessions ({sessions.length})</button>
             
@@ -3955,7 +4124,7 @@ Respond with ONLY a JSON array:
               </div>
               
               {/* Grok only singularity 70+ option */}
-              {(spectrumSettings.grokEnabled || spectrumSettings.technicalEnabled || spectrumSettings.teamEnabled || spectrumSettings.valuationEnabled || spectrumSettings.parabolicGrowthEnabled || spectrumSettings.momentumEnabled || spectrumSettings.buyoutEnabled || spectrumSettings.passionEnabled) && spectrumSettings.singularityEnabled && (
+              {(spectrumSettings.grokEnabled || spectrumSettings.technicalEnabled || spectrumSettings.teamEnabled || spectrumSettings.valuationEnabled || spectrumSettings.parabolicGrowthEnabled || spectrumSettings.momentumEnabled || spectrumSettings.buyoutEnabled || spectrumSettings.passionEnabled || spectrumSettings.playbookEnabled) && spectrumSettings.singularityEnabled && (
                 <div className="flex items-center justify-between p-3 rounded-lg border" style={{ background: 'rgba(139,92,246,0.05)', borderColor: 'rgba(139,92,246,0.2)' }}>
                   <div className="flex items-center gap-2">
                     <Filter className="w-4 h-4 text-violet-400" />
@@ -3995,6 +4164,7 @@ Respond with ONLY a JSON array:
                   { key: 'momentumEnabled', label: 'Momentum (3x AI)' },
                   { key: 'buyoutEnabled', label: 'Buyout (5x AI)' },
                   { key: 'passionEnabled', label: 'Passion (3x AI)' },
+                  { key: 'playbookEnabled', label: 'Playbook Match' },
                 ]},
               ].map(group => (
                 <div key={group.title}>
@@ -4019,7 +4189,7 @@ Respond with ONLY a JSON array:
                 </div>
               ))}
 
-              {(spectrumSettings.grokEnabled || spectrumSettings.technicalEnabled || spectrumSettings.teamEnabled || spectrumSettings.valuationEnabled || spectrumSettings.parabolicGrowthEnabled || spectrumSettings.momentumEnabled || spectrumSettings.buyoutEnabled || spectrumSettings.passionEnabled) && (
+              {(spectrumSettings.grokEnabled || spectrumSettings.technicalEnabled || spectrumSettings.teamEnabled || spectrumSettings.valuationEnabled || spectrumSettings.parabolicGrowthEnabled || spectrumSettings.momentumEnabled || spectrumSettings.buyoutEnabled || spectrumSettings.passionEnabled || spectrumSettings.playbookEnabled) && (
                 <div>
                   <label className="text-sm text-slate-300 mb-2 block">AI Agents - Stocks to Analyze (applies to every agent above)</label>
                   <select
@@ -4154,6 +4324,24 @@ Respond with ONLY a JSON array:
                 </div>
               </div>
               
+              {/* Playbooks editor */}
+              <div className="mb-3 p-3 rounded-lg border" style={{ background: 'rgba(167,139,250,0.05)', borderColor: 'rgba(167,139,250,0.2)' }}>
+                <span className="text-sm text-slate-200">Playbooks</span>
+                <p className="text-xs text-slate-500 mb-2">Your winning circumstances - the Playbook Match scan scores every stock against these. Edit freely.</p>
+                {playbooks.map(p => (
+                  <div key={p.id} className="mb-2">
+                    <label className="text-xs font-semibold mb-1 block" style={{ color: '#a78bfa' }}>{p.name}</label>
+                    <textarea
+                      value={p.description}
+                      onChange={e => updatePlaybook(p.id, e.target.value)}
+                      rows={3}
+                      className="w-full rounded-lg px-3 py-2 text-xs border outline-none"
+                      style={{ background: 'rgba(30,41,59,0.5)', borderColor: 'rgba(167,139,250,0.25)', color: '#cbd5e1', resize: 'vertical' }}
+                    />
+                  </div>
+                ))}
+              </div>
+
               {/* Cloud Main Session + daily data refresh */}
               <div className="mb-3 p-3 rounded-lg border" style={{ background: 'rgba(34,211,238,0.05)', borderColor: 'rgba(34,211,238,0.2)' }}>
                 <div className="flex items-center justify-between mb-2">
@@ -4410,7 +4598,7 @@ Respond with ONLY a JSON array:
           <div className="mb-6 card rounded-2xl border border-slate-800/50 p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold flex items-center gap-2"><Sliders className="w-5 h-5 text-amber-400" />Scoring Weights</h2>
-              <button onClick={() => { setWeights({ pricePosition: 40, insiderActivity: 40, netCash: 20 }); setAiWeights({ conviction: 15, cupHandle: 10, singularity: 20, team: 10, valuation: 10, parabolicGrowth: 10, momentum: 15, buyout: 15, passion: 10 }); }} className="text-xs text-slate-400 hover:text-white px-3 py-1.5 rounded-lg border" style={{ background: 'rgba(30,41,59,0.5)', borderColor: 'rgba(51,65,85,0.5)' }}>Reset All</button>
+              <button onClick={() => { setWeights({ pricePosition: 40, insiderActivity: 40, netCash: 20 }); setAiWeights({ conviction: 15, cupHandle: 10, singularity: 20, team: 10, valuation: 10, parabolicGrowth: 10, momentum: 15, buyout: 15, passion: 10, playbook: 15 }); }} className="text-xs text-slate-400 hover:text-white px-3 py-1.5 rounded-lg border" style={{ background: 'rgba(30,41,59,0.5)', borderColor: 'rgba(51,65,85,0.5)' }}>Reset All</button>
             </div>
             
             <p className="text-xs text-slate-500 mb-3">Base Scoring (applied to all stocks)</p>
@@ -4450,6 +4638,7 @@ Respond with ONLY a JSON array:
                 { k: 'momentum', label: 'Momentum', color: '#fb923c' },
                 { k: 'buyout', label: 'Buyout', color: '#fbbf24' },
                 { k: 'passion', label: 'Passion', color: '#f472b6' },
+                { k: 'playbook', label: 'Playbook', color: '#a78bfa' },
               ].map(w => (
                 <div key={w.k} className="rounded-xl p-4 border" style={{ background: 'rgba(30,41,59,0.3)', borderColor: 'rgba(51,65,85,0.4)' }}>
                   <div className="flex items-center gap-2 mb-3"><div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(51,65,85,0.4)' }}><BarChart3 className="w-4 h-4" style={{ color: w.color }} /></div><span className="text-sm font-medium text-slate-200">{w.label}</span></div>
@@ -5257,6 +5446,23 @@ Respond with ONLY a JSON array:
                               <p className="text-sm text-slate-200 leading-relaxed whitespace-pre-wrap">{s[d.field]}</p>
                             </div>
                           ) : null)}
+
+                          {/* Playbook match details */}
+                          {s.playbookAnalysis && (
+                            <div className="mb-4 p-4 rounded-xl border" style={{ background: 'rgba(167,139,250,0.08)', borderColor: 'rgba(167,139,250,0.3)' }}>
+                              <h4 className="text-sm font-semibold mb-2 flex items-center gap-2 flex-wrap" style={{ color: '#a78bfa' }}>
+                                <Target className="w-4 h-4" />
+                                Playbook Match
+                                {s.playbookScore !== null && s.playbookScore !== undefined && (
+                                  <span className="ml-1 px-2 py-0.5 rounded text-xs font-bold" style={{ background: 'rgba(167,139,250,0.2)', color: '#a78bfa' }}>{s.playbookBest || 'Best'}: {s.playbookScore}/100</span>
+                                )}
+                                {s.playbookScores && Object.entries(s.playbookScores).map(([name, sc]) => sc !== null && sc !== undefined ? (
+                                  <span key={name} className="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-800/70 text-slate-300">{name} {sc}</span>
+                                ) : null)}
+                              </h4>
+                              <p className="text-sm text-slate-200 leading-relaxed whitespace-pre-wrap">{s.playbookAnalysis}</p>
+                            </div>
+                          )}
 
                           {/* Momentum / volatility computed metrics */}
                           {(s.rsScore !== undefined || s.realizedVol !== undefined) && (
