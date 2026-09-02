@@ -27,6 +27,7 @@ const STOCK_LIMITS = {
 const STOCK_CATEGORIES = {
   all: { name: 'All Stocks', keywords: [] },
   singularity: { name: 'Singularity (70+)', keywords: [], singularityFilter: true },
+  watchlist: { name: '⭐ Watchlist', keywords: [] },
   tech: { name: 'Tech', keywords: ['software', 'computer', 'semiconductor', 'electronic', 'technology', 'data processing', 'internet', 'cloud', 'cyber', 'digital'] },
   biotech: { name: 'Biotech/Health', keywords: ['biotech', 'pharmaceutical', 'medical', 'drug', 'health', 'therapeutic', 'diagnostic', 'surgical'] },
   energy: { name: 'Energy', keywords: ['oil', 'gas', 'energy', 'solar', 'wind', 'petroleum', 'mining', 'utilities'] },
@@ -2004,6 +2005,7 @@ export default function StockResearchApp() {
   // Filter by category keywords or Singularity buckets
   const matchesCategory = (stock, categoryKey) => {
     if (categoryKey === 'all') return true;
+    if (categoryKey === 'watchlist') return Boolean(watchlist[stock.ticker]);
     const category = STOCK_CATEGORIES[categoryKey];
     if (!category) return true;
     
@@ -2197,6 +2199,19 @@ export default function StockResearchApp() {
     return next;
   });
 
+  // Watchlist (scout finds + your stars) - drives the research team
+  const [watchlist, setWatchlist] = useState({});
+  const [scoutsLatest, setScoutsLatest] = useState(null);
+  const toggleWatch = async (stock) => {
+    const on = !watchlist[stock.ticker];
+    setWatchlist(prev => { const next = { ...prev }; if (on) next[stock.ticker] = { route: 'manual', reason: 'Starred by you', addedAt: Date.now() }; else delete next[stock.ticker]; return next; });
+    try {
+      const res = await fetch('/api/main-session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'watch', ticker: stock.ticker, name: stock.name, on }) });
+      const d = await res.json();
+      if (d.watchlist) setWatchlist(d.watchlist);
+    } catch (e) {}
+  };
+
   // Research team feed
   const [researchFeed, setResearchFeed] = useState([]);
   const [researchConfig, setResearchConfig] = useState({ n: 10, model: 'grok-4.3' });
@@ -2206,7 +2221,7 @@ export default function StockResearchApp() {
   useEffect(() => {
     try { setFeedViewedAt(parseInt(localStorage.getItem('singularityhunter_feed_viewed') || '0')); } catch (e) {}
     fetch('/api/research?feed=1').then(r => r.ok ? r.json() : null).then(d => {
-      if (d) { setResearchFeed(d.feed || []); if (d.config) setResearchConfig(d.config); }
+      if (d) { setResearchFeed(d.feed || []); if (d.config) setResearchConfig(d.config); if (d.watchlist) setWatchlist(d.watchlist); if (d.scouts) setScoutsLatest(d.scouts); }
     }).catch(() => {});
   }, []);
   const openResearch = () => {
@@ -2227,9 +2242,26 @@ export default function StockResearchApp() {
         if (data.done || data.note) break;
       }
       const d = await fetch('/api/research?feed=1').then(r => r.json());
-      setResearchFeed(d.feed || []);
+      setResearchFeed(d.feed || []); if (d.watchlist) setWatchlist(d.watchlist); if (d.scouts) setScoutsLatest(d.scouts);
     } catch (e) { setError(`Research pass failed: ${e.message}`); }
     setIsRunningResearch(false);
+  };
+  const [isRunningScouts, setIsRunningScouts] = useState(false);
+  const runScoutsNow = async () => {
+    if (isRunningScouts) return;
+    setIsRunningScouts(true);
+    try {
+      const res = await fetch('/api/scouts', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || res.status);
+      const d = await fetch('/api/research?feed=1').then(r => r.json());
+      setResearchFeed(d.feed || []); if (d.watchlist) setWatchlist(d.watchlist); if (d.scouts) setScoutsLatest(d.scouts);
+      // pull server-added watchlist stocks into the table
+      const ms = await fetch('/api/main-session').then(r => r.json()).catch(() => null);
+      if (ms?.session?.stocks?.length) { stocksRef.current = calcScores(ms.session.stocks, weights, aiWeights); setStocks(stocksRef.current); }
+      setStatus({ type: 'live', msg: `Scouts: ${data.candidates} candidates, ${data.triaged} triaged, ${(data.added || []).length} added to watchlist` });
+    } catch (e) { setError(`Scouts failed: ${e.message}`); }
+    setIsRunningScouts(false);
   };
   const saveResearchConfig = (cfg) => {
     setResearchConfig(cfg);
@@ -3902,7 +3934,19 @@ Respond with ONLY a JSON array:
                         </button>
                       </div>
                     </div>
-                    <p className="text-[10px] text-slate-600 mb-2">Watches your top {researchConfig.n} stocks daily for new info. Suggestions only - it never changes your scan scores.</p>
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <p className="text-[10px] text-slate-600">Watchlist: {Object.keys(watchlist).length} stocks (scout finds + your ★). Monitored daily for new info - suggestions only, never touches your scores.</p>
+                      <button onClick={runScoutsNow} disabled={isRunningScouts} className="shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-semibold border flex items-center gap-1" style={{ background: 'rgba(34,211,238,0.12)', borderColor: 'rgba(34,211,238,0.4)', color: '#67e8f9', opacity: isRunningScouts ? 0.6 : 1 }} title="Run the value / momentum / social scouts now">
+                        {isRunningScouts ? <><RefreshCw className="w-3 h-3 animate-spin" />Scouting...</> : 'Run scouts'}
+                      </button>
+                    </div>
+                    {scoutsLatest && (
+                      <div className="mb-2 p-2 rounded-lg border text-[11px]" style={{ background: 'rgba(34,211,238,0.05)', borderColor: 'rgba(34,211,238,0.2)' }}>
+                        <span className="text-cyan-300 font-semibold">Last scout pass</span> <span className="text-slate-500">{new Date(scoutsLatest.ts).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                        <span className="text-slate-400"> - value {scoutsLatest.counts?.value || 0}, momentum {scoutsLatest.counts?.momentum || 0}, social {scoutsLatest.counts?.social || 0} candidates</span>
+                        {scoutsLatest.added?.length > 0 && <span className="text-emerald-400"> - added: {scoutsLatest.added.join(', ')}</span>}
+                      </div>
+                    )}
                     {researchFeed.length === 0 && <p className="text-xs text-slate-500 py-4 text-center">No findings yet. The daily pass runs automatically, or hit "Run pass now".</p>}
                     {researchFeed.slice(0, 60).map((f, i) => {
                       const sigColor = f.significance >= 70 ? '#f87171' : f.significance >= 40 ? '#fbbf24' : '#64748b';
@@ -3927,9 +3971,6 @@ Respond with ONLY a JSON array:
                 </>
               )}
             </div>
-
-            {/* Sessions Button */}
-            <button onClick={() => setShowSessions(!showSessions)} className="px-4 py-2.5 rounded-xl text-sm font-medium border flex items-center gap-2" style={{ background: showSessions ? 'rgba(139,92,246,0.2)' : 'rgba(30,41,59,0.5)', borderColor: 'rgba(51,65,85,0.5)', color: showSessions ? '#a78bfa' : '#94a3b8' }}><Clock className="w-4 h-4" />Sessions ({sessions.length})</button>
             
             <button onClick={() => setShowDiscovery(!showDiscovery)} className="px-4 py-2.5 rounded-xl text-sm font-medium border flex items-center gap-2" style={{ background: showDiscovery ? 'rgba(16,185,129,0.2)' : 'rgba(30,41,59,0.5)', borderColor: 'rgba(51,65,85,0.5)', color: showDiscovery ? '#6ee7b7' : '#94a3b8' }}><Radar className="w-4 h-4" />Discovery</button>
             <button onClick={() => setShowWeights(!showWeights)} className="px-4 py-2.5 rounded-xl text-sm font-medium border flex items-center gap-2" style={{ background: showWeights ? 'rgba(245,158,11,0.2)' : 'rgba(30,41,59,0.5)', borderColor: 'rgba(51,65,85,0.5)', color: showWeights ? '#fcd34d' : '#94a3b8' }}><Sliders className="w-4 h-4" />Weights</button>
@@ -4359,7 +4400,7 @@ Respond with ONLY a JSON array:
                 </div>
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-xs text-slate-500">
-                    {universeMeta ? `Universe: ${universeMeta.count?.toLocaleString?.() || universeMeta.count} tickers - prices ${universeMeta.prices_date || 'n/a'} - auto-refreshes daily` : 'No universe data yet - run a refresh to build it'}
+                    {universeMeta ? `Universe: ${universeMeta.count?.toLocaleString?.() || universeMeta.count} tickers - prices ${universeMeta.prices_date || 'n/a'} - fundamentals swept ${universeMeta.swept || 0}/${universeMeta.sweep_total || universeMeta.count || 0} - refreshes hourly` : 'No universe data yet - run a refresh to build it'}
                   </p>
                   <button
                     onClick={refreshMarketData}
@@ -4425,75 +4466,6 @@ Respond with ONLY a JSON array:
       )}
 
       {/* Sessions Panel */}
-      {showSessions && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.7)' }}>
-          <div className="card rounded-2xl border border-slate-700 p-6 w-full max-w-lg mx-4 max-h-[80vh] overflow-hidden flex flex-col" style={{ background: 'rgba(15,23,42,0.98)' }}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-white flex items-center gap-2"><Clock className="w-6 h-6 text-violet-400" />Saved Sessions</h2>
-              <button onClick={() => setShowSessions(false)} className="text-slate-400 hover:text-white"><X className="w-5 h-5" /></button>
-            </div>
-            
-            {/* New Session Button */}
-            <button
-              onClick={() => {
-                setStocks([]);
-                setCurrentSessionId(null);
-                setSelected(null);
-                setScanProgress({ phase: 'idle', current: 0, total: 0, found: 0 });
-                setStatus({ type: 'ready', msg: 'New session created. Run a scan to find stocks.' });
-                setShowSessions(false);
-              }}
-              className="mb-4 w-full px-4 py-3 rounded-xl text-sm font-semibold border flex items-center justify-center gap-2 hover:border-emerald-500/50 transition-colors"
-              style={{ background: 'rgba(16,185,129,0.1)', borderColor: 'rgba(16,185,129,0.3)', color: '#34d399' }}
-            >
-              <Plus className="w-5 h-5" />
-              New Session
-            </button>
-            
-            <div className="flex-1 overflow-y-auto space-y-2">
-              {sessions.length === 0 ? (
-                <p className="text-center text-slate-500 py-8">No saved sessions yet. Run a scan to create one.</p>
-              ) : sessions.map(session => (
-                <div 
-                  key={session.id} 
-                  className="p-3 rounded-xl border cursor-pointer hover:border-violet-500/50 transition-colors"
-                  style={{ 
-                    background: currentSessionId === session.id ? 'rgba(139,92,246,0.1)' : 'rgba(30,41,59,0.5)', 
-                    borderColor: currentSessionId === session.id ? 'rgba(139,92,246,0.5)' : 'rgba(51,65,85,0.5)' 
-                  }}
-                  onClick={() => loadPreviousSession(session.id)}
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-slate-200">{session.name}</p>
-                      <p className="text-xs text-slate-500">{session.stockCount} stocks • {formatCacheAge(Date.now() - session.timestamp)}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {currentSessionId === session.id && <span className="text-xs text-violet-400">Current</span>}
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); deleteSession(session.id); setSessions(getAllSessions()); }}
-                        className="text-slate-500 hover:text-red-400 p-1"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            
-            <div className="mt-4 pt-4 border-t border-slate-700">
-              <button 
-                onClick={() => setShowSessions(false)} 
-                className="w-full px-4 py-2.5 rounded-xl text-sm font-medium border"
-                style={{ background: 'rgba(30,41,59,0.5)', borderColor: 'rgba(51,65,85,0.5)', color: '#94a3b8' }}
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       <div className="max-w-[1800px] mx-auto px-6 py-6 min-h-screen">
         {error && <div className="mb-4 p-4 rounded-xl border flex items-center gap-3" style={{ background: 'rgba(239,68,68,0.1)', borderColor: 'rgba(239,68,68,0.3)' }}><AlertCircle className="w-5 h-5 text-red-400" /><p className="text-sm text-red-300 flex-1">{error}</p><button onClick={() => setError(null)} className="text-red-400"><X className="w-4 h-4" /></button></div>}
@@ -5136,6 +5108,7 @@ Respond with ONLY a JSON array:
                         <div className="w-10 h-10 rounded-xl flex items-center justify-center mono font-bold text-sm" style={{ background: i < 3 ? ['rgba(245,158,11,0.2)', 'rgba(148,163,184,0.2)', 'rgba(194,65,12,0.2)'][i] : 'rgba(30,41,59,0.5)', color: i < 3 ? ['#fbbf24', '#cbd5e1', '#fb923c'][i] : '#64748b' }}>#{i + 1}</div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
+                            <button onClick={(e) => { e.stopPropagation(); toggleWatch(s); }} className="text-sm leading-none" title={watchlist[s.ticker] ? `Watching (${watchlist[s.ticker].route}) - click to unwatch` : 'Add to watchlist (research team will monitor it)'} style={{ color: watchlist[s.ticker] ? '#fbbf24' : '#334155' }}>★</button>
                             <span className="mono font-bold text-lg text-slate-100">{s.ticker}</span>
                             <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: s.change >= 0 ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', color: s.change >= 0 ? '#34d399' : '#f87171' }}>{s.change >= 0 ? '+' : ''}{s.change.toFixed(2)}%</span>
                             {s.aiAnalysis && <Sparkles className="w-4 h-4 text-emerald-400" title={`Conviction: ${s.insiderConviction}%`} />}

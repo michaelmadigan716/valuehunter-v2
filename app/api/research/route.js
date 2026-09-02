@@ -70,9 +70,17 @@ async function runResearchPass() {
     if (!main || !Array.isArray(main.stocks) || main.stocks.length === 0) {
       return Response.json({ ok: true, note: 'no main session yet' });
     }
-    const targets = [...main.stocks]
-      .sort((a, b) => (b.compositeScore || 0) - (a.compositeScore || 0))
+    // Research the Watchlist (scout finds + manual stars). Fall back to the
+    // top composite scores only if nothing is being watched yet.
+    const watchlist = (await kvGetJSON('vh:watchlist')) || {};
+    const watched = Object.keys(watchlist);
+    const byTicker = new Map(main.stocks.map(s => [s.ticker, s]));
+    let targets = watched.map(t => byTicker.get(t) || { ticker: t, name: watchlist[t].name || t, sector: 'Unknown' })
+      .sort((a, b) => (watchlist[b.ticker]?.addedAt || 0) - (watchlist[a.ticker]?.addedAt || 0))
       .slice(0, config.n);
+    if (targets.length === 0) {
+      targets = [...main.stocks].sort((a, b) => (b.compositeScore || 0) - (a.compositeScore || 0)).slice(0, config.n);
+    }
 
     const seen = (await kvGetJSON('vh:research:seen')) || {};
     let feed = (await kvGetJSON('vh:research:feed')) || [];
@@ -110,8 +118,10 @@ export async function GET(request) {
   if (!kvConfigured()) return Response.json({ error: 'KV not configured' }, { status: 500 });
   const url = new URL(request.url);
   if (url.searchParams.get('feed') === '1') {
-    const [feed, config] = await Promise.all([kvGetJSON('vh:research:feed'), kvGetJSON('vh:research:config')]);
-    return Response.json({ feed: feed || [], config: config || { n: 10, model: 'grok-4.3' } });
+    const [feed, config, watchlist, scouts] = await Promise.all([
+      kvGetJSON('vh:research:feed'), kvGetJSON('vh:research:config'), kvGetJSON('vh:watchlist'), kvGetJSON('vh:scouts:latest'),
+    ]);
+    return Response.json({ feed: feed || [], config: config || { n: 10, model: 'grok-4.3' }, watchlist: watchlist || {}, scouts: scouts || null });
   }
   if (!cronAuthorized(request)) return Response.json({ error: 'Unauthorized' }, { status: 401 });
   return runResearchPass();
