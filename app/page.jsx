@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { computeTechnicalOpinion } from '@/lib/technicals';
 import { TrendingUp, Users, BarChart3, Target, ChevronDown, ChevronUp, Zap, RefreshCw, Clock, CheckCircle, Sliders, Play, Brain, Network, LineChart, Globe, Database, FileText, Radio, Radar, AlertCircle, X, RotateCcw, DollarSign, Activity, TrendingDown, Beaker, Sparkles, Banknote, Calendar, Cpu, Atom, Bot, Eye, Filter, Flame, Plus, Trash2 } from 'lucide-react';
 
 // ============================================
@@ -1198,8 +1199,10 @@ async function computeMarketMetrics(stockList, onProgress) {
       const i = next++;
       const s = items[i];
       try {
-        const bars = await fetchDailyBars(s.ticker, 130);
-        results[s.ticker] = computeBarMetrics(bars);
+        const bars = await fetchDailyBars(s.ticker, 300);
+        const m = computeBarMetrics(bars);
+        const tech = computeTechnicalOpinion(bars);
+        results[s.ticker] = m || tech ? { ...(m || {}), ...(tech || {}) } : null;
       } catch (e) {
         results[s.ticker] = null;
       }
@@ -1962,7 +1965,8 @@ export default function StockResearchApp() {
     momentum: 15,
     buyout: 15,
     leadership: 10,
-    playbook: 15
+    playbook: 15,
+    technicals: 10
   });
   const [fullSpectrumPhase, setFullSpectrumPhase] = useState('');
 
@@ -1971,7 +1975,7 @@ export default function StockResearchApp() {
     
     // Calculate total weight (base + AI)
     const baseTotal = Object.values(w).reduce((a, b) => a + b, 0);
-    const aiTotal = (aw.conviction || 0) + (aw.cupHandle || 0) + (aw.singularity || 0) + (aw.valuation || 0) + (aw.momentum || 0) + (aw.buyout || 0) + (aw.leadership || 0) + (aw.playbook || 0);
+    const aiTotal = (aw.conviction || 0) + (aw.cupHandle || 0) + (aw.singularity || 0) + (aw.valuation || 0) + (aw.momentum || 0) + (aw.buyout || 0) + (aw.leadership || 0) + (aw.playbook || 0) + (aw.technicals || 0);
     const grandTotal = baseTotal + aiTotal;
     
     // If all weights are 0, just return unsorted
@@ -2034,7 +2038,7 @@ export default function StockResearchApp() {
 
       // Momentum + options scores (0-100 scales, weights default 0)
       const simpleContrib = [
-        ['momentum', s.momentumScore], ['buyout', s.buyoutScore], ['leadership', s.leadershipScore], ['playbook', s.playbookScore],
+        ['momentum', s.momentumScore], ['buyout', s.buyoutScore], ['leadership', s.leadershipScore], ['playbook', s.playbookScore], ['technicals', s.techScore],
       ];
       for (const [k, v] of simpleContrib) {
         if ((aw[k] || 0) > 0 && v !== null && v !== undefined) {
@@ -2208,13 +2212,14 @@ export default function StockResearchApp() {
   const [openScanGroup, setOpenScanGroup] = useState(null);
 
   // Table column visibility (scan-score columns toggleable via Columns menu)
-  const DEFAULT_COLS = { netCash: true, insider: true, sg: true, vl: true, cv: true, ch: true, low52: true, mo: true, by: true, ld: true, pk: true };
+  const DEFAULT_COLS = { netCash: true, insider: true, sg: true, vl: true, cv: true, ch: true, te: true, low52: true, mo: true, by: true, ld: true, pk: true };
   const [colVisible, setColVisible] = useState(DEFAULT_COLS);
   const [showColumnsMenu, setShowColumnsMenu] = useState(false);
   useEffect(() => { try { const saved = JSON.parse(localStorage.getItem('singularityhunter_columns') || 'null'); if (saved) setColVisible(prev => ({ ...prev, ...saved })); } catch (e) {} }, []);
   const toggleColumn = (key) => setColVisible(prev => { const next = { ...prev, [key]: !prev[key] }; try { localStorage.setItem('singularityhunter_columns', JSON.stringify(next)); } catch (e) {} return next; });
-  const COLUMN_LABELS = { netCash: 'Net Cash', insider: 'Insider', sg: 'Singularity', vl: 'Valuation', cv: 'Conviction', ch: 'Cup & Handle', low52: '% From 52w Low', mo: 'Momentum', by: 'Buyout', ld: 'Leadership', pk: 'Playbook' };
+  const COLUMN_LABELS = { netCash: 'Net Cash', insider: 'Insider', sg: 'Singularity', vl: 'Valuation', cv: 'Conviction', ch: 'Cup & Handle', te: 'Technical Opinion', low52: '% From 52w Low', mo: 'Momentum', by: 'Buyout', ld: 'Leadership', pk: 'Playbook' };
   const NEW_SCORE_COLS = [
+    { key: 'te', field: 'techScore', label: 'Te', title: 'Technical Opinion - % of 13 Barchart-style indicators on Buy (free, computed)', color: '#22d3ee' },
     { key: 'mo', field: 'momentumScore', label: 'Mo', title: 'Momentum (chart + continuation + parabolic potential)', color: '#fb923c' },
     { key: 'by', field: 'buyoutScore', label: 'By', title: 'Buyout likelihood (people + intent + buzz + fit)', color: '#fbbf24' },
     { key: 'ld', field: 'leadershipScore', label: 'Ld', title: 'Leadership (CEO + team + public presence + vibes)', color: '#f472b6' },
@@ -3669,7 +3674,7 @@ Respond with ONLY a JSON array:
       if (sortBy === 'valuationScore') {
         return (b.valuationScore ?? -1) - (a.valuationScore ?? -1);
       }
-      if (['momentumScore','buyoutScore','leadershipScore','playbookScore'].includes(sortBy)) {
+      if (['techScore','momentumScore','buyoutScore','leadershipScore','playbookScore'].includes(sortBy)) {
         return (b[sortBy] ?? -1) - (a[sortBy] ?? -1);
       }
       if (sortBy === 'fromLow') {
@@ -3887,7 +3892,7 @@ Respond with ONLY a JSON array:
                       {isOpen && (
                         <div className="absolute right-0 top-full mt-2 w-64 rounded-xl border p-2 z-50 space-y-1" style={{ background: 'rgba(15,23,42,0.98)', borderColor: 'rgba(51,65,85,0.7)', boxShadow: '0 12px 32px rgba(0,0,0,0.5)' }}>
                           <button onClick={() => runComputedMetricsScan('Market data')} disabled={isComputingMetrics || isAnalyzingAI} className="w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2 hover:bg-slate-800" style={{ color: '#67e8f9', opacity: (isComputingMetrics || isAnalyzingAI) ? 0.5 : 1 }}>
-                            {isComputingMetrics ? <RefreshCw className="w-4 h-4 animate-spin" /> : <BarChart3 className="w-4 h-4" />}Market Data (RS / Vol / ATR)<span className="text-xs text-slate-500 ml-auto">free</span>
+                            {isComputingMetrics ? <RefreshCw className="w-4 h-4 animate-spin" /> : <BarChart3 className="w-4 h-4" />}Market Data (Technicals / RS / Vol)<span className="text-xs text-slate-500 ml-auto">free</span>
                           </button>
                           {groupAgents.map(agent => { const AgentIcon = agent.icon; return (
                             <button key={agent.id} onClick={() => launchAgentScan(agent)} disabled={isAnalyzingAI || isScanning} className="w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2 hover:bg-slate-800" style={{ color: agent.color, opacity: (isAnalyzingAI || isScanning) ? 0.5 : 1 }}>
@@ -4439,7 +4444,7 @@ Respond with ONLY a JSON array:
           <div className="mb-6 card rounded-2xl border border-slate-800/50 p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold flex items-center gap-2"><Sliders className="w-5 h-5 text-amber-400" />Scoring Weights</h2>
-              <button onClick={() => { setWeights({ pricePosition: 40, insiderActivity: 40, netCash: 20 }); setAiWeights({ conviction: 15, cupHandle: 10, singularity: 20, valuation: 10, momentum: 15, buyout: 15, leadership: 10, playbook: 15 }); }} className="text-xs text-slate-400 hover:text-white px-3 py-1.5 rounded-lg border" style={{ background: 'rgba(30,41,59,0.5)', borderColor: 'rgba(51,65,85,0.5)' }}>Reset All</button>
+              <button onClick={() => { setWeights({ pricePosition: 40, insiderActivity: 40, netCash: 20 }); setAiWeights({ conviction: 15, cupHandle: 10, singularity: 20, valuation: 10, momentum: 15, buyout: 15, leadership: 10, playbook: 15, technicals: 10 }); }} className="text-xs text-slate-400 hover:text-white px-3 py-1.5 rounded-lg border" style={{ background: 'rgba(30,41,59,0.5)', borderColor: 'rgba(51,65,85,0.5)' }}>Reset All</button>
             </div>
             
             <p className="text-xs text-slate-500 mb-3">Base Scoring (applied to all stocks)</p>
@@ -4475,6 +4480,7 @@ Respond with ONLY a JSON array:
                 { k: 'buyout', label: 'Buyout', color: '#fbbf24' },
                 { k: 'leadership', label: 'Leadership', color: '#f472b6' },
                 { k: 'playbook', label: 'Playbook', color: '#a78bfa' },
+                { k: 'technicals', label: 'Technical Opinion', color: '#22d3ee' },
               ].map(w => (
                 <div key={w.k} className="rounded-xl p-4 border" style={{ background: 'rgba(30,41,59,0.3)', borderColor: 'rgba(51,65,85,0.4)' }}>
                   <div className="flex items-center gap-2 mb-3"><div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(51,65,85,0.4)' }}><BarChart3 className="w-4 h-4" style={{ color: w.color }} /></div><span className="text-sm font-medium text-slate-200">{w.label}</span></div>
@@ -5269,6 +5275,18 @@ Respond with ONLY a JSON array:
                                 ) : null)}
                               </h4>
                               <p className="text-sm text-slate-200 leading-relaxed whitespace-pre-wrap">{s.playbookAnalysis}</p>
+                            </div>
+                          )}
+
+                          {/* Technical Opinion (Barchart-style, computed) */}
+                          {s.techSignals && (
+                            <div className="mb-4 p-3 rounded-xl border" style={{ background: 'rgba(34,211,238,0.05)', borderColor: 'rgba(34,211,238,0.2)' }}>
+                              <p className="text-xs font-semibold mb-2 flex items-center gap-2" style={{ color: '#22d3ee' }}>Technical Opinion <span className="px-2 py-0.5 rounded text-[11px] font-bold" style={{ background: s.techBuys > s.techSells ? 'rgba(16,185,129,0.2)' : s.techSells > s.techBuys ? 'rgba(239,68,68,0.2)' : 'rgba(100,116,139,0.2)', color: s.techBuys > s.techSells ? '#34d399' : s.techSells > s.techBuys ? '#f87171' : '#94a3b8' }}>{s.techOpinion}</span><span className="text-slate-500 font-normal">{s.techBuys}/13 indicators on Buy</span></p>
+                              <div className="flex flex-wrap gap-1.5">
+                                {s.techSignals.map(sig => (
+                                  <span key={sig.name} className="px-2 py-0.5 rounded text-[10px]" style={{ background: sig.signal === 'buy' ? 'rgba(16,185,129,0.12)' : sig.signal === 'sell' ? 'rgba(239,68,68,0.12)' : 'rgba(100,116,139,0.12)', color: sig.signal === 'buy' ? '#34d399' : sig.signal === 'sell' ? '#f87171' : '#94a3b8' }}>{sig.name}: {sig.signal}</span>
+                                ))}
+                              </div>
                             </div>
                           )}
 
