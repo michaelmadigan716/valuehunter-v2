@@ -14,7 +14,7 @@ function sameOrigin(request) {
 export async function GET(request) {
   if (!kvConfigured()) return Response.json({ error: 'KV not configured' }, { status: 500 });
   if (!authorized(request)) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-  return Response.json(await runWeeklyPass('main'));
+  return Response.json(await runWeeklyPass('main', { fromCron: true }));
 }
 export async function POST(request) {
   if (!kvConfigured()) return Response.json({ error: 'KV not configured' }, { status: 500 });

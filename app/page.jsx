@@ -1136,6 +1136,7 @@ export default function StockResearchApp() {
   const switchWorkspace = async (ws) => {
     if (ws === workspaceRef.current) return;
     workspaceRef.current = ws; setWorkspace(ws);
+    setSectorFilter(ws === 'test' ? 'all' : 'hunt');
     try { localStorage.setItem('singularityhunter_workspace', ws); } catch (e) {}
     jobProgressRef.current = {};
     await loadWorkspaceSession(ws);
@@ -1501,6 +1502,7 @@ export default function StockResearchApp() {
         if (!res.ok) return;
         const data = await res.json();
         if (data.universe_meta) setUniverseMeta(data.universe_meta);
+        if (savedWs === 'test') setSectorFilter('all');
         if (savedWs === 'test' && (!data.session || !data.session.stocks?.length)) { setStatus({ type: 'ready', msg: 'Test workspace is empty - seed it or run a Base Scan (100 stocks)' }); return; }
         if (!data.session || !Array.isArray(data.session.stocks) || data.session.stocks.length === 0) {
           // No cloud session yet - seed it from the local one
@@ -3043,15 +3045,6 @@ Respond with ONLY a JSON array:
             {workspace === 'test' && stocks.length === 0 && (
               <button onClick={seedTestWorkspace} disabled={isSeeding} className="px-3 py-2.5 rounded-xl text-xs font-semibold border" style={{ background: 'rgba(245,158,11,0.12)', borderColor: 'rgba(245,158,11,0.4)', color: '#fbbf24' }}>{isSeeding ? 'Seeding...' : 'Seed 100 from Main'}</button>
             )}
-            <div className="relative">
-              <button onClick={() => runScheduledPass('daily')} disabled={!!isSchedulingPass} className="px-3 py-2.5 rounded-xl text-xs font-semibold border" style={{ background: 'rgba(167,139,250,0.12)', borderColor: 'rgba(167,139,250,0.4)', color: '#a78bfa' }} title="Run the daily targeted pass now: all 7 scans on watchlist + stocks hitting your minimums (insider buy <30d, technicals >=85, composite >=65, playbook >=70), skipping recently scanned">
-                {isSchedulingPass === 'daily' ? 'Queuing...' : 'Daily pass'}
-              </button>
-            </div>
-            <button onClick={() => runScheduledPass('weekly')} disabled={!!isSchedulingPass} className="px-3 py-2.5 rounded-xl text-xs font-semibold border" style={{ background: 'rgba(167,139,250,0.12)', borderColor: 'rgba(167,139,250,0.4)', color: '#a78bfa' }} title={workspace === 'test' ? "Run all 7 scans on the Test session (100 stocks, grok-4.3)" : "Run the weekly full pass now: all 7 scans across every Hunt-tier stock + watchlist"}>
-              {isSchedulingPass === 'weekly' ? 'Queuing...' : 'Weekly pass'}
-            </button>
-            
             {/* Run Base Scan Button with Dropdown */}
             <div className="relative">
               <div className="flex">
@@ -3358,6 +3351,37 @@ Respond with ONLY a JSON array:
                 </div>
               </div>
               
+              {/* Scheduled scan passes (Main workspace only) */}
+              <div className="mb-3 p-3 rounded-lg border" style={{ background: 'rgba(167,139,250,0.05)', borderColor: 'rgba(167,139,250,0.25)' }}>
+                <span className="text-sm text-slate-200">Scheduled scan passes</span>
+                <p className="text-xs text-slate-500 mb-2">Run automatically on the Main session. Toggle each on or off - nothing here runs on click.</p>
+                {[
+                  { key: 'weekly', title: 'Weekly full pass', when: 'Sundays ~2:00am ET', what: 'All 7 scans (Conviction, Technical, Valuation, Momentum, Buyout, Leadership, Playbook) on every Hunt-tier stock plus the watchlist. Smartest model.' },
+                  { key: 'daily', title: 'Daily targeted pass', when: 'Every day ~9:00am ET', what: `All 7 scans only on stocks earning it: on the watchlist, insider buy in the last ${appSettings.dailyMin?.insiderDays ?? 30} days, technicals ≥ ${appSettings.dailyMin?.techScore ?? 85}% buy, composite ≥ ${appSettings.dailyMin?.composite ?? 65}, or playbook ≥ ${appSettings.dailyMin?.playbookScore ?? 70}. Skips anything scanned in the last ${appSettings.rescanDays ?? 3} days. Max ${appSettings.dailyCap ?? 50} stocks.` },
+                ].map(p => {
+                  const on = appSettings.schedules?.[p.key]?.enabled !== false;
+                  return (
+                    <div key={p.key} className="flex items-start justify-between gap-3 py-2 border-t" style={{ borderColor: 'rgba(51,65,85,0.4)' }}>
+                      <div>
+                        <p className="text-sm text-slate-200">{p.title} <span className="text-xs text-slate-500">- {p.when}</span></p>
+                        <p className="text-xs text-slate-500 mt-0.5">{p.what}</p>
+                      </div>
+                      <button
+                        onClick={async () => {
+                          const next = { ...appSettings, schedules: { ...(appSettings.schedules || {}), [p.key]: { enabled: !on } } };
+                          setAppSettings(next);
+                          try { const res = await fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ settings: { schedules: next.schedules } }) }); const d = await res.json(); if (d?.settings) setAppSettings(d.settings); } catch (e) {}
+                        }}
+                        className="w-12 h-6 rounded-full transition-colors shrink-0 mt-1"
+                        style={{ background: on ? '#10b981' : 'rgba(51,65,85,0.5)' }}
+                      >
+                        <div className="w-5 h-5 rounded-full bg-white transition-transform" style={{ transform: on ? 'translateX(26px)' : 'translateX(2px)' }} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+
               {/* Scan eligibility tiers */}
               <div className="mb-3 p-3 rounded-lg border" style={{ background: 'rgba(16,185,129,0.05)', borderColor: 'rgba(16,185,129,0.2)' }}>
                 <span className="text-sm text-slate-200">Scan eligibility tiers</span>

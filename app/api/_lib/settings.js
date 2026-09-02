@@ -9,6 +9,7 @@ export const DEFAULT_SETTINGS = {
   dailyCap: 50,               // max stocks per daily targeted pass (10 in testing)
   dailyMin: { composite: 65, insiderDays: 30, techScore: 85, playbookScore: 70 },
   rescanDays: 3,              // don't re-run a scan on a stock scanned within N days
+  schedules: { weekly: { enabled: true }, daily: { enabled: true } },
 };
 
 export async function getSettings() {

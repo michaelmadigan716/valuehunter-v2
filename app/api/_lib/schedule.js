@@ -1,6 +1,7 @@
 // Builds and enqueues scheduled deep-scan jobs.
 import { kvGetJSON, kvSetJSON, wsKey } from './kv';
 import { getSettings, wsConfig } from './settings';
+import { classifyTier } from '../../../lib/tiers';
 
 const ALL_AGENTS = ['conviction', 'technical', 'valuation', 'momentum', 'buyout', 'leadership', 'playbook'];
 
@@ -33,12 +34,14 @@ async function enqueue(kind, tickers, cfg, ws) {
 }
 
 // Weekly: every Hunt-tier stock + the watchlist (capped in testing mode)
-export async function runWeeklyPass(ws = 'main') {
+export async function runWeeklyPass(ws = 'main', opts = {}) {
   const settings = await getSettings();
+  if (opts.fromCron && settings.schedules?.weekly?.enabled === false) return { ok: true, kind: 'weekly', ws, queued: 0, note: 'weekly schedule is off' };
   const cfg = wsConfig(ws, settings);
   const { stocks, watchlist } = await loadStocksWithResults(ws);
+  const tierOf = (s) => s.tier || classifyTier(s).tier;
   const pool = stocks
-    .filter(s => s.tier === 'A' || watchlist[s.ticker])
+    .filter(s => ws === 'test' || tierOf(s) === 'A' || watchlist[s.ticker])
     .sort((a, b) => (b.compositeScore || 0) - (a.compositeScore || 0))
     .map(s => s.ticker);
   const capped = cfg.limit ? pool.slice(0, cfg.limit) : pool.slice(0, 2000);
@@ -46,8 +49,9 @@ export async function runWeeklyPass(ws = 'main') {
 }
 
 // Daily: only stocks that hit a minimum, not scanned in the last N days
-export async function runDailyPass(ws = 'main') {
+export async function runDailyPass(ws = 'main', opts = {}) {
   const settings = await getSettings();
+  if (opts.fromCron && settings.schedules?.daily?.enabled === false) return { ok: true, kind: 'daily', ws, queued: 0, note: 'daily schedule is off' };
   const cfg = wsConfig(ws, settings);
   const { stocks, watchlist } = await loadStocksWithResults(ws);
   const m = settings.dailyMin;
@@ -62,7 +66,7 @@ export async function runDailyPass(ws = 'main') {
     return false;
   };
   const pool = stocks
-    .filter(s => s.tier !== 'C')
+    .filter(s => (s.tier || classifyTier(s).tier) !== 'C')
     .filter(qualifies)
     .filter(s => !s.scannedAt || s.scannedAt < cutoff)
     .sort((a, b) => (watchlist[b.ticker] ? 1 : 0) - (watchlist[a.ticker] ? 1 : 0) || (b.compositeScore || 0) - (a.compositeScore || 0))
