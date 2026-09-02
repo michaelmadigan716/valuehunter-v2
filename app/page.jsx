@@ -1350,27 +1350,6 @@ End with: OPTIONS_SCORE: [0-100]`;
   }
 }
 
-// ============================================
-// PARABOLIC GROWTH - merged Explosive + Parabolic scan
-// ============================================
-async function getParabolicGrowthAnalysis(stock, model = 'grok-4.6') {
-  try {
-    const prompt = `Evaluate PARABOLIC GROWTH potential for ${stock.ticker} (${stock.name}), sector: ${stock.sector || 'Unknown'}, price $${stock.price?.toFixed(2)}, market cap $${stock.marketCap ? Math.round(stock.marketCap / 1000000) + 'M' : 'unknown'}${stock.change != null ? `, today ${stock.change >= 0 ? '+' : ''}${stock.change.toFixed(1)}%` : ''}.
-
-Assess BOTH angles in one verdict:
-1. EXPLOSIVE DEMAND: could this company land singularity-scale contracts or demand inflections (AI infrastructure, robotics, energy) that step-change revenue? Who would the customers be and how big?
-2. PRICE CONTINUATION: if the stock is already moving, does the move have fuel left (float, volume character, narrative strength, upcoming catalysts) or is it exhausted?
-
-Score 0-100 where 80+ = high probability of parabolic growth ahead.
-End with: PARABOLIC_GROWTH_SCORE: [0-100]`;
-
-    const text = await callAgentGrok(prompt, model);
-    const { score, cleaned } = extractScore(text, 'PARABOLIC_GROWTH_SCORE');
-    return { parabolicGrowthAnalysis: cleaned, parabolicGrowthScore: score };
-  } catch (e) {
-    return { parabolicGrowthAnalysis: `Error: ${e.message}`, parabolicGrowthScore: null };
-  }
-}
 
 // ============================================
 // MOMENTUM - one stat from 3 sub-scans:
@@ -1378,7 +1357,6 @@ End with: PARABOLIC_GROWTH_SCORE: [0-100]`;
 // ============================================
 async function getMomentumAnalysis(stock, model = 'grok-4.6') {
   try {
-    // Shared price context for the sub-scans
     let chartBlock = 'No price history available.';
     let metricsLine = '';
     try {
@@ -1389,51 +1367,30 @@ async function getMomentumAnalysis(stock, model = 'grok-4.6') {
         if (m) metricsLine = `1mo ${m.pct21d != null ? (m.pct21d >= 0 ? '+' : '') + m.pct21d.toFixed(1) + '%' : 'n/a'} | 3mo ${m.pct63d != null ? (m.pct63d >= 0 ? '+' : '') + m.pct63d.toFixed(1) + '%' : 'n/a'} | volume ${m.volumeSurge != null ? m.volumeSurge.toFixed(1) + 'x avg' : 'n/a'} | realized vol ${m.realizedVol != null ? m.realizedVol.toFixed(0) + '%' : 'n/a'}`;
       }
     } catch (e) {}
-    const base = `${stock.ticker} (${stock.name}), sector ${stock.sector || 'Unknown'}, price $${stock.price?.toFixed(2)}, market cap $${stock.marketCap ? Math.round(stock.marketCap / 1000000) + 'M' : 'unknown'}.`;
-
-    // Sub-scan 1: chart momentum quality (last couple of months)
-    const chartPrompt = `Analyze the CHART MOMENTUM of ${base}
+    const prompt = `MOMENTUM ANALYSIS for ${stock.ticker} (${stock.name}), sector ${stock.sector || 'Unknown'}, price $${stock.price?.toFixed(2)}, market cap $${stock.marketCap ? Math.round(stock.marketCap) + 'M' : 'unknown'}.
 ${metricsLine ? `Computed stats: ${metricsLine}` : ''}
 DAILY BARS (last 60 days):
 ${chartBlock}
 
-Judge trend structure, higher lows/highs, volume confirmation, pullback behavior, and whether this is early, mid, or late in the move. Score 0-100 where 80+ = strong healthy momentum.
-End with: CHART_SCORE: [0-100]`;
+Cover three angles, searching for current news where it helps:
+1. CHART: trend structure over the last couple of months - higher lows/highs, volume confirmation, pullback behavior, early/mid/late stage.
+2. CONTINUATION: what has been driving the stock and what is coming (catalysts, earnings, sector flows, narrative strength vs exhaustion) - odds momentum continues 1-3 months.
+3. PARABOLIC POTENTIAL: could this go parabolic - explosive demand/contract inflection (AI, robotics, energy), float and volume character, narrative fuel left.
+Then give one overall momentum verdict.
+End with EXACTLY these lines:
+CHART_SCORE: [0-100]
+CONTINUATION_SCORE: [0-100]
+PARABOLIC_SCORE: [0-100]
+MOMENTUM_SCORE: [0-100]`;
 
-    // Sub-scan 2: continuation odds (news/catalyst driven)
-    const contPrompt = `Assess the odds that MOMENTUM CONTINUES for ${base}
-Search for what has been driving the stock recently and what is coming: catalysts, earnings, sector flows, analyst/insider activity, narrative strength vs exhaustion signs.
-Score 0-100 where 80+ = momentum very likely to continue over the next 1-3 months.
-End with: CONTINUATION_SCORE: [0-100]`;
-
-    // Sub-scan 3: market room + moat durability
-    const roomPrompt = `Assess GROWTH ROOM and MOAT for ${base}
-Two questions: (1) Market conditions - how large is the opportunity relative to its current size; does it have a lot of space to grow into, and are sector conditions favorable? (2) Moat - what protects this company (technology, contracts, switching costs, regulation) so its momentum is durable rather than easily competed away?
-Score 0-100 where 80+ = big open market AND a defensible moat.
-End with: ROOM_MOAT_SCORE: [0-100]`;
-
-    // All three sub-scans run in parallel - total time = slowest call
-    const [chartText, contText, roomText] = await Promise.all([
-      callAgentGrok(chartPrompt, model),
-      callAgentGrok(contPrompt, model, { liveSearch: true }),
-      callAgentGrok(roomPrompt, model, { liveSearch: true }),
-    ]);
-
-    const chart = extractScore(chartText, 'CHART_SCORE');
-    const cont = extractScore(contText, 'CONTINUATION_SCORE');
-    const room = extractScore(roomText, 'ROOM_MOAT_SCORE');
-    const parts = [chart.score, cont.score, room.score].filter(v => v !== null);
-    const momentumScore = parts.length > 0
-      ? Math.round((chart.score ?? 50) * 0.35 + (cont.score ?? 50) * 0.35 + (room.score ?? 50) * 0.30)
-      : null;
-
-    const analysis = [
-      `CHART (${chart.score ?? 'n/a'}/100)\n${chart.cleaned}`,
-      `CONTINUATION (${cont.score ?? 'n/a'}/100)\n${cont.cleaned}`,
-      `MARKET ROOM & MOAT (${room.score ?? 'n/a'}/100)\n${room.cleaned}`,
-    ].join('\n\n');
-
-    return { momentumAnalysis: analysis, momentumScore, momentumChartScore: chart.score, momentumContinuationScore: cont.score, momentumRoomMoatScore: room.score };
+    const text = await callAgentGrok(prompt, model, { liveSearch: true });
+    const chart = extractScore(text, 'CHART_SCORE');
+    const cont = extractScore(chart.cleaned, 'CONTINUATION_SCORE');
+    const para = extractScore(cont.cleaned, 'PARABOLIC_SCORE');
+    const overall = extractScore(para.cleaned, 'MOMENTUM_SCORE');
+    const momentumScore = overall.score ?? ([chart.score, cont.score, para.score].some(v => v !== null)
+      ? Math.round((chart.score ?? 50) * 0.35 + (cont.score ?? 50) * 0.35 + (para.score ?? 50) * 0.30) : null);
+    return { momentumAnalysis: overall.cleaned, momentumScore, momentumChartScore: chart.score, momentumContinuationScore: cont.score, momentumParabolicScore: para.score };
   } catch (e) {
     return { momentumAnalysis: `Error: ${e.message}`, momentumScore: null };
   }
@@ -1445,140 +1402,68 @@ End with: ROOM_MOAT_SCORE: [0-100]`;
 // ============================================
 async function getBuyoutAnalysis(stock, model = 'grok-4.6') {
   try {
-    const base = `${stock.ticker} (${stock.name}), sector ${stock.sector || 'Unknown'}, price $${stock.price?.toFixed(2)}, market cap $${stock.marketCap ? Math.round(stock.marketCap / 1000000) + 'M' : 'unknown'}.`;
+    const base = `${stock.ticker} (${stock.name}), sector ${stock.sector || 'Unknown'}, price $${stock.price?.toFixed(2)}, market cap $${stock.marketCap ? Math.round(stock.marketCap) + 'M' : 'unknown'}`;
+    const prompt = `BUYOUT LIKELIHOOD analysis for ${base}. Search the web and X for current evidence on all four angles:
+1. PEOPLE & HIRES: recent executive/board appointments, retained bankers or advisors; flag people whose backgrounds suggest positioning for a sale (M&A, investment banking, prior exits, "strategic alternatives" specialists) and briefly note their track records.
+2. STATED INTENT: "exploring strategic alternatives" language, activist pressure, going-private chatter, management commentary on consolidation, prior rejected offers.
+3. SOCIAL BUZZ: StockTwits/X/Reddit and financial media buyout speculation - substantive (credible reporting, named acquirers, deal-tied options activity) vs meme noise.
+4. STRATEGIC FIT: is the sector consolidating; name the most likely strategic or PE acquirers and why; valuation attractiveness to a buyer; float/insider ownership that eases or blocks a deal.
+Then give one overall buyout-likelihood verdict.
+End with EXACTLY these lines:
+PEOPLE_SCORE: [0-100]
+INTENT_SCORE: [0-100]
+BUZZ_SCORE: [0-100]
+FIT_SCORE: [0-100]
+BUYOUT_SCORE: [0-100]`;
 
-    // Angle 1: people/hires - executives and hires whose skillsets suggest
-    // positioning for a sale
-    const peoplePrompt = `Investigate RECENT HIRES AND EXECUTIVE APPOINTMENTS at ${base}
-Search for board changes, new CFO/CEO/corp-dev hires, retained advisors or bankers. Flag people whose backgrounds suggest positioning for a sale: M&A experience, prior exits, investment banking, "strategic alternatives" specialists.
-Score 0-100 for how much the people signal points to a potential buyout.
-If specific individuals deserve a deeper background check, end with DIG_DEEPER: yes and KEY_PEOPLE: [names, semicolon-separated]. Otherwise DIG_DEEPER: no.
-End with: PEOPLE_SCORE: [0-100]`;
-    const peoplePromise = callAgentGrok(peoplePrompt, model, { liveSearch: true });
-
-    // Angle 2: stated intent - has the company signaled it wants to sell
-    const intentPrompt = `Search for signals that ${base} is SEEKING OR OPEN TO A BUYOUT.
-Look for: "exploring strategic alternatives" language, retained financial advisors, activist investors pushing a sale, going-private chatter, management commentary about consolidation, prior rejected offers.
-Score 0-100 where 80+ = company has clearly signaled openness to a sale.
-End with: INTENT_SCORE: [0-100]`;
-
-    // Angle 3: social/StockTwits buzz
-    const buzzPrompt = `Search StockTwits, X/Twitter, Reddit and financial media for BUYOUT BUZZ about ${base}
-Distinguish substantive chatter (unusual options activity tied to deal speculation, credible rumor reporting, repeated acquirer names) from meme noise.
-Score 0-100 for the level of credible buyout speculation right now.
-End with: BUZZ_SCORE: [0-100]`;
-
-    // Angle 4: strategic fit - would anyone actually want to buy it
-    const fitPrompt = `Assess STRATEGIC FIT of ${base} as an acquisition target.
-Consider: is its sector consolidating; which specific acquirers (strategic or PE) would want its technology, contracts, or market position and why; is its valuation attractive to a buyer; float/insider ownership that would ease or block a deal.
-Name the most likely acquirers. Score 0-100 for target attractiveness.
-End with: FIT_SCORE: [0-100]`;
-
-    // People, intent, buzz, and fit all run in parallel; only the
-    // conditional people deep-dive has to wait for the people result
-    const [peopleText, intentText, buzzText, fitText] = await Promise.all([
-      peoplePromise,
-      callAgentGrok(intentPrompt, model, { liveSearch: true }),
-      callAgentGrok(buzzPrompt, model, { liveSearch: true }),
-      callAgentGrok(fitPrompt, model, { liveSearch: true }),
-    ]);
-    const people = extractScore(peopleText, 'PEOPLE_SCORE');
-    const intent = extractScore(intentText, 'INTENT_SCORE');
-    const buzz = extractScore(buzzText, 'BUZZ_SCORE');
-    const fit = extractScore(fitText, 'FIT_SCORE');
-    let peopleScore = people.score;
-    let peopleDeepText = null;
-
-    const dig = /DIG_DEEPER[:\s]*yes/i.test(peopleText);
-    const keyPeople = peopleText.match(/KEY_PEOPLE[:\s]*([^\n]+)/i)?.[1]?.trim();
-    if (dig && keyPeople) {
-      const deepPrompt = `Deep background check on these people at ${stock.ticker} (${stock.name}): ${keyPeople}
-Search their career history: companies they helped sell or take private, M&A deals they led, banking/PE backgrounds, patterns of joining companies shortly before an exit.
-How strongly does their presence suggest ${stock.ticker} is being positioned for a buyout? Score 0-100.
-End with: PEOPLE_DEEP_SCORE: [0-100]`;
-      const deep = extractScore(await callAgentGrok(deepPrompt, model, { liveSearch: true }), 'PEOPLE_DEEP_SCORE');
-      peopleDeepText = deep.cleaned;
-      if (deep.score !== null) peopleScore = Math.round(((people.score ?? 50) + deep.score * 2) / 3);
-    }
-
-    const have = [peopleScore, intent.score, buzz.score, fit.score].filter(v => v !== null);
-    const buyoutScore = have.length > 0
-      ? Math.round((peopleScore ?? 50) * 0.25 + (intent.score ?? 50) * 0.30 + (buzz.score ?? 50) * 0.15 + (fit.score ?? 50) * 0.30)
-      : null;
-
-    const sections = [
-      `PEOPLE & HIRES (${peopleScore ?? 'n/a'}/100)\n${people.cleaned.replace(/DIG_DEEPER[:\s]*(yes|no)/gi, '').replace(/KEY_PEOPLE[:\s]*[^\n]+/gi, '').trim()}`,
-    ];
-    if (peopleDeepText) sections.push(`KEY PEOPLE DEEP-DIVE\n${peopleDeepText}`);
-    sections.push(`STATED INTENT (${intent.score ?? 'n/a'}/100)\n${intent.cleaned}`);
-    sections.push(`SOCIAL BUZZ (${buzz.score ?? 'n/a'}/100)\n${buzz.cleaned}`);
-    sections.push(`STRATEGIC FIT (${fit.score ?? 'n/a'}/100)\n${fit.cleaned}`);
-
-    return {
-      buyoutAnalysis: sections.join('\n\n'),
-      buyoutScore,
-      buyoutPeopleScore: peopleScore,
-      buyoutIntentScore: intent.score,
-      buyoutBuzzScore: buzz.score,
-      buyoutFitScore: fit.score,
-    };
+    const text = await callAgentGrok(prompt, model, { liveSearch: true });
+    const people = extractScore(text, 'PEOPLE_SCORE');
+    const intent = extractScore(people.cleaned, 'INTENT_SCORE');
+    const buzz = extractScore(intent.cleaned, 'BUZZ_SCORE');
+    const fit = extractScore(buzz.cleaned, 'FIT_SCORE');
+    const overall = extractScore(fit.cleaned, 'BUYOUT_SCORE');
+    const buyoutScore = overall.score ?? ([people.score, intent.score, buzz.score, fit.score].some(v => v !== null)
+      ? Math.round((people.score ?? 50) * 0.25 + (intent.score ?? 50) * 0.30 + (buzz.score ?? 50) * 0.15 + (fit.score ?? 50) * 0.30) : null);
+    return { buyoutAnalysis: overall.cleaned, buyoutScore, buyoutPeopleScore: people.score, buyoutIntentScore: intent.score, buyoutBuzzScore: buzz.score, buyoutFitScore: fit.score };
   } catch (e) {
     return { buyoutAnalysis: `Error: ${e.message}`, buyoutScore: null };
   }
 }
 
 // ============================================
-// PASSION - leadership passion score from 3 sub-scans:
-// CEO quality/commitment, public communication, interview vibes
+// LEADERSHIP - CEO quality, team depth, public presence, interview vibes
+// (single call; absorbs the former Team and Passion scans)
 // ============================================
-async function getPassionAnalysis(stock, model = 'grok-4.6') {
+async function getLeadershipAnalysis(stock, model = 'grok-4.6') {
   try {
-    const base = `${stock.ticker} (${stock.name}), sector ${stock.sector || 'Unknown'}, market cap $${stock.marketCap ? Math.round(stock.marketCap / 1000000) + 'M' : 'unknown'}.`;
+    const base = `${stock.ticker} (${stock.name}), sector ${stock.sector || 'Unknown'}, market cap $${stock.marketCap ? Math.round(stock.marketCap) + 'M' : 'unknown'}`;
+    const prompt = `LEADERSHIP analysis for ${base}. Search for real evidence (filings, interviews, podcasts, X posts, press) and cover:
+1. CEO: founder-led or hired; skin in the game (ownership, insider buys); execution track record; focused on THIS business; technical depth.
+2. TEAM: depth and quality of the executive team and board; relevant experience; capital allocation discipline; recent notable hires or departures.
+3. PUBLIC PRESENCE: how transparent and communicative leadership is - shareholder letters, interviews, conference appearances, X activity, investor access.
+4. VIBES: from actual recent interviews/appearances - genuine passion and command of detail vs scripted promotion; conviction about the mission; candor about problems; do employees/customers echo it.
+Then give one overall leadership verdict.
+End with EXACTLY these lines:
+CEO_SCORE: [0-100]
+TEAM_SCORE: [0-100]
+PUBLIC_SCORE: [0-100]
+VIBES_SCORE: [0-100]
+LEADERSHIP_SCORE: [0-100]`;
 
-    // Sub-scan 1: CEO quality and commitment to the business
-    const ceoPrompt = `Investigate the CEO (and founding team) of ${base}
-Search for who leads the company and judge: founder-led or hired gun; skin in the game (ownership, insider buys); track record of execution; whether they are focused on THIS business or spread across ventures; technical depth in their domain.
-Score 0-100 where 80+ = an exceptional, deeply committed operator.
-End with: CEO_SCORE: [0-100]`;
-
-    // Sub-scan 2: how public/communicative leadership is
-    const publicPrompt = `Investigate how PUBLIC and COMMUNICATIVE the leadership of ${base} is.
-Search for: frequency of shareholder updates and letters, interviews, podcasts, conference appearances, X/Twitter activity, earnings-call accessibility, direct engagement with investors.
-Score 0-100 where 80+ = highly transparent leadership that communicates constantly and candidly.
-End with: PUBLIC_SCORE: [0-100]`;
-
-    // Sub-scan 3: the vibes of that content - passion, conviction, authenticity
-    const vibesPrompt = `Find recent INTERVIEWS, PODCASTS, or PUBLIC APPEARANCES by executives of ${base}
-Read/watch coverage of what they actually said and judge the VIBES: genuine passion and command of detail vs scripted promotion; conviction about the mission; energy; candor about challenges; whether employees/customers echo that energy. Use any unique angles needed to find real content (X posts, YouTube, transcripts, local press).
-Score 0-100 where 80+ = electric, mission-driven leadership energy.
-End with: VIBES_SCORE: [0-100]`;
-
-    // All three sub-scans run in parallel - total time = slowest call
-    const [ceoText, pubText, vibesText] = await Promise.all([
-      callAgentGrok(ceoPrompt, model, { liveSearch: true }),
-      callAgentGrok(publicPrompt, model, { liveSearch: true }),
-      callAgentGrok(vibesPrompt, model, { liveSearch: true }),
-    ]);
-    const ceo = extractScore(ceoText, 'CEO_SCORE');
-    const pub = extractScore(pubText, 'PUBLIC_SCORE');
-    const vibes = extractScore(vibesText, 'VIBES_SCORE');
-
-    const have = [ceo.score, pub.score, vibes.score].filter(v => v !== null);
-    const passionScore = have.length > 0
-      ? Math.round((ceo.score ?? 50) * 0.40 + (pub.score ?? 50) * 0.25 + (vibes.score ?? 50) * 0.35)
-      : null;
-
-    const analysis = [
-      `CEO QUALITY (${ceo.score ?? 'n/a'}/100)\n${ceo.cleaned}`,
-      `PUBLIC PRESENCE (${pub.score ?? 'n/a'}/100)\n${pub.cleaned}`,
-      `INTERVIEW VIBES (${vibes.score ?? 'n/a'}/100)\n${vibes.cleaned}`,
-    ].join('\n\n');
-
-    return { passionAnalysis: analysis, passionScore, passionCeoScore: ceo.score, passionPublicScore: pub.score, passionVibesScore: vibes.score };
+    const text = await callAgentGrok(prompt, model, { liveSearch: true });
+    const ceo = extractScore(text, 'CEO_SCORE');
+    const team = extractScore(ceo.cleaned, 'TEAM_SCORE');
+    const pub = extractScore(team.cleaned, 'PUBLIC_SCORE');
+    const vibes = extractScore(pub.cleaned, 'VIBES_SCORE');
+    const overall = extractScore(vibes.cleaned, 'LEADERSHIP_SCORE');
+    const leadershipScore = overall.score ?? ([ceo.score, team.score, pub.score, vibes.score].some(v => v !== null)
+      ? Math.round((ceo.score ?? 50) * 0.35 + (team.score ?? 50) * 0.25 + (pub.score ?? 50) * 0.15 + (vibes.score ?? 50) * 0.25) : null);
+    return { leadershipAnalysis: overall.cleaned, leadershipScore, leadershipCeoScore: ceo.score, leadershipTeamScore: team.score, leadershipPublicScore: pub.score, leadershipVibesScore: vibes.score };
   } catch (e) {
-    return { passionAnalysis: `Error: ${e.message}`, passionScore: null };
+    return { leadershipAnalysis: `Error: ${e.message}`, leadershipScore: null };
   }
 }
+
 
 // ============================================
 // PLAYBOOKS - the user's proven winning circumstances, scored per stock
@@ -1991,13 +1876,11 @@ export default function StockResearchApp() {
     computedEnabled: true,      // free momentum/volatility metrics from price data
     grokEnabled: true,          // Conviction (insider) scan
     technicalEnabled: true,     // Cup & Handle scan
-    teamEnabled: true,
     valuationEnabled: true,
-    parabolicGrowthEnabled: true,
-    momentumEnabled: false,     // 3 AI calls per stock - opt in
-    buyoutEnabled: false,       // 4-5 AI calls per stock - opt in
-    passionEnabled: false,      // 3 AI calls per stock - opt in
-    playbookEnabled: false,     // 1 live-search AI call per stock - opt in
+    momentumEnabled: false,     // live-search scans - opt in
+    buyoutEnabled: false,
+    leadershipEnabled: false,
+    playbookEnabled: false,
     grokCount: 25,              // shared "stocks to analyze" count for all AI agent scans
     grokOnlySingularity70: false  // Only analyze stocks with singularity >= 70
   });
@@ -2075,12 +1958,10 @@ export default function StockResearchApp() {
     conviction: 15,
     cupHandle: 10,
     singularity: 20,
-    team: 10,
     valuation: 10,
-    parabolicGrowth: 10,
     momentum: 15,
     buyout: 15,
-    passion: 10,
+    leadership: 10,
     playbook: 15
   });
   const [fullSpectrumPhase, setFullSpectrumPhase] = useState('');
@@ -2090,7 +1971,7 @@ export default function StockResearchApp() {
     
     // Calculate total weight (base + AI)
     const baseTotal = Object.values(w).reduce((a, b) => a + b, 0);
-    const aiTotal = (aw.conviction || 0) + (aw.cupHandle || 0) + (aw.singularity || 0) + (aw.team || 0) + (aw.valuation || 0) + (aw.parabolicGrowth || 0) + (aw.momentum || 0) + (aw.buyout || 0) + (aw.passion || 0) + (aw.playbook || 0);
+    const aiTotal = (aw.conviction || 0) + (aw.cupHandle || 0) + (aw.singularity || 0) + (aw.valuation || 0) + (aw.momentum || 0) + (aw.buyout || 0) + (aw.leadership || 0) + (aw.playbook || 0);
     const grandTotal = baseTotal + aiTotal;
     
     // If all weights are 0, just return unsorted
@@ -2146,11 +2027,6 @@ export default function StockResearchApp() {
         }
       }
 
-      // AI scores - Team quality (0-100 scale)
-      if (aw.team > 0 && s.teamScore !== null && s.teamScore !== undefined) {
-        score += (s.teamScore / 100) * (aw.team / grandTotal) * 100;
-      }
-
       // AI scores - Valuation (0-100 scale, high = undervalued)
       if (aw.valuation > 0 && s.valuationScore !== null && s.valuationScore !== undefined) {
         score += (s.valuationScore / 100) * (aw.valuation / grandTotal) * 100;
@@ -2158,7 +2034,7 @@ export default function StockResearchApp() {
 
       // Momentum + options scores (0-100 scales, weights default 0)
       const simpleContrib = [
-        ['parabolicGrowth', s.parabolicGrowthScore], ['momentum', s.momentumScore], ['buyout', s.buyoutScore], ['passion', s.passionScore], ['playbook', s.playbookScore],
+        ['momentum', s.momentumScore], ['buyout', s.buyoutScore], ['leadership', s.leadershipScore], ['playbook', s.playbookScore],
       ];
       for (const [k, v] of simpleContrib) {
         if ((aw[k] || 0) > 0 && v !== null && v !== undefined) {
@@ -2332,29 +2208,26 @@ export default function StockResearchApp() {
   const [openScanGroup, setOpenScanGroup] = useState(null);
 
   // Table column visibility (scan-score columns toggleable via Columns menu)
-  const DEFAULT_COLS = { netCash: true, insider: true, sg: true, tm: true, vl: true, cv: true, ch: true, low52: true, pg: true, mo: true, by: true, pa: true, pk: true };
+  const DEFAULT_COLS = { netCash: true, insider: true, sg: true, vl: true, cv: true, ch: true, low52: true, mo: true, by: true, ld: true, pk: true };
   const [colVisible, setColVisible] = useState(DEFAULT_COLS);
   const [showColumnsMenu, setShowColumnsMenu] = useState(false);
   useEffect(() => { try { const saved = JSON.parse(localStorage.getItem('singularityhunter_columns') || 'null'); if (saved) setColVisible(prev => ({ ...prev, ...saved })); } catch (e) {} }, []);
   const toggleColumn = (key) => setColVisible(prev => { const next = { ...prev, [key]: !prev[key] }; try { localStorage.setItem('singularityhunter_columns', JSON.stringify(next)); } catch (e) {} return next; });
-  const COLUMN_LABELS = { netCash: 'Net Cash', insider: 'Insider', sg: 'Singularity', tm: 'Team', vl: 'Valuation', cv: 'Conviction', ch: 'Cup & Handle', low52: '% From 52w Low', pg: 'Parabolic Growth', mo: 'Momentum', by: 'Buyout', pa: 'Passion', pk: 'Playbook' };
+  const COLUMN_LABELS = { netCash: 'Net Cash', insider: 'Insider', sg: 'Singularity', vl: 'Valuation', cv: 'Conviction', ch: 'Cup & Handle', low52: '% From 52w Low', mo: 'Momentum', by: 'Buyout', ld: 'Leadership', pk: 'Playbook' };
   const NEW_SCORE_COLS = [
-    { key: 'pg', field: 'parabolicGrowthScore', label: 'PG', title: 'Parabolic Growth score', color: '#4ade80' },
-    { key: 'mo', field: 'momentumScore', label: 'Mo', title: 'Momentum score (chart + continuation + room/moat)', color: '#fb923c' },
+    { key: 'mo', field: 'momentumScore', label: 'Mo', title: 'Momentum (chart + continuation + parabolic potential)', color: '#fb923c' },
     { key: 'by', field: 'buyoutScore', label: 'By', title: 'Buyout likelihood (people + intent + buzz + fit)', color: '#fbbf24' },
-    { key: 'pa', field: 'passionScore', label: 'Pa', title: 'Passion (CEO + public presence + interview vibes)', color: '#f472b6' },
+    { key: 'ld', field: 'leadershipScore', label: 'Ld', title: 'Leadership (CEO + team + public presence + vibes)', color: '#f472b6' },
     { key: 'pk', field: 'playbookScore', label: 'Pk', title: 'Playbook match (best of your winning setups)', color: '#a78bfa' },
   ];
 
   const AGENT_REGISTRY = [
     { id: 'conviction', label: 'Conviction', group: 'core', color: '#34d399', icon: Sparkles, fn: getAIAnalysis, apply: (s, r) => ({ ...s, aiAnalysis: r.analysis, insiderConviction: r.insiderConviction }) },
     { id: 'technical', label: 'Technical (C&H)', group: 'core', color: '#a5b4fc', icon: Activity, fn: getTechnicalAnalysis, apply: (s, r) => ({ ...s, technicalAnalysis: r.technicalAnalysis, cupHandleScore: r.cupHandleScore }) },
-    { id: 'team', label: 'Team', group: 'core', color: '#c084fc', icon: Users, fn: getTeamAnalysis, apply: (s, r) => ({ ...s, teamAnalysis: r.teamAnalysis, teamScore: r.teamScore }) },
     { id: 'valuation', label: 'Valuation', group: 'core', color: '#38bdf8', icon: DollarSign, fn: getValuationAnalysis, apply: (s, r) => ({ ...s, valuationAnalysis: r.valuationAnalysis, valuationScore: r.valuationScore }) },
-    { id: 'parabolicGrowth', label: 'Parabolic Growth', group: 'core', color: '#4ade80', icon: TrendingUp, fn: getParabolicGrowthAnalysis, apply: (s, r) => ({ ...s, parabolicGrowthAnalysis: r.parabolicGrowthAnalysis, parabolicGrowthScore: r.parabolicGrowthScore }) },
-    { id: 'momentum', label: 'Momentum (3-part)', group: 'core', color: '#fb923c', icon: Flame, fn: getMomentumAnalysis, apply: (s, r) => ({ ...s, momentumAnalysis: r.momentumAnalysis, momentumScore: r.momentumScore, momentumChartScore: r.momentumChartScore, momentumContinuationScore: r.momentumContinuationScore, momentumRoomMoatScore: r.momentumRoomMoatScore }) },
+    { id: 'momentum', label: 'Momentum', group: 'core', color: '#fb923c', icon: Flame, fn: getMomentumAnalysis, apply: (s, r) => ({ ...s, momentumAnalysis: r.momentumAnalysis, momentumScore: r.momentumScore, momentumChartScore: r.momentumChartScore, momentumContinuationScore: r.momentumContinuationScore, momentumParabolicScore: r.momentumParabolicScore }) },
     { id: 'buyout', label: 'Buyout Likelihood', group: 'core', color: '#fbbf24', icon: Banknote, fn: getBuyoutAnalysis, apply: (s, r) => ({ ...s, buyoutAnalysis: r.buyoutAnalysis, buyoutScore: r.buyoutScore, buyoutPeopleScore: r.buyoutPeopleScore, buyoutIntentScore: r.buyoutIntentScore, buyoutBuzzScore: r.buyoutBuzzScore, buyoutFitScore: r.buyoutFitScore }) },
-    { id: 'passion', label: 'Passion (3-part)', group: 'core', color: '#f472b6', icon: Radio, fn: getPassionAnalysis, apply: (s, r) => ({ ...s, passionAnalysis: r.passionAnalysis, passionScore: r.passionScore, passionCeoScore: r.passionCeoScore, passionPublicScore: r.passionPublicScore, passionVibesScore: r.passionVibesScore }) },
+    { id: 'leadership', label: 'Leadership', group: 'core', color: '#f472b6', icon: Users, fn: getLeadershipAnalysis, apply: (s, r) => ({ ...s, leadershipAnalysis: r.leadershipAnalysis, leadershipScore: r.leadershipScore, leadershipCeoScore: r.leadershipCeoScore, leadershipTeamScore: r.leadershipTeamScore, leadershipPublicScore: r.leadershipPublicScore, leadershipVibesScore: r.leadershipVibesScore }) },
     { id: 'playbook', label: 'Playbook Match', group: 'core', color: '#a78bfa', icon: Target, fn: (s, m) => getPlaybookAnalysis(s, m, playbooksRef.current), apply: (s, r) => ({ ...s, playbookAnalysis: r.playbookAnalysis, playbookScore: r.playbookScore, playbookBest: r.playbookBest, playbookScores: r.playbookScores }) },
   ];
 
@@ -3665,12 +3538,10 @@ Respond with ONLY a JSON array:
       const spectrumAgentIds = [
         spectrumSettings.grokEnabled && 'conviction',
         spectrumSettings.technicalEnabled && 'technical',
-        spectrumSettings.teamEnabled && 'team',
         spectrumSettings.valuationEnabled && 'valuation',
-        spectrumSettings.parabolicGrowthEnabled && 'parabolicGrowth',
         spectrumSettings.momentumEnabled && 'momentum',
         spectrumSettings.buyoutEnabled && 'buyout',
-        spectrumSettings.passionEnabled && 'passion',
+        spectrumSettings.leadershipEnabled && 'leadership',
         spectrumSettings.playbookEnabled && 'playbook',
       ].filter(Boolean);
 
@@ -3798,7 +3669,7 @@ Respond with ONLY a JSON array:
       if (sortBy === 'valuationScore') {
         return (b.valuationScore ?? -1) - (a.valuationScore ?? -1);
       }
-      if (['parabolicGrowthScore','momentumScore','buyoutScore','passionScore','playbookScore'].includes(sortBy)) {
+      if (['momentumScore','buyoutScore','leadershipScore','playbookScore'].includes(sortBy)) {
         return (b[sortBy] ?? -1) - (a[sortBy] ?? -1);
       }
       if (sortBy === 'fromLow') {
@@ -4132,7 +4003,7 @@ Respond with ONLY a JSON array:
               <button onClick={() => setShowFullSpectrumModal(false)} className="text-slate-400 hover:text-white"><X className="w-5 h-5" /></button>
             </div>
             
-            <p className="text-sm text-slate-400 mb-6">Runs everything in sequence: Base Scan → Singularity Scan → each enabled AI agent below. Momentum runs 3 AI calls per stock and Buyout runs 4-5, so they're off by default.</p>
+            <p className="text-sm text-slate-400 mb-6">Runs everything in sequence: Base Scan → Singularity Scan → each enabled AI agent below. Every agent is one AI call per stock; the live-search ones are off by default.</p>
             
             <div className="space-y-4 mb-6">
               <div>
@@ -4165,7 +4036,7 @@ Respond with ONLY a JSON array:
               </div>
               
               {/* Grok only singularity 70+ option */}
-              {(spectrumSettings.grokEnabled || spectrumSettings.technicalEnabled || spectrumSettings.teamEnabled || spectrumSettings.valuationEnabled || spectrumSettings.parabolicGrowthEnabled || spectrumSettings.momentumEnabled || spectrumSettings.buyoutEnabled || spectrumSettings.passionEnabled || spectrumSettings.playbookEnabled) && spectrumSettings.singularityEnabled && (
+              {(spectrumSettings.grokEnabled || spectrumSettings.technicalEnabled || spectrumSettings.valuationEnabled || spectrumSettings.momentumEnabled || spectrumSettings.buyoutEnabled || spectrumSettings.leadershipEnabled || spectrumSettings.playbookEnabled) && spectrumSettings.singularityEnabled && (
                 <div className="flex items-center justify-between p-3 rounded-lg border" style={{ background: 'rgba(139,92,246,0.05)', borderColor: 'rgba(139,92,246,0.2)' }}>
                   <div className="flex items-center gap-2">
                     <Filter className="w-4 h-4 text-violet-400" />
@@ -4199,12 +4070,10 @@ Respond with ONLY a JSON array:
                 { title: 'AI Agent Scans', agents: [
                   { key: 'grokEnabled', label: 'Conviction' },
                   { key: 'technicalEnabled', label: 'Technical (C&H)' },
-                  { key: 'teamEnabled', label: 'Team' },
                   { key: 'valuationEnabled', label: 'Valuation' },
-                  { key: 'parabolicGrowthEnabled', label: 'Parabolic Growth' },
-                  { key: 'momentumEnabled', label: 'Momentum (3x AI)' },
-                  { key: 'buyoutEnabled', label: 'Buyout (5x AI)' },
-                  { key: 'passionEnabled', label: 'Passion (3x AI)' },
+                  { key: 'momentumEnabled', label: 'Momentum' },
+                  { key: 'buyoutEnabled', label: 'Buyout' },
+                  { key: 'leadershipEnabled', label: 'Leadership' },
                   { key: 'playbookEnabled', label: 'Playbook Match' },
                 ]},
               ].map(group => (
@@ -4230,7 +4099,7 @@ Respond with ONLY a JSON array:
                 </div>
               ))}
 
-              {(spectrumSettings.grokEnabled || spectrumSettings.technicalEnabled || spectrumSettings.teamEnabled || spectrumSettings.valuationEnabled || spectrumSettings.parabolicGrowthEnabled || spectrumSettings.momentumEnabled || spectrumSettings.buyoutEnabled || spectrumSettings.passionEnabled || spectrumSettings.playbookEnabled) && (
+              {(spectrumSettings.grokEnabled || spectrumSettings.technicalEnabled || spectrumSettings.valuationEnabled || spectrumSettings.momentumEnabled || spectrumSettings.buyoutEnabled || spectrumSettings.leadershipEnabled || spectrumSettings.playbookEnabled) && (
                 <div>
                   <label className="text-sm text-slate-300 mb-2 block">AI Agents - Stocks to Analyze (applies to every agent above)</label>
                   <select
@@ -4570,7 +4439,7 @@ Respond with ONLY a JSON array:
           <div className="mb-6 card rounded-2xl border border-slate-800/50 p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold flex items-center gap-2"><Sliders className="w-5 h-5 text-amber-400" />Scoring Weights</h2>
-              <button onClick={() => { setWeights({ pricePosition: 40, insiderActivity: 40, netCash: 20 }); setAiWeights({ conviction: 15, cupHandle: 10, singularity: 20, team: 10, valuation: 10, parabolicGrowth: 10, momentum: 15, buyout: 15, passion: 10, playbook: 15 }); }} className="text-xs text-slate-400 hover:text-white px-3 py-1.5 rounded-lg border" style={{ background: 'rgba(30,41,59,0.5)', borderColor: 'rgba(51,65,85,0.5)' }}>Reset All</button>
+              <button onClick={() => { setWeights({ pricePosition: 40, insiderActivity: 40, netCash: 20 }); setAiWeights({ conviction: 15, cupHandle: 10, singularity: 20, valuation: 10, momentum: 15, buyout: 15, leadership: 10, playbook: 15 }); }} className="text-xs text-slate-400 hover:text-white px-3 py-1.5 rounded-lg border" style={{ background: 'rgba(30,41,59,0.5)', borderColor: 'rgba(51,65,85,0.5)' }}>Reset All</button>
             </div>
             
             <p className="text-xs text-slate-500 mb-3">Base Scoring (applied to all stocks)</p>
@@ -4597,19 +4466,14 @@ Respond with ONLY a JSON array:
                 <div className="flex items-center gap-2 mb-3"><div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(245,158,11,0.2)' }}><Zap className="w-4 h-4 text-amber-400" /></div><span className="text-sm font-medium text-slate-200">Singularity</span></div>
                 <div className="flex items-center gap-3"><input type="range" min="0" max="50" value={aiWeights.singularity || 0} onChange={e => { const v = parseInt(e.target.value); setAiWeights(p => ({...p, singularity: v})); setStocks(s => calcScores(s, weights, {...aiWeights, singularity: v})); }} className="flex-1" style={{ accentColor: '#f59e0b' }} /><span className="mono text-sm font-semibold w-8 text-right text-amber-400">{aiWeights.singularity || 0}</span></div>
               </div>
-              <div className="rounded-xl p-4 border" style={{ background: 'rgba(56,189,248,0.05)', borderColor: 'rgba(56,189,248,0.2)' }}>
-                <div className="flex items-center gap-2 mb-3"><div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(56,189,248,0.2)' }}><Users className="w-4 h-4 text-sky-400" /></div><span className="text-sm font-medium text-slate-200">Team</span></div>
-                <div className="flex items-center gap-3"><input type="range" min="0" max="50" value={aiWeights.team || 0} onChange={e => { const v = parseInt(e.target.value); setAiWeights(p => ({...p, team: v})); setStocks(s => calcScores(s, weights, {...aiWeights, team: v})); }} className="flex-1" style={{ accentColor: '#38bdf8' }} /><span className="mono text-sm font-semibold w-8 text-right text-sky-400">{aiWeights.team || 0}</span></div>
-              </div>
               <div className="rounded-xl p-4 border" style={{ background: 'rgba(52,211,153,0.05)', borderColor: 'rgba(52,211,153,0.2)' }}>
                 <div className="flex items-center gap-2 mb-3"><div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(52,211,153,0.2)' }}><DollarSign className="w-4 h-4 text-emerald-400" /></div><span className="text-sm font-medium text-slate-200">Valuation</span></div>
                 <div className="flex items-center gap-3"><input type="range" min="0" max="50" value={aiWeights.valuation || 0} onChange={e => { const v = parseInt(e.target.value); setAiWeights(p => ({...p, valuation: v})); setStocks(s => calcScores(s, weights, {...aiWeights, valuation: v})); }} className="flex-1" style={{ accentColor: '#34d399' }} /><span className="mono text-sm font-semibold w-8 text-right text-emerald-400">{aiWeights.valuation || 0}</span></div>
               </div>
               {[
-                { k: 'parabolicGrowth', label: 'Parabolic Growth', color: '#4ade80' },
                 { k: 'momentum', label: 'Momentum', color: '#fb923c' },
                 { k: 'buyout', label: 'Buyout', color: '#fbbf24' },
-                { k: 'passion', label: 'Passion', color: '#f472b6' },
+                { k: 'leadership', label: 'Leadership', color: '#f472b6' },
                 { k: 'playbook', label: 'Playbook', color: '#a78bfa' },
               ].map(w => (
                 <div key={w.k} className="rounded-xl p-4 border" style={{ background: 'rgba(30,41,59,0.3)', borderColor: 'rgba(51,65,85,0.4)' }}>
@@ -5015,16 +4879,6 @@ Respond with ONLY a JSON array:
                     {sortBy === 'singularityScore' && <span className="text-amber-400">↓</span>}
                   </div>
                   )}
-                  {colVisible.tm && (
-                  <div 
-                    className="w-10 text-center cursor-pointer hover:text-slate-300 transition-colors flex items-center justify-center gap-1"
-                    onClick={() => setSortBy(sortBy === 'teamScore' ? 'compositeScore' : 'teamScore')}
-                    title="Team/Management Score"
-                  >
-                    Tm
-                    {sortBy === 'teamScore' && <span className="text-purple-400">↓</span>}
-                  </div>
-                  )}
                   {colVisible.vl && (
                   <div 
                     className="w-10 text-center cursor-pointer hover:text-slate-300 transition-colors flex items-center justify-center gap-1"
@@ -5173,24 +5027,6 @@ Respond with ONLY a JSON array:
                               }}
                             >
                               {s.singularityScore}
-                            </span>
-                          ) : (
-                            <span className="text-xs text-slate-600">—</span>
-                          )}
-                        </div>
-                        </>)}
-                        {colVisible.tm && (<>
-                        {/* Team Score */}
-                        <div className="w-10 text-center">
-                          {s.teamScore !== null && s.teamScore !== undefined ? (
-                            <span 
-                              className="text-[10px] font-bold mono px-1 py-0.5 rounded"
-                              style={{ 
-                                background: s.teamScore >= 70 ? 'rgba(168,85,247,0.3)' : s.teamScore >= 50 ? 'rgba(168,85,247,0.2)' : 'rgba(100,116,139,0.2)',
-                                color: s.teamScore >= 70 ? '#c084fc' : s.teamScore >= 50 ? '#d8b4fe' : '#94a3b8'
-                              }}
-                            >
-                              {s.teamScore}
                             </span>
                           ) : (
                             <span className="text-xs text-slate-600">—</span>
@@ -5392,17 +5228,16 @@ Respond with ONLY a JSON array:
                             </div>
                           )}
 
-                          {/* Parabolic Growth / Momentum / Buyout details */}
+                          {/* Momentum / Buyout / Leadership details */}
                           {[
-                            { field: 'parabolicGrowthAnalysis', scoreField: 'parabolicGrowthScore', title: 'Parabolic Growth Analysis', color: '#4ade80', bg: 'rgba(74,222,128,', subs: [] },
-                            { field: 'momentumAnalysis', scoreField: 'momentumScore', title: 'Momentum Analysis (3-part)', color: '#fb923c', bg: 'rgba(251,146,60,', subs: [
-                              { label: 'Chart', f: 'momentumChartScore' }, { label: 'Continuation', f: 'momentumContinuationScore' }, { label: 'Room+Moat', f: 'momentumRoomMoatScore' },
+                            { field: 'momentumAnalysis', scoreField: 'momentumScore', title: 'Momentum Analysis', color: '#fb923c', bg: 'rgba(251,146,60,', subs: [
+                              { label: 'Chart', f: 'momentumChartScore' }, { label: 'Continuation', f: 'momentumContinuationScore' }, { label: 'Parabolic', f: 'momentumParabolicScore' },
                             ]},
                             { field: 'buyoutAnalysis', scoreField: 'buyoutScore', title: 'Buyout Likelihood Analysis', color: '#fbbf24', bg: 'rgba(251,191,36,', subs: [
                               { label: 'People', f: 'buyoutPeopleScore' }, { label: 'Intent', f: 'buyoutIntentScore' }, { label: 'Buzz', f: 'buyoutBuzzScore' }, { label: 'Fit', f: 'buyoutFitScore' },
                             ]},
-                            { field: 'passionAnalysis', scoreField: 'passionScore', title: 'Passion Analysis (3-part)', color: '#f472b6', bg: 'rgba(244,114,182,', subs: [
-                              { label: 'CEO', f: 'passionCeoScore' }, { label: 'Public', f: 'passionPublicScore' }, { label: 'Vibes', f: 'passionVibesScore' },
+                            { field: 'leadershipAnalysis', scoreField: 'leadershipScore', title: 'Leadership Analysis', color: '#f472b6', bg: 'rgba(244,114,182,', subs: [
+                              { label: 'CEO', f: 'leadershipCeoScore' }, { label: 'Team', f: 'leadershipTeamScore' }, { label: 'Public', f: 'leadershipPublicScore' }, { label: 'Vibes', f: 'leadershipVibesScore' },
                             ]},
                           ].map(d => s[d.field] ? (
                             <div key={d.field} className="mb-4 p-4 rounded-xl border" style={{ background: `${d.bg}0.08)`, borderColor: `${d.bg}0.3)` }}>
@@ -5452,7 +5287,7 @@ Respond with ONLY a JSON array:
                           
                           {!s.aiAnalysis && !s.explosiveAnalysis && !s.teamAnalysis && !s.technicalAnalysis && !s.parabolicAnalysis && !s.valuationAnalysis && i < 10 && (
                             <div className="mb-4 p-3 rounded-xl border" style={{ background: 'rgba(99,102,241,0.05)', borderColor: 'rgba(99,102,241,0.2)' }}>
-                              <p className="text-sm text-slate-400 flex items-center gap-2"><Sparkles className="w-4 h-4 text-indigo-400" />Run AI scans (Conviction, C&H, Team, Valuation, Parabolic Growth, Momentum, Buyout) to analyze</p>
+                              <p className="text-sm text-slate-400 flex items-center gap-2"><Sparkles className="w-4 h-4 text-indigo-400" />Run AI scans (Conviction, C&H, Valuation, Momentum, Buyout, Leadership, Playbook) to analyze</p>
                             </div>
                           )}
                           

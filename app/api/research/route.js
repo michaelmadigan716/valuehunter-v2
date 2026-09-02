@@ -29,7 +29,7 @@ Summarize ONLY genuinely new information in 2-4 sentences. If nothing meaningful
 Then rate how significant the change is for an investor holding a thesis on this stock, and if significant, which deep scan should be re-run.
 End with EXACTLY:
 SIGNIFICANCE: [0-100]
-SUGGEST_SCAN: [buyout|momentum|passion|playbook|conviction|valuation|none]`;
+SUGGEST_SCAN: [buyout|momentum|leadership|playbook|conviction|valuation|none]`;
 
   const res = await fetch('https://api.x.ai/v1/responses', {
     method: 'POST',
