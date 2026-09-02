@@ -1113,6 +1113,36 @@ export default function StockResearchApp() {
   };
   const unreadResearch = researchFeed.filter(f => f.ts > feedViewedAt).length;
 
+  // Global app settings (testing mode caps everything at 100 stocks + fastest model)
+  const [appSettings, setAppSettings] = useState({ testingMode: true, testingLimit: 100, smartModel: 'grok-4.6', fastModel: 'grok-4.3', dailyCap: 50 });
+  const appSettingsRef = React.useRef(appSettings);
+  useEffect(() => { appSettingsRef.current = appSettings; }, [appSettings]);
+  useEffect(() => {
+    fetch('/api/settings').then(r => r.ok ? r.json() : null).then(d => { if (d?.settings) setAppSettings(d.settings); }).catch(() => {});
+  }, []);
+  const effectiveModel = appSettings.testingMode ? appSettings.fastModel : grokModel;
+  const toggleTestingMode = async () => {
+    const next = { ...appSettings, testingMode: !appSettings.testingMode };
+    setAppSettings(next);
+    try {
+      const res = await fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ settings: { testingMode: next.testingMode } }) });
+      const d = await res.json(); if (d?.settings) setAppSettings(d.settings);
+    } catch (e) {}
+  };
+  const [isSchedulingPass, setIsSchedulingPass] = useState(null);
+  const runScheduledPass = async (kind) => {
+    setIsSchedulingPass(kind);
+    try {
+      const res = await fetch(`/api/schedule/${kind}`, { method: 'POST' });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || res.status);
+      fetch('/api/worker', { method: 'POST' }).catch(() => {});
+      setStatus({ type: d.queued ? 'loading' : 'live', msg: d.queued ? `${kind === 'weekly' ? 'Weekly full' : 'Daily targeted'} pass queued: ${d.queued} stocks x 7 scans on ${d.model}` : `${kind} pass: ${d.note}` });
+      await pollJobs();
+    } catch (e) { setError(`${kind} pass failed: ${e.message}`); }
+    setIsSchedulingPass(null);
+  };
+
   // Server-side scan jobs (survive refresh / closed tabs). Used when the cloud
   // Main Session is on; local mode falls back to the in-browser runner.
   const [serverJobs, setServerJobs] = useState([]);
@@ -1162,7 +1192,7 @@ export default function StockResearchApp() {
 
   const enqueueJob = async (agentIds, tickers) => {
     try {
-      const res = await fetch('/api/jobs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ agentIds, tickers, model: grokModel, playbooks: playbooksRef.current }) });
+      const res = await fetch('/api/jobs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ agentIds, tickers, model: appSettingsRef.current.testingMode ? appSettingsRef.current.fastModel : grokModel, playbooks: playbooksRef.current }) });
       const d = await res.json();
       if (!res.ok) throw new Error(d.error || res.status);
       fetch('/api/worker', { method: 'POST' }).catch(() => {}); // kick the worker now; cron keeps it going
@@ -1285,7 +1315,7 @@ export default function StockResearchApp() {
   const runAgentQueue = async (agentIds, tickers, completedMap = {}, opts = {}) => {
     const agents = AGENT_REGISTRY.filter(a => agentIds.includes(a.id));
     if (agents.length === 0 || tickers.length === 0) return;
-    const model = opts.model || grokModel;
+    const model = opts.model || (appSettingsRef.current.testingMode ? appSettingsRef.current.fastModel : grokModel);
     const sid = 'main';
     if (!sessionIdRef.current) { sessionIdRef.current = sid; setCurrentSessionId(sid); }
     setIsAnalyzingAI(true);
@@ -2231,7 +2261,7 @@ Respond with ONLY a JSON array:
       setScanProgress({ phase: 'Loading tickers...', current: 0, total: 0, found: 0 });
       setDiscoveryStatus(p => ({ ...p, polygonScreener: 'running' }));
       
-      const allTickers = await getFilteredTickers(stockLimit);
+      const allTickers = await getFilteredTickers(appSettingsRef.current.testingMode ? appSettingsRef.current.testingLimit : stockLimit);
       setDiscoveryStatus(p => ({ ...p, polygonScreener: 'complete', marketCapFilter: 'running' }));
       
       setScanProgress({ phase: 'Filtering by market cap...', current: 0, total: allTickers.length, found: 0 });
@@ -2367,7 +2397,7 @@ Respond with ONLY a JSON array:
       setScanProgress({ phase: 'Loading tickers...', current: 0, total: 0, found: 0 });
       setDiscoveryStatus(p => ({ ...p, polygonScreener: 'running' }));
       
-      const allTickers = await getFilteredTickers(spectrumSettings.baseStockLimit);
+      const allTickers = await getFilteredTickers(appSettingsRef.current.testingMode ? appSettingsRef.current.testingLimit : spectrumSettings.baseStockLimit);
       setDiscoveryStatus(p => ({ ...p, polygonScreener: 'complete', marketCapFilter: 'running' }));
       
       setScanProgress({ phase: 'Filtering by market cap...', current: 0, total: allTickers.length, found: 0 });
@@ -2962,19 +2992,23 @@ Respond with ONLY a JSON array:
               </>
             )}
             
-            {/* Stock Limit Selector */}
-            <select 
-              value={stockLimit} 
-              onChange={e => setStockLimit(parseInt(e.target.value))}
-              className="rounded-lg px-2 py-2 text-sm border outline-none"
-              style={{ background: 'rgba(30,41,59,0.5)', borderColor: 'rgba(99,102,241,0.3)', color: '#a5b4fc', width: '100px' }}
-              disabled={isScanning || isAnalyzingAI || isRunningFullSpectrum}
+            {/* Testing mode: 100-stock cap + fastest model everywhere (browser + server jobs) */}
+            <button
+              onClick={toggleTestingMode}
+              className="px-3 py-2.5 rounded-xl text-xs font-semibold border flex items-center gap-2"
+              style={{ background: appSettings.testingMode ? 'rgba(245,158,11,0.15)' : 'rgba(30,41,59,0.5)', borderColor: appSettings.testingMode ? 'rgba(245,158,11,0.5)' : 'rgba(51,65,85,0.5)', color: appSettings.testingMode ? '#fbbf24' : '#94a3b8' }}
+              title={appSettings.testingMode ? 'Testing mode ON: every scan capped at 100 stocks, fastest model (grok-4.3). Click to go full scale.' : 'Testing mode OFF: full scale, smartest model. Click to cap at 100 stocks with the fast model.'}
             >
-              <option value={100}>100 stocks</option>
-              <option value={500}>500 stocks</option>
-              <option value={1000}>1000 stocks</option>
-              <option value={0}>All stocks</option>
-            </select>
+              <Beaker className="w-4 h-4" />{appSettings.testingMode ? 'TESTING: 100 stocks · grok-4.3' : 'Full scale'}
+            </button>
+            <div className="relative">
+              <button onClick={() => runScheduledPass('daily')} disabled={!!isSchedulingPass} className="px-3 py-2.5 rounded-xl text-xs font-semibold border" style={{ background: 'rgba(167,139,250,0.12)', borderColor: 'rgba(167,139,250,0.4)', color: '#a78bfa' }} title="Run the daily targeted pass now: all 7 scans on watchlist + stocks hitting your minimums (insider buy <30d, technicals >=85, composite >=65, playbook >=70), skipping recently scanned">
+                {isSchedulingPass === 'daily' ? 'Queuing...' : 'Daily pass'}
+              </button>
+            </div>
+            <button onClick={() => runScheduledPass('weekly')} disabled={!!isSchedulingPass} className="px-3 py-2.5 rounded-xl text-xs font-semibold border" style={{ background: 'rgba(167,139,250,0.12)', borderColor: 'rgba(167,139,250,0.4)', color: '#a78bfa' }} title="Run the weekly full pass now: all 7 scans across every Hunt-tier stock + watchlist (100 in testing mode)">
+              {isSchedulingPass === 'weekly' ? 'Queuing...' : 'Weekly pass'}
+            </button>
             
             {/* Run Base Scan Button with Dropdown */}
             <div className="relative">
@@ -3210,7 +3244,7 @@ Respond with ONLY a JSON array:
                     <option key={m.id} value={m.id}>{m.label}</option>
                   ))}
                 </select>
-                <p className="text-xs text-slate-500 mt-1">List updates automatically as xAI releases new models. Smartest = best analysis, Fastest = cheapest/quickest.</p>
+                <p className="text-xs text-slate-500 mt-1">List updates automatically as xAI releases new models. Smartest = best analysis, Fastest = cheapest/quickest.{appSettings.testingMode && <span className="text-amber-400"> Testing mode is ON - all scans use grok-4.3 regardless of this setting.</span>}</p>
               </div>
             </div>
             

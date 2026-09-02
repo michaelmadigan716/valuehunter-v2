@@ -15,6 +15,14 @@
     {
       "path": "/api/research",
       "schedule": "30 12 * * *"
+    },
+    {
+      "path": "/api/schedule/daily",
+      "schedule": "0 13 * * *"
+    },
+    {
+      "path": "/api/schedule/weekly",
+      "schedule": "0 6 * * 0"
     }
   ]
 }
