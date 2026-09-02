@@ -9,11 +9,16 @@ export async function GET(request) {
   if (!kvConfigured()) return Response.json({ session: null, error: 'KV not configured' });
   const url = new URL(request.url);
   const wantUniverse = url.searchParams.get('universe') === '1';
-  const [session, universeMeta, watchlist] = await Promise.all([
+  const [session, universeMeta, watchlist, scanResults] = await Promise.all([
     kvGetJSON('vh:main'),
     kvGetJSON('vh:universe:meta'),
     kvGetJSON('vh:watchlist'),
+    kvGetJSON('vh:scanresults'),
   ]);
+  // Overlay server-side scan results (single-writer blob) onto the session
+  if (session?.stocks && scanResults) {
+    session.stocks = session.stocks.map(s => (scanResults[s.ticker] ? { ...s, ...scanResults[s.ticker] } : s));
+  }
   const out = { session, universe_meta: universeMeta, watchlist: watchlist || {} };
   if (wantUniverse) out.universe = await kvGetJSON('vh:universe');
   return Response.json(out);

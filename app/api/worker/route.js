@@ -42,7 +42,7 @@ async function runWorker(request) {
       await saveJob(job);
 
       const agents = AGENT_DEFS.filter(a => job.agentIds.includes(a.id));
-      let main = (await kvGetJSON('vh:main')) || { stocks: [] };
+      const main = (await kvGetJSON('vh:main')) || { stocks: [] };
       const byTicker = new Map(main.stocks.map(s => [s.ticker, s]));
       let finished = true;
 
@@ -55,16 +55,22 @@ async function runWorker(request) {
           const fresh = ((await kvGetJSON('vh:jobs')) || []).find(j => j.id === job.id);
           if (!fresh || fresh.status === 'paused' || fresh.status === 'cancelled') { job.status = fresh ? fresh.status : 'cancelled'; finished = false; break outer; }
 
-          const stock = byTicker.get(ticker);
+          // Scan results live in their own single-writer blob (vh:scanresults)
+          // and are overlaid onto the Main Session on read - so nothing else
+          // that rewrites vh:main can ever clobber them.
+          const existingPatch = ((await kvGetJSON('vh:scanresults')) || {})[ticker] || {};
+          const stock = byTicker.get(ticker) ? { ...byTicker.get(ticker), ...existingPatch } : null;
           if (stock) {
             try {
               const result = await agent.fn(stock, job.model, { playbooks: job.playbooks || undefined });
-              const updated = agent.apply(stock, result);
-              byTicker.set(ticker, updated);
-              main.stocks = main.stocks.map(s => (s.ticker === ticker ? updated : s));
-              main.timestamp = Date.now();
-              await kvSetJSON('vh:main', main);
+              const patch = agent.apply({}, result);
+              const all = (await kvGetJSON('vh:scanresults')) || {};
+              all[ticker] = { ...(all[ticker] || {}), ...patch, scannedAt: Date.now() };
+              await kvSetJSON('vh:scanresults', all);
+              byTicker.set(ticker, { ...stock, ...patch });
             } catch (e) { job.errors++; }
+          } else {
+            job.errors++;
           }
           done.add(ticker);
           job.completed[agent.id] = [...done];
