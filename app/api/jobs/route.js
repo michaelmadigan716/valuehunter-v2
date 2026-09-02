@@ -3,7 +3,7 @@
 //   GET  ?id=... | (none)             -> one job | all recent jobs
 //   POST {agentIds, tickers, model}    -> enqueue
 //   POST {action:'pause'|'resume'|'cancel', id}
-import { kvGetJSON, kvSetJSON, kvConfigured } from '../_lib/kv';
+import { kvGetJSON, kvSetJSON, kvConfigured, wsKey, wsFrom } from '../_lib/kv';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,7 +14,8 @@ function sameOrigin(request) {
 
 export async function GET(request) {
   if (!kvConfigured()) return Response.json({ jobs: [] });
-  const jobs = (await kvGetJSON('vh:jobs')) || [];
+  const ws = wsFrom(request);
+  const jobs = (await kvGetJSON(wsKey(ws, 'jobs'))) || [];
   const id = new URL(request.url).searchParams.get('id');
   if (id) return Response.json({ job: jobs.find(j => j.id === id) || null });
   return Response.json({ jobs: jobs.slice(0, 20) });
@@ -24,7 +25,8 @@ export async function POST(request) {
   if (!kvConfigured()) return Response.json({ error: 'KV not configured' }, { status: 500 });
   if (!sameOrigin(request)) return Response.json({ error: 'Forbidden' }, { status: 403 });
   const body = await request.json().catch(() => ({}));
-  let jobs = (await kvGetJSON('vh:jobs')) || [];
+  const ws = wsFrom(request, body);
+  let jobs = (await kvGetJSON(wsKey(ws, 'jobs'))) || [];
 
   if (body.action && body.id) {
     const job = jobs.find(j => j.id === body.id);
@@ -33,7 +35,7 @@ export async function POST(request) {
     if (body.action === 'resume' && job.status === 'paused') job.status = 'queued';
     if (body.action === 'cancel') job.status = 'cancelled';
     job.updatedAt = Date.now();
-    await kvSetJSON('vh:jobs', jobs);
+    await kvSetJSON(wsKey(ws, 'jobs'), jobs);
     return Response.json({ ok: true, job });
   }
 
@@ -42,6 +44,7 @@ export async function POST(request) {
   }
   const job = {
     id: `job_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    ws,
     agentIds: body.agentIds,
     tickers: body.tickers.slice(0, 500),
     model: body.model || 'grok-4.6',
@@ -53,6 +56,6 @@ export async function POST(request) {
     errors: 0,
   };
   jobs = [job, ...jobs].slice(0, 30);
-  await kvSetJSON('vh:jobs', jobs);
+  await kvSetJSON(wsKey(ws, 'jobs'), jobs);
   return Response.json({ ok: true, job });
 }

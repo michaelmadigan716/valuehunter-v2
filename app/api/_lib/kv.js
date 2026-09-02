@@ -35,3 +35,13 @@ export async function kvLock(key, ttlMs) {
 export function kvConfigured() {
   return Boolean(URL_ && TOKEN);
 }
+
+// Workspace-scoped keys. 'main' keeps the legacy unprefixed keys.
+export function wsKey(ws, name) {
+  return ws && ws !== 'main' ? `vh:${ws}:${name}` : `vh:${name}`;
+}
+export function wsFrom(request, body) {
+  const q = new URL(request.url).searchParams.get('ws');
+  const w = (body && body.ws) || q || 'main';
+  return w === 'test' ? 'test' : 'main';
+}

@@ -1,25 +1,26 @@
 // Main Session store: one canonical session shared across devices, kept in KV.
 // GET  -> { session, universe_meta }   (?universe=1 adds the ticker universe)
 // POST -> save the session object (same-origin only)
-import { kvGetJSON, kvSetJSON, kvConfigured } from '../_lib/kv';
+import { kvGetJSON, kvSetJSON, kvConfigured, wsKey, wsFrom } from '../_lib/kv';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request) {
   if (!kvConfigured()) return Response.json({ session: null, error: 'KV not configured' });
   const url = new URL(request.url);
+  const ws = wsFrom(request);
   const wantUniverse = url.searchParams.get('universe') === '1';
   const [session, universeMeta, watchlist, scanResults] = await Promise.all([
-    kvGetJSON('vh:main'),
+    kvGetJSON(wsKey(ws, 'main')),
     kvGetJSON('vh:universe:meta'),
     kvGetJSON('vh:watchlist'),
-    kvGetJSON('vh:scanresults'),
+    kvGetJSON(wsKey(ws, 'scanresults')),
   ]);
   // Overlay server-side scan results (single-writer blob) onto the session
   if (session?.stocks && scanResults) {
     session.stocks = session.stocks.map(s => (scanResults[s.ticker] ? { ...s, ...scanResults[s.ticker] } : s));
   }
-  const out = { session, universe_meta: universeMeta, watchlist: watchlist || {} };
+  const out = { ws, session, universe_meta: universeMeta, watchlist: watchlist || {} };
   if (wantUniverse) out.universe = await kvGetJSON('vh:universe');
   return Response.json(out);
 }
@@ -32,6 +33,22 @@ export async function POST(request) {
   }
   if (!kvConfigured()) return Response.json({ error: 'KV not configured' }, { status: 500 });
   const body = await request.json();
+  const ws = wsFrom(request, body);
+
+  // Seed the Test workspace with the top-N Hunt-tier stocks from Main
+  if (body && body.action === 'seed') {
+    const main = (await kvGetJSON('vh:main')) || { stocks: [] };
+    const n = Math.min(500, Math.max(10, parseInt(body.n) || 100));
+    const picked = [...main.stocks]
+      .filter(s => s.tier === 'A' || !s.tier)
+      .sort((a, b) => (b.compositeScore || 0) - (a.compositeScore || 0))
+      .slice(0, n)
+      .map(({ aiAnalysis, ...s }) => ({ ...s, aiAnalysis: null }));
+    const session = { id: ws, name: ws === 'test' ? 'Test Session' : 'Main Session', stocks: picked, timestamp: Date.now() };
+    await kvSetJSON(wsKey(ws, 'main'), session);
+    await kvSetJSON(wsKey(ws, 'scanresults'), {});
+    return Response.json({ ok: true, seeded: picked.length });
+  }
 
   // Manual watch toggle from the table star
   if (body && body.action === 'watch' && body.ticker) {
@@ -47,21 +64,21 @@ export async function POST(request) {
   }
   // MERGE into the existing Main Session: incoming stocks overwrite matching
   // tickers (client-side scan results win), server-added stocks are kept.
-  const existing = (await kvGetJSON('vh:main')) || { stocks: [] };
+  const existing = (await kvGetJSON(wsKey(ws, 'main'))) || { stocks: [] };
   const merged = new Map((existing.stocks || []).map(s => [s.ticker, s]));
   for (const s of body.stocks) {
     const prev = merged.get(s.ticker) || {};
     merged.set(s.ticker, { ...prev, ...s });
   }
   const session = {
-    id: 'main',
-    name: 'Main Session',
+    id: ws,
+    name: ws === 'test' ? 'Test Session' : 'Main Session',
     stocks: [...merged.values()],
     scanStats: body.scanStats || existing.scanStats || null,
     weights: body.weights || existing.weights || null,
     aiWeights: body.aiWeights || existing.aiWeights || null,
     timestamp: Date.now(),
   };
-  await kvSetJSON('vh:main', session);
-  return Response.json({ ok: true, stocks: session.stocks.length });
+  await kvSetJSON(wsKey(ws, 'main'), session);
+  return Response.json({ ok: true, ws, stocks: session.stocks.length });
 }

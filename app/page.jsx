@@ -1113,14 +1113,55 @@ export default function StockResearchApp() {
   };
   const unreadResearch = researchFeed.filter(f => f.ts > feedViewedAt).length;
 
-  // Global app settings (testing mode caps everything at 100 stocks + fastest model)
+  // Workspace: 'main' = the real session (full scale, smartest model, all schedules);
+  // 'test' = a separate 100-stock sandbox on the fast model. Both run independently.
+  const [workspace, setWorkspace] = useState('main');
+  const workspaceRef = React.useRef('main');
+  useEffect(() => {
+    try { const w = localStorage.getItem('singularityhunter_workspace'); if (w === 'test') { setWorkspace('test'); workspaceRef.current = 'test'; } } catch (e) {}
+  }, []);
+  const wsQuery = (ws) => (ws || workspaceRef.current) === 'test' ? '?ws=test' : '';
+  const loadWorkspaceSession = async (ws) => {
+    try {
+      const res = await fetch(`/api/main-session${ws === 'test' ? '?ws=test' : ''}`);
+      const data = await res.json();
+      const list = data?.session?.stocks || [];
+      stocksRef.current = calcScores(list, weights, aiWeights);
+      setStocks(stocksRef.current);
+      setSelected(null);
+      setStatus(list.length ? { type: 'cached', msg: `${list.length} stocks (${ws === 'test' ? 'Test' : 'Main'} Session)` } : { type: 'ready', msg: ws === 'test' ? 'Test workspace is empty - seed it or run a Base Scan (100 stocks)' : 'Click Run Base Scan' });
+      if (data?.watchlist) setWatchlist(data.watchlist);
+    } catch (e) {}
+  };
+  const switchWorkspace = async (ws) => {
+    if (ws === workspaceRef.current) return;
+    workspaceRef.current = ws; setWorkspace(ws);
+    try { localStorage.setItem('singularityhunter_workspace', ws); } catch (e) {}
+    jobProgressRef.current = {};
+    await loadWorkspaceSession(ws);
+    pollJobs();
+  };
+  const [isSeeding, setIsSeeding] = useState(false);
+  const seedTestWorkspace = async () => {
+    setIsSeeding(true);
+    try {
+      const res = await fetch('/api/main-session?ws=test', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ws: 'test', action: 'seed', n: 100 }) });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || res.status);
+      await loadWorkspaceSession('test');
+      setStatus({ type: 'live', msg: `Test session seeded with ${d.seeded} Hunt-tier stocks from Main` });
+    } catch (e) { setError(`Seed failed: ${e.message}`); }
+    setIsSeeding(false);
+  };
+
+  // Global app settings
   const [appSettings, setAppSettings] = useState({ testingMode: true, testingLimit: 100, smartModel: 'grok-4.6', fastModel: 'grok-4.3', dailyCap: 50 });
   const appSettingsRef = React.useRef(appSettings);
   useEffect(() => { appSettingsRef.current = appSettings; }, [appSettings]);
   useEffect(() => {
     fetch('/api/settings').then(r => r.ok ? r.json() : null).then(d => { if (d?.settings) setAppSettings(d.settings); }).catch(() => {});
   }, []);
-  const effectiveModel = appSettings.testingMode ? appSettings.fastModel : grokModel;
+  const effectiveModel = workspace === 'test' ? appSettings.fastModel : grokModel;
   const toggleTestingMode = async () => {
     const next = { ...appSettings, testingMode: !appSettings.testingMode };
     setAppSettings(next);
@@ -1133,7 +1174,7 @@ export default function StockResearchApp() {
   const runScheduledPass = async (kind) => {
     setIsSchedulingPass(kind);
     try {
-      const res = await fetch(`/api/schedule/${kind}`, { method: 'POST' });
+      const res = await fetch(`/api/schedule/${kind}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ws: workspaceRef.current }) });
       const d = await res.json();
       if (!res.ok) throw new Error(d.error || res.status);
       fetch('/api/worker', { method: 'POST' }).catch(() => {});
@@ -1149,7 +1190,7 @@ export default function StockResearchApp() {
   const jobProgressRef = React.useRef({});
   const pullCloudStocks = async () => {
     try {
-      const ms = await fetch('/api/main-session').then(r => r.json());
+      const ms = await fetch(`/api/main-session${wsQuery()}`).then(r => r.json());
       if (!ms?.session?.stocks?.length) return;
       const cloud = new Map(ms.session.stocks.map(s => [s.ticker, s]));
       const localTickers = new Set(stocksRef.current.map(s => s.ticker));
@@ -1161,7 +1202,7 @@ export default function StockResearchApp() {
   };
   const pollJobs = async () => {
     try {
-      const d = await fetch('/api/jobs').then(r => r.json());
+      const d = await fetch(`/api/jobs${wsQuery()}`).then(r => r.json());
       const jobs = d.jobs || [];
       setServerJobs(jobs);
       let changed = false;
@@ -1192,7 +1233,7 @@ export default function StockResearchApp() {
 
   const enqueueJob = async (agentIds, tickers) => {
     try {
-      const res = await fetch('/api/jobs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ agentIds, tickers, model: appSettingsRef.current.testingMode ? appSettingsRef.current.fastModel : grokModel, playbooks: playbooksRef.current }) });
+      const res = await fetch('/api/jobs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ws: workspaceRef.current, agentIds, tickers, model: workspaceRef.current === 'test' ? appSettingsRef.current.fastModel : grokModel, playbooks: playbooksRef.current }) });
       const d = await res.json();
       if (!res.ok) throw new Error(d.error || res.status);
       fetch('/api/worker', { method: 'POST' }).catch(() => {}); // kick the worker now; cron keeps it going
@@ -1203,7 +1244,7 @@ export default function StockResearchApp() {
   };
   const jobAction = async (id, action) => {
     try {
-      await fetch('/api/jobs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, id }) });
+      await fetch('/api/jobs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ws: workspaceRef.current, action, id }) });
       if (action === 'resume') fetch('/api/worker', { method: 'POST' }).catch(() => {});
       await pollJobs();
     } catch (e) {}
@@ -1235,10 +1276,10 @@ export default function StockResearchApp() {
     if (!force && now - lastCloudSyncRef.current < 60000) return;
     lastCloudSyncRef.current = now;
     try {
-      fetch('/api/main-session', {
+      fetch(`/api/main-session${wsQuery()}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ stocks: stocksRef.current, weights, aiWeights }),
+        body: JSON.stringify({ ws: workspaceRef.current, stocks: stocksRef.current, weights, aiWeights }),
       }).catch(() => {});
     } catch (e) {}
   };
@@ -1315,7 +1356,7 @@ export default function StockResearchApp() {
   const runAgentQueue = async (agentIds, tickers, completedMap = {}, opts = {}) => {
     const agents = AGENT_REGISTRY.filter(a => agentIds.includes(a.id));
     if (agents.length === 0 || tickers.length === 0) return;
-    const model = opts.model || (appSettingsRef.current.testingMode ? appSettingsRef.current.fastModel : grokModel);
+    const model = opts.model || (workspaceRef.current === 'test' ? appSettingsRef.current.fastModel : grokModel);
     const sid = 'main';
     if (!sessionIdRef.current) { sessionIdRef.current = sid; setCurrentSessionId(sid); }
     setIsAnalyzingAI(true);
@@ -1455,10 +1496,12 @@ export default function StockResearchApp() {
       try {
         if (localStorage.getItem('singularityhunter_use_cloud') === '0') return;
         if (localStorage.getItem(CHECKPOINT_KEY)) return; // don't clobber a resumable scan
-        const res = await fetch('/api/main-session');
+        const savedWs = (() => { try { return localStorage.getItem('singularityhunter_workspace') === 'test' ? 'test' : 'main'; } catch (e) { return 'main'; } })();
+        const res = await fetch(`/api/main-session${savedWs === 'test' ? '?ws=test' : ''}`);
         if (!res.ok) return;
         const data = await res.json();
         if (data.universe_meta) setUniverseMeta(data.universe_meta);
+        if (savedWs === 'test' && (!data.session || !data.session.stocks?.length)) { setStatus({ type: 'ready', msg: 'Test workspace is empty - seed it or run a Base Scan (100 stocks)' }); return; }
         if (!data.session || !Array.isArray(data.session.stocks) || data.session.stocks.length === 0) {
           // No cloud session yet - seed it from the local one
           setTimeout(() => { if (stocksRef.current.length > 0) syncMainToCloud(true); }, 3000);
@@ -1470,7 +1513,7 @@ export default function StockResearchApp() {
           sessionIdRef.current = 'main';
           setLastUpdate(new Date(data.session.timestamp));
           setCacheAge(Date.now() - data.session.timestamp);
-          setStatus({ type: 'cached', msg: `${data.session.stocks.length} stocks (Main Session)` });
+          setStatus({ type: 'cached', msg: `${data.session.stocks.length} stocks (${savedWs === 'test' ? 'Test' : 'Main'} Session)` });
         }
       } catch (e) {}
     })();
@@ -2261,7 +2304,7 @@ Respond with ONLY a JSON array:
       setScanProgress({ phase: 'Loading tickers...', current: 0, total: 0, found: 0 });
       setDiscoveryStatus(p => ({ ...p, polygonScreener: 'running' }));
       
-      const allTickers = await getFilteredTickers(appSettingsRef.current.testingMode ? appSettingsRef.current.testingLimit : stockLimit);
+      const allTickers = await getFilteredTickers(workspaceRef.current === 'test' ? (appSettingsRef.current.testingLimit || 100) : stockLimit);
       setDiscoveryStatus(p => ({ ...p, polygonScreener: 'complete', marketCapFilter: 'running' }));
       
       setScanProgress({ phase: 'Filtering by market cap...', current: 0, total: allTickers.length, found: 0 });
@@ -2397,7 +2440,7 @@ Respond with ONLY a JSON array:
       setScanProgress({ phase: 'Loading tickers...', current: 0, total: 0, found: 0 });
       setDiscoveryStatus(p => ({ ...p, polygonScreener: 'running' }));
       
-      const allTickers = await getFilteredTickers(appSettingsRef.current.testingMode ? appSettingsRef.current.testingLimit : spectrumSettings.baseStockLimit);
+      const allTickers = await getFilteredTickers(workspaceRef.current === 'test' ? (appSettingsRef.current.testingLimit || 100) : spectrumSettings.baseStockLimit);
       setDiscoveryStatus(p => ({ ...p, polygonScreener: 'complete', marketCapFilter: 'running' }));
       
       setScanProgress({ phase: 'Filtering by market cap...', current: 0, total: allTickers.length, found: 0 });
@@ -2992,21 +3035,20 @@ Respond with ONLY a JSON array:
               </>
             )}
             
-            {/* Testing mode: 100-stock cap + fastest model everywhere (browser + server jobs) */}
-            <button
-              onClick={toggleTestingMode}
-              className="px-3 py-2.5 rounded-xl text-xs font-semibold border flex items-center gap-2"
-              style={{ background: appSettings.testingMode ? 'rgba(245,158,11,0.15)' : 'rgba(30,41,59,0.5)', borderColor: appSettings.testingMode ? 'rgba(245,158,11,0.5)' : 'rgba(51,65,85,0.5)', color: appSettings.testingMode ? '#fbbf24' : '#94a3b8' }}
-              title={appSettings.testingMode ? 'Testing mode ON: every scan capped at 100 stocks, fastest model (grok-4.3). Click to go full scale.' : 'Testing mode OFF: full scale, smartest model. Click to cap at 100 stocks with the fast model.'}
-            >
-              <Beaker className="w-4 h-4" />{appSettings.testingMode ? 'TESTING: 100 stocks · grok-4.3' : 'Full scale'}
-            </button>
+            {/* Workspace tabs: Main (real) | Test (100-stock sandbox, fast model) */}
+            <div className="flex rounded-xl border overflow-hidden" style={{ borderColor: 'rgba(51,65,85,0.6)' }}>
+              <button onClick={() => switchWorkspace('main')} className="px-3 py-2.5 text-xs font-semibold" style={{ background: workspace === 'main' ? 'rgba(99,102,241,0.25)' : 'rgba(30,41,59,0.5)', color: workspace === 'main' ? '#c7d2fe' : '#64748b' }} title="Main session: full scale, smartest model, all schedules">Main</button>
+              <button onClick={() => switchWorkspace('test')} className="px-3 py-2.5 text-xs font-semibold flex items-center gap-1" style={{ background: workspace === 'test' ? 'rgba(245,158,11,0.2)' : 'rgba(30,41,59,0.5)', color: workspace === 'test' ? '#fbbf24' : '#64748b' }} title="Test session: separate 100-stock sandbox on grok-4.3 - never touches Main"><Beaker className="w-3.5 h-3.5" />Test</button>
+            </div>
+            {workspace === 'test' && stocks.length === 0 && (
+              <button onClick={seedTestWorkspace} disabled={isSeeding} className="px-3 py-2.5 rounded-xl text-xs font-semibold border" style={{ background: 'rgba(245,158,11,0.12)', borderColor: 'rgba(245,158,11,0.4)', color: '#fbbf24' }}>{isSeeding ? 'Seeding...' : 'Seed 100 from Main'}</button>
+            )}
             <div className="relative">
               <button onClick={() => runScheduledPass('daily')} disabled={!!isSchedulingPass} className="px-3 py-2.5 rounded-xl text-xs font-semibold border" style={{ background: 'rgba(167,139,250,0.12)', borderColor: 'rgba(167,139,250,0.4)', color: '#a78bfa' }} title="Run the daily targeted pass now: all 7 scans on watchlist + stocks hitting your minimums (insider buy <30d, technicals >=85, composite >=65, playbook >=70), skipping recently scanned">
                 {isSchedulingPass === 'daily' ? 'Queuing...' : 'Daily pass'}
               </button>
             </div>
-            <button onClick={() => runScheduledPass('weekly')} disabled={!!isSchedulingPass} className="px-3 py-2.5 rounded-xl text-xs font-semibold border" style={{ background: 'rgba(167,139,250,0.12)', borderColor: 'rgba(167,139,250,0.4)', color: '#a78bfa' }} title="Run the weekly full pass now: all 7 scans across every Hunt-tier stock + watchlist (100 in testing mode)">
+            <button onClick={() => runScheduledPass('weekly')} disabled={!!isSchedulingPass} className="px-3 py-2.5 rounded-xl text-xs font-semibold border" style={{ background: 'rgba(167,139,250,0.12)', borderColor: 'rgba(167,139,250,0.4)', color: '#a78bfa' }} title={workspace === 'test' ? "Run all 7 scans on the Test session (100 stocks, grok-4.3)" : "Run the weekly full pass now: all 7 scans across every Hunt-tier stock + watchlist"}>
               {isSchedulingPass === 'weekly' ? 'Queuing...' : 'Weekly pass'}
             </button>
             
@@ -3244,7 +3286,7 @@ Respond with ONLY a JSON array:
                     <option key={m.id} value={m.id}>{m.label}</option>
                   ))}
                 </select>
-                <p className="text-xs text-slate-500 mt-1">List updates automatically as xAI releases new models. Smartest = best analysis, Fastest = cheapest/quickest.{appSettings.testingMode && <span className="text-amber-400"> Testing mode is ON - all scans use grok-4.3 regardless of this setting.</span>}</p>
+                <p className="text-xs text-slate-500 mt-1">List updates automatically as xAI releases new models. Smartest = best analysis, Fastest = cheapest/quickest.{workspace === 'test' && <span className="text-amber-400"> Test workspace always uses grok-4.3 regardless of this setting.</span>}</p>
               </div>
             </div>
             

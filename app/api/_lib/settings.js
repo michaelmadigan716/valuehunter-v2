@@ -16,3 +16,9 @@ export async function getSettings() {
   return { ...DEFAULT_SETTINGS, ...(saved || {}) };
 }
 export function modelFor(settings) { return settings.testingMode ? settings.fastModel : settings.smartModel; }
+
+// Per-workspace scan configuration. Test = sandbox: 100 stocks, fast model.
+export function wsConfig(ws, settings) {
+  if (ws === 'test') return { limit: settings.testingLimit || 100, model: settings.fastModel, dailyCap: 10 };
+  return { limit: 0, model: settings.smartModel, dailyCap: settings.dailyCap };
+}
