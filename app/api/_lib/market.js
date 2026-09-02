@@ -1,6 +1,7 @@
 // Server-side port of the Base Scan qualifiers (net cash, insider buys,
 // 52-week position) so the whole market can be swept on a schedule.
 import { computeTechnicalOpinion } from '../../../lib/technicals';
+import { classifyTier } from '../../../lib/tiers';
 
 const POLYGON_KEY = process.env.NEXT_PUBLIC_POLYGON_KEY;
 const FINNHUB_KEY = process.env.NEXT_PUBLIC_FINNHUB_KEY;
@@ -74,9 +75,12 @@ export async function fetch52w(ticker) {
     const low52 = Math.min(...bars.map(b => b.l));
     const price = bars[bars.length - 1].c;
     const prev = bars.length > 1 ? bars[bars.length - 2].c : price;
+    const last20 = bars.slice(-20);
+    const avgDollarVolume = last20.reduce((a, b) => a + (b.v || 0) * b.c, 0) / last20.length;
     return { high52, low52, price, change: prev ? ((price - prev) / prev) * 100 : 0,
       positionIn52Week: high52 > low52 ? ((price - low52) / (high52 - low52)) * 100 : 50,
       fromLow: low52 > 0 ? ((price - low52) / low52) * 100 : 0,
+      avgDollarVolume,
       tech: computeTechnicalOpinion(bars) };
   } catch (e) { return null; }
 }
@@ -105,7 +109,7 @@ export async function qualifyTicker(ticker, hint = {}) {
   if (price === null) return null;
   const marketCapM = details?.market_cap ? Math.round(details.market_cap / 1e6) : (hint.marketCap || 0);
   const agentScores = scoreStock({ positionIn52Week: w?.positionIn52Week, insider, financials, marketCapM });
-  return {
+  const rec = {
     ticker,
     name: details?.name || hint.name || ticker,
     sector: details?.sic_description || 'Unknown',
@@ -119,6 +123,11 @@ export async function qualifyTicker(ticker, hint = {}) {
     lastInsiderPurchase: insider, hasInsiderData: insider !== null,
     agentScores, compositeScore: 0, aiAnalysis: null,
     ...(w?.tech ? { techScore: w.tech.techScore, techOpinion: w.tech.techOpinion, techBuys: w.tech.techBuys, techSells: w.tech.techSells } : {}),
+    sicCode: details?.sic_code || null,
+    avgDollarVolume: w?.avgDollarVolume ?? null,
     sweptAt: Date.now(),
   };
+  const t = classifyTier(rec);
+  rec.tier = t.tier; rec.tierReason = t.reason;
+  return rec;
 }

@@ -1,6 +1,10 @@
 {
   "crons": [
     {
+      "path": "/api/worker",
+      "schedule": "* * * * *"
+    },
+    {
       "path": "/api/refresh",
       "schedule": "0 * * * *"
     },

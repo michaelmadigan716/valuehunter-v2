@@ -126,6 +126,20 @@ async function stageSweep(meta, deadline) {
     await new Promise(r => setTimeout(r, sleepMs));
   }
   await kvSetJSON('vh:fundamentals', fundamentals);
+  // Stamp fresh tier / technicals / liquidity onto matching Main Session stocks
+  try {
+    const main = await kvGetJSON('vh:main');
+    if (main?.stocks?.length) {
+      let touched = 0;
+      main.stocks = main.stocks.map(s => {
+        const f = fundamentals[s.ticker];
+        if (!f || !f.sweptAt || (s.sweptAt && s.sweptAt >= f.sweptAt)) return s;
+        touched++;
+        return { ...s, tier: f.tier, tierReason: f.tierReason, sicCode: f.sicCode, avgDollarVolume: f.avgDollarVolume, techScore: f.techScore, techOpinion: f.techOpinion, techBuys: f.techBuys, techSells: f.techSells, sweptAt: f.sweptAt };
+      });
+      if (touched) { main.timestamp = Date.now(); await kvSetJSON('vh:main', main); }
+    }
+  } catch (e) {}
   return { ...meta, sweep_index: idx >= list.length ? 0 : idx, sweep_last: Date.now(), sweep_done_this_run: done, sweep_total: list.length, swept_count: Object.keys(fundamentals).length };
 }
 

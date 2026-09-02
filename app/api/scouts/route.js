@@ -36,6 +36,7 @@ function valueScout(fundamentals) {
   const out = [];
   for (const [t, f] of Object.entries(fundamentals)) {
     if (!f.hasFinancials || !(f.netCash > 0) || !(f.marketCap > 0) || !(f.price > 0)) continue;
+    if (f.tier === 'C') continue; // funds / SPACs / shells never qualify
     if (f.price < 12 && f.marketCap * 1e6 <= 1.3 * f.netCash) {
       out.push({ ticker: t, route: 'value', reason: `Market cap $${f.marketCap}M vs net cash $${Math.round(f.netCash / 1e6)}M (${(f.marketCap * 1e6 / f.netCash).toFixed(2)}x) at $${f.price.toFixed(2)}` });
     }
@@ -56,6 +57,7 @@ function momentumScout(hist, universe, fundamentals) {
     const volRatio = avgV > 0 ? v / avgV : 0;
     const chg = prevC > 0 ? ((c - prevC) / prevC) * 100 : 0;
     const mcap = fundamentals[t]?.marketCap || 0;
+    if (fundamentals[t]?.tier === 'C') continue;
     if (volRatio >= 3 && chg >= 15 && c < 20 && v * c > 2e6 && (mcap === 0 || mcap < 2000)) {
       out.push({ ticker: t, route: 'momentum', reason: `${chg.toFixed(0)}% move on ${volRatio.toFixed(1)}x average volume at $${c.toFixed(2)}`, score: volRatio * chg });
     }
