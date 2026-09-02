@@ -135,7 +135,11 @@ async function stageSweep(meta, deadline) {
         const f = fundamentals[s.ticker];
         if (!f || !f.sweptAt || (s.sweptAt && s.sweptAt >= f.sweptAt)) return s;
         touched++;
-        return { ...s, tier: f.tier, tierReason: f.tierReason, sicCode: f.sicCode, avgDollarVolume: f.avgDollarVolume, techScore: f.techScore, techOpinion: f.techOpinion, techBuys: f.techBuys, techSells: f.techSells, sweptAt: f.sweptAt };
+        // Daily Base Scan refresh: overlay ALL fresh qualifier data (price,
+        // market cap, 52w position, net cash, latest insider buy, agent
+        // scores, tier, technicals) but never touch AI scan results.
+        const { compositeScore, aiAnalysis, id, ...fresh } = f;
+        return { ...s, ...fresh };
       });
       if (touched) { main.timestamp = Date.now(); await kvSetJSON('vh:main', main); }
     }
