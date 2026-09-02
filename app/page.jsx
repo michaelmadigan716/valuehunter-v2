@@ -1145,15 +1145,20 @@ export default function StockResearchApp() {
       return jobs;
     } catch (e) { return []; }
   };
+  const serverJobsRef = React.useRef([]);
+  useEffect(() => { serverJobsRef.current = serverJobs; }, [serverJobs]);
   useEffect(() => {
     if (!useMainSessionRef.current) return; // ref: declared later in the component, safe to read at effect time
     pollJobs();
+    let tick = 0;
     const t = setInterval(() => {
-      const active = serverJobs.some(j => j.status === 'queued' || j.status === 'running' || j.status === 'paused');
-      if (active || showResearch) pollJobs();
+      tick++;
+      const active = serverJobsRef.current.some(j => j.status === 'queued' || j.status === 'running' || j.status === 'paused');
+      // active jobs: every 5s; otherwise every 15s so jobs started elsewhere show up
+      if (active || tick % 3 === 0) pollJobs();
     }, 5000);
     return () => clearInterval(t);
-  }, [serverJobs.length, showResearch]);
+  }, []);
 
   const enqueueJob = async (agentIds, tickers) => {
     try {
@@ -2798,8 +2803,8 @@ Respond with ONLY a JSON array:
               borderColor: status.type === 'live' ? 'rgba(16,185,129,0.3)' : 'rgba(99,102,241,0.3)', 
               color: status.type === 'live' ? '#34d399' : '#a5b4fc' 
             }}>
-              {(status.type === 'loading' || isAnalyzingAI || isRunningFullSpectrum || isRunningOracle) ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Database className="w-3.5 h-3.5" />}
-              <span>{fullSpectrumPhase || status.msg}</span>
+              {(status.type === 'loading' || isAnalyzingAI || isRunningFullSpectrum || isRunningOracle || serverJobs.some(x => x.status === 'running' || x.status === 'queued')) ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Database className="w-3.5 h-3.5" />}
+              <span>{fullSpectrumPhase || (() => { const j = serverJobs.find(x => x.status === 'running') || serverJobs.find(x => x.status === 'queued'); if (j && status.type !== 'loading') { const p = j.progress || {}; return `Server scanning: ${p.agent || j.agentIds[0]} ${p.ticker ? 'on ' + p.ticker + ' ' : ''}(${p.done || 0}/${p.total || j.agentIds.length * j.tickers.length})`; } return status.msg; })()}</span>
               {cacheAge && status.type === 'cached' && <span className="text-slate-500">• {formatCacheAge(cacheAge)}</span>}
             </div>
 
