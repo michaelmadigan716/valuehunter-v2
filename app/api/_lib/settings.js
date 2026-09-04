@@ -25,7 +25,7 @@ export const DEFAULT_SETTINGS = {
   //            only if stage 1 shows something worth paying for
   staging: {
     enabled: true,
-    minComposite: 45,
+    minComposite: 25,
     insiderDays: 90,
     minTechScore: 85,
     stage2: { insiderConviction: 50, valuationScore: 60, cupHandleScore: 60 },
@@ -36,6 +36,7 @@ export const CHEAP_AGENTS = ['conviction', 'technical', 'valuation'];
 export const LIVE_SEARCH_AGENTS = ['momentum', 'buyout', 'leadership', 'playbook'];
 
 function daysSince(d) {
+  if (d && typeof d === 'object') d = d.date; // lastInsiderPurchase is {date, shares, name, ...}
   if (!d) return Infinity;
   const t = new Date(d).getTime();
   return Number.isFinite(t) ? (Date.now() - t) / 864e5 : Infinity;
@@ -46,7 +47,7 @@ export function passesFreeGate(stock, settings) {
   const s = settings.staging || {};
   if (daysSince(stock.lastInsiderPurchase) <= (s.insiderDays ?? 90)) return { ok: true, why: 'recent insider buy' };
   if ((stock.techScore ?? 0) >= (s.minTechScore ?? 85)) return { ok: true, why: `technicals ${stock.techScore}%` };
-  if ((stock.compositeScore ?? 0) >= (s.minComposite ?? 45)) return { ok: true, why: `composite ${stock.compositeScore}` };
+  if ((stock.compositeScore ?? 0) >= (s.minComposite ?? 25)) return { ok: true, why: `composite ${stock.compositeScore}` };
   return { ok: false, why: `composite ${stock.compositeScore ?? '?'} < ${s.minComposite ?? 45}, no recent insider buy, technicals ${stock.techScore ?? '?'}%` };
 }
 
