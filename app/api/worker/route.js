@@ -40,15 +40,18 @@ async function runWorker(request) {
   setApiBase(base);
   let processed = 0;
   try {
+    const order = ['main', 'test'];
+    let turn = 0, idleTurns = 0;
     while (Date.now() < deadline) {
-      // Both workspaces share the worker; test jobs are small so alternate fairly
-      let job = null;
-      for (const ws of ['test', 'main']) {
-        const jobs = (await kvGetJSON(wsKey(ws, 'jobs'))) || [];
-        const found = [...jobs].reverse().find(j => j.status === 'queued' || j.status === 'running');
-        if (found) { job = { ...found, ws }; break; }
-      }
-      if (!job) break;
+      // Both workspaces share the worker: round-robin, a few stocks per turn,
+      // so Main and Test genuinely run at the same time.
+      const ws = order[turn % order.length]; turn++;
+      const jobs = (await kvGetJSON(wsKey(ws, 'jobs'))) || [];
+      const found = [...jobs].reverse().find(j => j.status === 'queued' || j.status === 'running');
+      if (!found) { if (++idleTurns >= order.length) break; continue; }
+      idleTurns = 0;
+      const job = { ...found, ws };
+      const MAX_BATCHES_PER_TURN = 3; // 3 batches x 2 stocks, then yield to the other workspace
       const wsMainKey = wsKey(job.ws, 'main');
       const wsResultsKey = wsKey(job.ws, 'scanresults');
       job.status = 'running'; job.updatedAt = Date.now();
@@ -97,8 +100,11 @@ async function runWorker(request) {
         await saveJob(job);
         processed++;
       };
+      let batchesThisTurn = 0;
       while (cursor < pending.length) {
         if (Date.now() > deadline - 45_000) { finished = false; break; }
+        if (batchesThisTurn >= MAX_BATCHES_PER_TURN) { finished = false; break; }
+        batchesThisTurn++;
         const fresh = ((await kvGetJSON(wsKey(job.ws, 'jobs'))) || []).find(j => j.id === job.id);
         if (!fresh || fresh.status === 'paused' || fresh.status === 'cancelled') { job.status = fresh ? fresh.status : 'cancelled'; finished = false; break; }
         const batch = pending.slice(cursor, cursor + 2);
@@ -107,8 +113,7 @@ async function runWorker(request) {
       }
       if (finished && cursor < pending.length) finished = false;
       if (finished) { job.status = 'done'; job.finishedAt = Date.now(); await saveJob(job); }
-      else if (job.status === 'running') { await saveJob(job); break; } // out of time; next tick continues
-      else { await saveJob(job); } // paused/cancelled -> look for another job
+      else { await saveJob(job); } // yielded turn, out of time, paused or cancelled -> loop decides
     }
     return Response.json({ ok: true, processed });
   } finally {
