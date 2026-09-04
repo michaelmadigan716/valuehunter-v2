@@ -1,8 +1,8 @@
 // Job worker: runs queued scan jobs server-side, one stock at a time, writing
 // results into the Main Session after every stock. Triggered every minute by
 // cron and immediately ("kick") by the client after enqueueing.
-import { kvGetJSON, kvSetJSON, kvDel, kvLock, kvConfigured, wsKey } from '../_lib/kv';
-import { AGENT_DEFS, setApiBase } from '../../../lib/scanAgents';
+import { kvGetJSON, kvSetJSON, kvDel, kvLock, kvConfigured, wsKey, kvHSetMany, kvHGetAllJSON } from '../_lib/kv';
+import { AGENT_DEFS, setApiBase, scoreSingularityBatch } from '../../../lib/scanAgents';
 import { getSettings, meetsEscalation, passesFreeGate, passesStage2, CHEAP_AGENTS, LIVE_SEARCH_AGENTS } from '../_lib/settings';
 
 export const dynamic = 'force-dynamic';
@@ -80,6 +80,21 @@ async function runWorker(request) {
       const agents = AGENT_DEFS.filter(a => job.agentIds.includes(a.id));
       const main = (await kvGetJSON(wsMainKey)) || { stocks: [] };
       const byTicker = new Map(main.stocks.map(s => [s.ticker, s]));
+      // Singularity scores live in their own hash (per-field writes, no clobbering)
+      const sgKey = wsKey(job.ws, 'singularity');
+      const sgAll = await kvHGetAllJSON(sgKey);
+      for (const [t, v] of Object.entries(sgAll)) if (byTicker.has(t)) byTicker.set(t, { ...byTicker.get(t), ...v });
+      const stagedJob = settings.staging?.enabled !== false && (job.kind === 'weekly' || job.kind === 'eligible-topup');
+      // Score singularity for any batch stocks that lack it - ONE cheap call per batch
+      const ensureSingularity = async (tickers) => {
+        const need = tickers.map(t => byTicker.get(t)).filter(s => s && typeof s.singularityScore !== 'number');
+        if (!need.length) return;
+        const scored = await scoreSingularityBatch(need, settings.fastModel || 'grok-4.3');
+        if (Object.keys(scored).length) {
+          await kvHSetMany(sgKey, scored);
+          for (const [t, v] of Object.entries(scored)) if (byTicker.has(t)) byTicker.set(t, { ...byTicker.get(t), ...v });
+        }
+      };
       let finished = true;
 
       // Stock-major processing: for each stock run every remaining agent
@@ -170,6 +185,7 @@ async function runWorker(request) {
         if (!fresh || fresh.status === 'paused' || fresh.status === 'cancelled') { job.status = fresh ? fresh.status : 'cancelled'; finished = false; break; }
         const batch = pending.slice(cursor, cursor + 15); // 15 stocks concurrently (x7 scans = 105 calls; account allows 6000/min)
         cursor += batch.length;
+        if (stagedJob) await ensureSingularity(batch);
         await Promise.all(batch.map(runOne));
       }
       if (finished && cursor < pending.length) finished = false;
