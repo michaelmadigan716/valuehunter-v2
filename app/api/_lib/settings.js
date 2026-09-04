@@ -25,7 +25,8 @@ export const DEFAULT_SETTINGS = {
   //            only if stage 1 shows something worth paying for
   staging: {
     enabled: true,
-    minComposite: 25,
+    minSingularity: 50,   // primary gate: singularity relevance 0-100 (batched, ~1 cheap call per 20 stocks)
+    minComposite: null,   // optional secondary gate on the free composite; null = off
     insiderDays: 90,
     minTechScore: 85,
     stage2: { insiderConviction: 50, valuationScore: 60, cupHandleScore: 60 },

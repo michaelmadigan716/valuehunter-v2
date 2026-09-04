@@ -22,6 +22,21 @@ export async function kvSetJSON(key, value) {
   return cmd('SET', key, JSON.stringify(value));
 }
 
+// Hash helpers: per-field writes never clobber other writers (safe for
+// concurrent worker + sweep writes, unlike a whole-JSON blob)
+export async function kvHSetMany(key, obj) {
+  const entries = Object.entries(obj);
+  if (!entries.length) return 0;
+  return cmd('HSET', key, ...entries.flatMap(([f, v]) => [f, JSON.stringify(v)]));
+}
+export async function kvHGetAllJSON(key) {
+  const flat = await cmd('HGETALL', key);
+  const out = {};
+  if (!Array.isArray(flat)) return out;
+  for (let i = 0; i < flat.length; i += 2) { try { out[flat[i]] = JSON.parse(flat[i + 1]); } catch {} }
+  return out;
+}
+
 export async function kvDel(key) {
   return cmd('DEL', key);
 }
