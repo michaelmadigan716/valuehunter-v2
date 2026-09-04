@@ -1,7 +1,7 @@
 // Main Session store: one canonical session shared across devices, kept in KV.
 // GET  -> { session, universe_meta }   (?universe=1 adds the ticker universe)
 // POST -> save the session object (same-origin only)
-import { kvGetJSON, kvSetJSON, kvConfigured, wsKey, wsFrom, kvHGetAllJSON } from '../_lib/kv';
+import { kvGetJSON, kvSetJSON, kvConfigured, wsKey, wsFrom, kvHGetAllJSON, kvDel } from '../_lib/kv';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,7 +14,7 @@ export async function GET(request) {
     kvGetJSON(wsKey(ws, 'main')),
     kvGetJSON('vh:universe:meta'),
     kvGetJSON('vh:watchlist'),
-    kvGetJSON(wsKey(ws, 'scanresults')),
+    kvHGetAllJSON(wsKey(ws, 'scanres')),
     kvHGetAllJSON(wsKey(ws, 'singularity')),
   ]);
   // Overlay singularity scores (hash) then server-side scan results (single-writer blob)
@@ -47,7 +47,7 @@ export async function POST(request) {
       .map(({ aiAnalysis, ...s }) => ({ ...s, aiAnalysis: null }));
     const session = { id: ws, name: ws === 'test' ? 'Test Session' : 'Main Session', stocks: picked, timestamp: Date.now() };
     await kvSetJSON(wsKey(ws, 'main'), session);
-    await kvSetJSON(wsKey(ws, 'scanresults'), {});
+    await kvDel(wsKey(ws, 'scanres'));
     return Response.json({ ok: true, seeded: picked.length });
   }
 

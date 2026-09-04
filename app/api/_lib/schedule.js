@@ -1,12 +1,12 @@
 // Builds and enqueues scheduled deep-scan jobs.
-import { kvGetJSON, kvSetJSON, wsKey } from './kv';
+import { kvGetJSON, kvSetJSON, wsKey, kvHGetAllJSON } from './kv';
 import { getSettings, wsConfig } from './settings';
 import { classifyTier } from '../../../lib/tiers';
 
 const ALL_AGENTS = ['conviction', 'technical', 'valuation', 'momentum', 'buyout', 'leadership', 'playbook'];
 
 async function loadStocksWithResults(ws) {
-  const [main, results, watchlist] = await Promise.all([kvGetJSON(wsKey(ws, 'main')), kvGetJSON(wsKey(ws, 'scanresults')), kvGetJSON('vh:watchlist')]);
+  const [main, results, watchlist] = await Promise.all([kvGetJSON(wsKey(ws, 'main')), kvHGetAllJSON(wsKey(ws, 'scanres')), kvGetJSON('vh:watchlist')]);
   const stocks = (main?.stocks || []).map(s => (results?.[s.ticker] ? { ...s, ...results[s.ticker] } : s));
   return { stocks, watchlist: watchlist || {} };
 }

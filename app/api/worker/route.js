@@ -1,7 +1,7 @@
 // Job worker: runs queued scan jobs server-side, one stock at a time, writing
 // results into the Main Session after every stock. Triggered every minute by
 // cron and immediately ("kick") by the client after enqueueing.
-import { kvGetJSON, kvSetJSON, kvDel, kvLock, kvConfigured, wsKey, kvHSetMany, kvHGetAllJSON } from '../_lib/kv';
+import { kvGetJSON, kvSetJSON, kvDel, kvLock, kvConfigured, wsKey, kvHSetMany, kvHGetAllJSON, kvHGetJSON } from '../_lib/kv';
 import { AGENT_DEFS, setApiBase, scoreSingularityBatch } from '../../../lib/scanAgents';
 import { getSettings, meetsEscalation, passesFreeGate, passesStage2, CHEAP_AGENTS, LIVE_SEARCH_AGENTS } from '../_lib/settings';
 
@@ -73,7 +73,7 @@ async function runWorker(request) {
       const job = { ...found, ws };
       const MAX_BATCHES_PER_TURN = 2; // two batches, then yield to the other workspace
       const wsMainKey = wsKey(job.ws, 'main');
-      const wsResultsKey = wsKey(job.ws, 'scanresults');
+      const wsResultsKey = wsKey(job.ws, 'scanres'); // HASH ticker -> JSON (per-field writes; concurrent stocks never clobber each other)
       job.status = 'running'; job.updatedAt = Date.now();
       await saveJob(job);
 
@@ -103,7 +103,7 @@ async function runWorker(request) {
       let cursor = 0;
       const runOne = async (ticker) => {
         const remainingAgents = agents.filter(a => !(job.completed[a.id] || []).includes(ticker));
-        const existingPatch = ((await kvGetJSON(wsResultsKey)) || {})[ticker] || {};
+        const existingPatch = (await kvHGetJSON(wsResultsKey, ticker)) || {};
         const stock = byTicker.get(ticker) ? { ...byTicker.get(ticker), ...existingPatch } : null;
         let patch = {};
         // Staged scanning applies to the big fast-model passes only; targeted
@@ -150,9 +150,9 @@ async function runWorker(request) {
           }
           job.skipped = (job.skipped || 0) + skippedAgents.length;
           if (Object.keys(patch).length) {
-            const all = (await kvGetJSON(wsResultsKey)) || {};
+            const current = (await kvHGetJSON(wsResultsKey, ticker)) || {};
             const scannedSomething = Object.keys(patch).some(k => !/^staged/.test(k));
-            const merged = { ...(all[ticker] || {}), ...patch, ...(scannedSomething ? { scannedAt: Date.now() } : {}) };
+            const merged = { ...current, ...patch, ...(scannedSomething ? { scannedAt: Date.now() } : {}) };
             // Dynamic strategy: a fast-model scan that clears a threshold earns a
             // smart-model deep re-scan (once per cooldown window)
             const fastPass = job.kind !== 'escalate' && job.model !== settings.smartModel;
@@ -160,8 +160,7 @@ async function runWorker(request) {
             if (settings.escalation?.enabled !== false && fastPass && cooled && meetsEscalation({ ...stock, ...merged }, settings)) {
               if (await escalate(job.ws, ticker, settings)) { merged.escalatedAt = Date.now(); escalated++; }
             }
-            all[ticker] = merged;
-            await kvSetJSON(wsResultsKey, all);
+            await kvHSetMany(wsResultsKey, { [ticker]: merged });
             byTicker.set(ticker, { ...stock, ...merged });
           }
           // mark every attempted OR staged-out agent complete for this stock

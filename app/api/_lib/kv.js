@@ -29,6 +29,11 @@ export async function kvHSetMany(key, obj) {
   if (!entries.length) return 0;
   return cmd('HSET', key, ...entries.flatMap(([f, v]) => [f, JSON.stringify(v)]));
 }
+export async function kvHGetJSON(key, field) {
+  const raw = await cmd('HGET', key, field);
+  if (raw === null || raw === undefined) return null;
+  try { return JSON.parse(raw); } catch { return null; }
+}
 export async function kvHGetAllJSON(key) {
   const flat = await cmd('HGETALL', key);
   const out = {};
