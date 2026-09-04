@@ -43,13 +43,25 @@ function daysSince(d) {
   return Number.isFinite(t) ? (Date.now() - t) / 864e5 : Infinity;
 }
 
-// Stage 0: does this stock deserve ANY AI spend right now?
+// Stage 0: does this stock deserve ANY per-stock AI spend right now?
+// Singularity relevance is the primary gate; a recent insider buy or very
+// strong technicals can still let a low-singularity name through.
 export function passesFreeGate(stock, settings) {
   const s = settings.staging || {};
+  const minSg = s.minSingularity ?? 50;
   if (daysSince(stock.lastInsiderPurchase) <= (s.insiderDays ?? 90)) return { ok: true, why: 'recent insider buy' };
   if ((stock.techScore ?? 0) >= (s.minTechScore ?? 85)) return { ok: true, why: `technicals ${stock.techScore}%` };
-  if ((stock.compositeScore ?? 0) >= (s.minComposite ?? 25)) return { ok: true, why: `composite ${stock.compositeScore}` };
-  return { ok: false, why: `composite ${stock.compositeScore ?? '?'} < ${s.minComposite ?? 45}, no recent insider buy, technicals ${stock.techScore ?? '?'}%` };
+  const sg = typeof stock.singularityScore === 'number' ? stock.singularityScore : null;
+  if (sg !== null) {
+    if (sg >= minSg) return { ok: true, why: `singularity ${sg}` };
+    return { ok: false, why: `singularity ${sg} < ${minSg}, no recent insider buy, technicals ${stock.techScore ?? '?'}%` };
+  }
+  // singularity unknown (scoring failed): fall back to the composite if enabled, else let it through
+  if (s.minComposite != null) {
+    if ((stock.compositeScore ?? 0) >= s.minComposite) return { ok: true, why: `composite ${stock.compositeScore} (singularity unknown)` };
+    return { ok: false, why: `singularity unknown, composite ${stock.compositeScore ?? '?'} < ${s.minComposite}` };
+  }
+  return { ok: true, why: 'singularity unknown' };
 }
 
 // Stage 2: did the cheap scans show enough to pay for live-search scans?
