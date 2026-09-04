@@ -59,42 +59,53 @@ async function runWorker(request) {
       const byTicker = new Map(main.stocks.map(s => [s.ticker, s]));
       let finished = true;
 
-      outer: for (const agent of agents) {
-        const done = new Set(job.completed[agent.id] || []);
-        for (const ticker of job.tickers) {
-          if (done.has(ticker)) continue;
-          if (Date.now() > deadline - 30_000) { finished = false; break outer; }
-          // re-check control flags every stock
-          const fresh = ((await kvGetJSON(wsKey(job.ws, 'jobs'))) || []).find(j => j.id === job.id);
-          if (!fresh || fresh.status === 'paused' || fresh.status === 'cancelled') { job.status = fresh ? fresh.status : 'cancelled'; finished = false; break outer; }
-
-          // Scan results live in their own single-writer blob (vh:scanresults)
-          // and are overlaid onto the Main Session on read - so nothing else
-          // that rewrites vh:main can ever clobber them.
-          const existingPatch = ((await kvGetJSON(wsResultsKey)) || {})[ticker] || {};
-          const stock = byTicker.get(ticker) ? { ...byTicker.get(ticker), ...existingPatch } : null;
-          if (stock) {
+      // Stock-major processing: for each stock run every remaining agent
+      // concurrently, two stocks at a time -> whole rows land together.
+      const pending = job.tickers.filter(t => agents.some(a => !(job.completed[a.id] || []).includes(t)));
+      let cursor = 0;
+      const runOne = async (ticker) => {
+        const remainingAgents = agents.filter(a => !(job.completed[a.id] || []).includes(ticker));
+        const existingPatch = ((await kvGetJSON(wsResultsKey)) || {})[ticker] || {};
+        const stock = byTicker.get(ticker) ? { ...byTicker.get(ticker), ...existingPatch } : null;
+        let patch = {};
+        if (stock) {
+          const results = await Promise.all(remainingAgents.map(async (agent) => {
             try {
               const result = await agent.fn(stock, job.model, { playbooks: job.playbooks || undefined });
-              const patch = agent.apply({}, result);
-              const junk = Object.values(patch).some(v => typeof v === 'string' && /^(Error|API Error)/.test(v));
+              const p = agent.apply({}, result);
+              const junk = Object.values(p).some(v => typeof v === 'string' && /^(Error|API Error)/.test(v));
               if (junk) throw new Error('scan returned error text');
-              const all = (await kvGetJSON(wsResultsKey)) || {};
-              all[ticker] = { ...(all[ticker] || {}), ...patch, scannedAt: Date.now() };
-              await kvSetJSON(wsResultsKey, all);
-              byTicker.set(ticker, { ...stock, ...patch });
-            } catch (e) { job.errors++; }
-          } else {
-            job.errors++;
+              return { agent, p };
+            } catch (e) { job.errors++; return { agent, p: null }; }
+          }));
+          for (const r of results) if (r.p) patch = { ...patch, ...r.p };
+          if (Object.keys(patch).length) {
+            const all = (await kvGetJSON(wsResultsKey)) || {};
+            all[ticker] = { ...(all[ticker] || {}), ...patch, scannedAt: Date.now() };
+            await kvSetJSON(wsResultsKey, all);
+            byTicker.set(ticker, { ...stock, ...patch });
           }
-          done.add(ticker);
-          job.completed[agent.id] = [...done];
-          job.updatedAt = Date.now();
-          job.progress = { done: Object.values(job.completed).reduce((a, arr) => a + arr.length, 0), total: agents.length * job.tickers.length, agent: agent.label, ticker };
-          await saveJob(job);
-          processed++;
+          // mark every attempted agent complete for this stock (failed ones
+          // are retried by the next pass, not looped on forever)
+          for (const r of results) { const done = new Set(job.completed[r.agent.id] || []); done.add(ticker); job.completed[r.agent.id] = [...done]; }
+        } else {
+          job.errors++;
+          for (const a of remainingAgents) { const done = new Set(job.completed[a.id] || []); done.add(ticker); job.completed[a.id] = [...done]; }
         }
+        job.updatedAt = Date.now();
+        job.progress = { done: Object.values(job.completed).reduce((a, arr) => a + arr.length, 0), total: agents.length * job.tickers.length, agent: `${remainingAgents.length} scans`, ticker };
+        await saveJob(job);
+        processed++;
+      };
+      while (cursor < pending.length) {
+        if (Date.now() > deadline - 45_000) { finished = false; break; }
+        const fresh = ((await kvGetJSON(wsKey(job.ws, 'jobs'))) || []).find(j => j.id === job.id);
+        if (!fresh || fresh.status === 'paused' || fresh.status === 'cancelled') { job.status = fresh ? fresh.status : 'cancelled'; finished = false; break; }
+        const batch = pending.slice(cursor, cursor + 2);
+        cursor += batch.length;
+        await Promise.all(batch.map(runOne));
       }
+      if (finished && cursor < pending.length) finished = false;
       if (finished) { job.status = 'done'; job.finishedAt = Date.now(); await saveJob(job); }
       else if (job.status === 'running') { await saveJob(job); break; } // out of time; next tick continues
       else { await saveJob(job); } // paused/cancelled -> look for another job
