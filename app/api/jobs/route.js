@@ -34,6 +34,7 @@ export async function POST(request) {
     if (body.action === 'pause' && (job.status === 'queued' || job.status === 'running')) job.status = 'paused';
     if (body.action === 'resume' && job.status === 'paused') job.status = 'queued';
     if (body.action === 'cancel') job.status = 'cancelled';
+    if (body.action === 'model' && typeof body.model === 'string') job.model = body.model; // takes effect within a few stocks, no restart
     job.updatedAt = Date.now();
     await kvSetJSON(wsKey(ws, 'jobs'), jobs);
     return Response.json({ ok: true, job });

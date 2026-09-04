@@ -45,7 +45,7 @@ export async function runWeeklyPass(ws = 'main', opts = {}) {
     .sort((a, b) => (b.compositeScore || 0) - (a.compositeScore || 0))
     .map(s => s.ticker);
   const capped = cfg.limit ? pool.slice(0, cfg.limit) : pool.slice(0, 2000);
-  return enqueue('weekly', capped, cfg, ws);
+  return enqueue('weekly', capped, { ...cfg, model: cfg.weeklyModel }, ws);
 }
 
 // Daily: only stocks that hit a minimum, not scanned in the last N days

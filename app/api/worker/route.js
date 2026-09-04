@@ -3,6 +3,7 @@
 // cron and immediately ("kick") by the client after enqueueing.
 import { kvGetJSON, kvSetJSON, kvDel, kvLock, kvConfigured, wsKey } from '../_lib/kv';
 import { AGENT_DEFS, setApiBase } from '../../../lib/scanAgents';
+import { getSettings, meetsEscalation } from '../_lib/settings';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -26,9 +27,28 @@ async function saveJob(job) {
   await kvSetJSON(key, jobs);
 }
 
+// Queue a smart-model deep re-scan for a stock that cleared a threshold on
+// the fast pass. One open 'escalate' job per workspace collects them.
+async function escalate(ws, ticker, settings) {
+  const key = wsKey(ws, 'jobs');
+  const jobs = (await kvGetJSON(key)) || [];
+  let job = jobs.find(j => j.kind === 'escalate' && (j.status === 'queued' || j.status === 'running'));
+  if (job) {
+    if (job.tickers.includes(ticker)) return false;
+    job.tickers.push(ticker); job.updatedAt = Date.now();
+  } else {
+    job = { id: `job_${Date.now()}_escalate`, ws, kind: 'escalate', agentIds: AGENT_DEFS.map(a => a.id), tickers: [ticker], model: settings.smartModel, playbooks: null, completed: {}, status: 'queued', createdAt: Date.now(), updatedAt: Date.now(), errors: 0 };
+    jobs.unshift(job);
+  }
+  await kvSetJSON(key, jobs.slice(0, 30));
+  return true;
+}
+
 async function runWorker(request) {
   if (!(await kvLock('vh:worker:lock', 290_000))) return Response.json({ ok: true, running: true });
   const deadline = Date.now() + TIME_BUDGET_MS;
+  const settings = await getSettings();
+  let escalated = 0;
   // Call our own /api/grok server -> server. Always use the PUBLIC production
   // URL: cron invocations arrive on deployment-specific hosts that sit behind
   // Vercel deployment protection, so calling back through that host returns
@@ -84,9 +104,17 @@ async function runWorker(request) {
           for (const r of results) if (r.p) patch = { ...patch, ...r.p };
           if (Object.keys(patch).length) {
             const all = (await kvGetJSON(wsResultsKey)) || {};
-            all[ticker] = { ...(all[ticker] || {}), ...patch, scannedAt: Date.now() };
+            const merged = { ...(all[ticker] || {}), ...patch, scannedAt: Date.now() };
+            // Dynamic strategy: a fast-model scan that clears a threshold earns a
+            // smart-model deep re-scan (once per cooldown window)
+            const fastPass = job.kind !== 'escalate' && job.model !== settings.smartModel;
+            const cooled = !merged.escalatedAt || Date.now() - merged.escalatedAt > (settings.escalation?.cooldownDays || 7) * 864e5;
+            if (settings.escalation?.enabled !== false && fastPass && cooled && meetsEscalation({ ...stock, ...merged }, settings)) {
+              if (await escalate(job.ws, ticker, settings)) { merged.escalatedAt = Date.now(); escalated++; }
+            }
+            all[ticker] = merged;
             await kvSetJSON(wsResultsKey, all);
-            byTicker.set(ticker, { ...stock, ...patch });
+            byTicker.set(ticker, { ...stock, ...merged });
           }
           // mark every attempted agent complete for this stock (failed ones
           // are retried by the next pass, not looped on forever)
@@ -115,7 +143,7 @@ async function runWorker(request) {
       if (finished) { job.status = 'done'; job.finishedAt = Date.now(); await saveJob(job); }
       else { await saveJob(job); } // yielded turn, out of time, paused or cancelled -> loop decides
     }
-    return Response.json({ ok: true, processed });
+    return Response.json({ ok: true, processed, escalated });
   } finally {
     await kvDel('vh:worker:lock');
   }

@@ -3356,7 +3356,7 @@ Respond with ONLY a JSON array:
                 <span className="text-sm text-slate-200">Scheduled scan passes</span>
                 <p className="text-xs text-slate-500 mb-2">Run automatically on the Main session. Toggle each on or off - nothing here runs on click.</p>
                 {[
-                  { key: 'weekly', title: 'Weekly full pass', when: 'Sundays ~2:00am ET', what: 'All 7 scans (Conviction, Technical, Valuation, Momentum, Buyout, Leadership, Playbook) on every Hunt-tier stock plus the watchlist. Smartest model.' },
+                  { key: 'weekly', title: 'Weekly full pass', when: 'Sundays ~2:00am ET', what: `All 7 scans (Conviction, Technical, Valuation, Momentum, Buyout, Leadership, Playbook) on every Eligible stock plus the watchlist, on the fast model (${appSettings.fastModel}). High scorers are automatically escalated to the smart model.` },
                   { key: 'daily', title: 'Daily targeted pass', when: 'Every day ~9:00am ET', what: `All 7 scans only on stocks earning it: on the watchlist, insider buy in the last ${appSettings.dailyMin?.insiderDays ?? 30} days, technicals ≥ ${appSettings.dailyMin?.techScore ?? 85}% buy, composite ≥ ${appSettings.dailyMin?.composite ?? 65}, or playbook ≥ ${appSettings.dailyMin?.playbookScore ?? 70}. Skips anything scanned in the last ${appSettings.rescanDays ?? 3} days. Max ${appSettings.dailyCap ?? 50} stocks.` },
                 ].map(p => {
                   const on = appSettings.schedules?.[p.key]?.enabled !== false;
@@ -3380,6 +3380,29 @@ Respond with ONLY a JSON array:
                     </div>
                   );
                 })}
+              </div>
+
+              {/* Dynamic scan strategy */}
+              <div className="mb-3 p-3 rounded-lg border" style={{ background: 'rgba(34,211,238,0.05)', borderColor: 'rgba(34,211,238,0.25)' }}>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <span className="text-sm text-slate-200">Dynamic scan strategy</span>
+                    <p className="text-xs text-slate-500 mt-0.5">Breadth on the fast model ({appSettings.fastModel}), depth on the smart model ({appSettings.smartModel}) only for stocks that earn it. The weekly full pass runs on the fast model; any stock clearing a threshold is automatically queued for a smart-model re-scan of all 7 scans (once per {appSettings.escalation?.cooldownDays ?? 7} days). The daily targeted pass always uses the smart model.</p>
+                    <p className="text-xs text-slate-400 mt-1">Escalates when any of: {Object.entries(appSettings.escalation?.thresholds || {}).map(([k, v]) => `${({ singularityScore: 'Singularity', playbookScore: 'Playbook', buyoutScore: 'Buyout', momentumScore: 'Momentum', valuationScore: 'Valuation', insiderConviction: 'Conviction', techScore: 'Technicals' })[k] || k} ≥ ${v}`).join(' · ')}</p>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      const on = appSettings.escalation?.enabled !== false;
+                      const next = { ...appSettings, escalation: { ...(appSettings.escalation || {}), enabled: !on } };
+                      setAppSettings(next);
+                      try { const res = await fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ settings: { escalation: next.escalation } }) }); const d = await res.json(); if (d?.settings) setAppSettings(d.settings); } catch (e) {}
+                    }}
+                    className="w-12 h-6 rounded-full transition-colors shrink-0 mt-1"
+                    style={{ background: appSettings.escalation?.enabled !== false ? '#10b981' : 'rgba(51,65,85,0.5)' }}
+                  >
+                    <div className="w-5 h-5 rounded-full bg-white transition-transform" style={{ transform: appSettings.escalation?.enabled !== false ? 'translateX(26px)' : 'translateX(2px)' }} />
+                  </button>
+                </div>
               </div>
 
               {/* Scan eligibility tiers */}
@@ -3511,7 +3534,7 @@ Respond with ONLY a JSON array:
               const color = j.status === 'done' ? '#34d399' : j.status === 'paused' ? '#fbbf24' : '#a78bfa';
               return (
                 <div key={j.id}>
-                  <div className="flex justify-between text-xs mb-1 gap-2"><span className="truncate" style={{ color }}>{j.status === 'queued' ? 'Queued' : j.status === 'paused' ? 'Paused' : j.status === 'done' ? 'Done' : 'Server'}: {labels}</span><span className="text-slate-500 mono shrink-0">{done}/{total}</span></div>
+                  <div className="flex justify-between text-xs mb-1 gap-2"><span className="truncate" style={{ color }}>{j.status === 'queued' ? 'Queued' : j.status === 'paused' ? 'Paused' : j.status === 'done' ? 'Done' : 'Running'}: {j.kind === 'escalate' ? `Smart re-scan of high scorers (${j.tickers.length} stocks)` : j.kind === 'weekly' ? `Full pass (${j.tickers.length} stocks)` : j.kind === 'daily' ? `Daily targeted (${j.tickers.length} stocks)` : j.kind === 'eligible-topup' ? `Newly eligible (${j.tickers.length} stocks)` : labels} <span className="text-slate-600">· {j.model}</span></span><span className="text-slate-500 mono shrink-0">{done}/{total}</span></div>
                   <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(30,41,59,0.8)' }}><div className="h-full rounded-full transition-all" style={{ width: `${total ? (done / total) * 100 : 0}%`, background: color }} /></div>
                   {j.progress?.ticker && j.status === 'running' && <p className="text-[10px] text-slate-500 mt-1 truncate">{j.progress.agent}: {j.progress.ticker} - runs on server, safe to refresh</p>}
                   {j.status !== 'done' && (
