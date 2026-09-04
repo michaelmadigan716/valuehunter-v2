@@ -71,7 +71,7 @@ async function runWorker(request) {
       if (!found) { if (++idleTurns >= order.length) break; continue; }
       idleTurns = 0;
       const job = { ...found, ws };
-      const MAX_BATCHES_PER_TURN = 1; // one batch (2 stocks), then yield to the other workspace
+      const MAX_BATCHES_PER_TURN = 2; // two batches, then yield to the other workspace
       const wsMainKey = wsKey(job.ws, 'main');
       const wsResultsKey = wsKey(job.ws, 'scanresults');
       job.status = 'running'; job.updatedAt = Date.now();
@@ -135,7 +135,7 @@ async function runWorker(request) {
         batchesThisTurn++;
         const fresh = ((await kvGetJSON(wsKey(job.ws, 'jobs'))) || []).find(j => j.id === job.id);
         if (!fresh || fresh.status === 'paused' || fresh.status === 'cancelled') { job.status = fresh ? fresh.status : 'cancelled'; finished = false; break; }
-        const batch = pending.slice(cursor, cursor + 2);
+        const batch = pending.slice(cursor, cursor + 15); // 15 stocks concurrently (x7 scans = 105 calls; account allows 6000/min)
         cursor += batch.length;
         await Promise.all(batch.map(runOne));
       }
