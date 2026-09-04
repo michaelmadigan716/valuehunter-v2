@@ -29,10 +29,15 @@ async function saveJob(job) {
 async function runWorker(request) {
   if (!(await kvLock('vh:worker:lock', 290_000))) return Response.json({ ok: true, running: true });
   const deadline = Date.now() + TIME_BUDGET_MS;
-  // Call our own /api/grok on this deployment (server -> server, no Origin header)
-  const host = request.headers.get('host');
-  const proto = host && host.startsWith('localhost') ? 'http' : 'https';
-  setApiBase(`${proto}://${host}`);
+  // Call our own /api/grok server -> server. Always use the PUBLIC production
+  // URL: cron invocations arrive on deployment-specific hosts that sit behind
+  // Vercel deployment protection, so calling back through that host returns
+  // an auth page instead of JSON.
+  const host = request.headers.get('host') || '';
+  const base = host.startsWith('localhost')
+    ? `http://${host}`
+    : (process.env.APP_PUBLIC_URL || 'https://valuehunter-v2.vercel.app');
+  setApiBase(base);
   let processed = 0;
   try {
     while (Date.now() < deadline) {
@@ -72,6 +77,8 @@ async function runWorker(request) {
             try {
               const result = await agent.fn(stock, job.model, { playbooks: job.playbooks || undefined });
               const patch = agent.apply({}, result);
+              const junk = Object.values(patch).some(v => typeof v === 'string' && /^(Error|API Error)/.test(v));
+              if (junk) throw new Error('scan returned error text');
               const all = (await kvGetJSON(wsResultsKey)) || {};
               all[ticker] = { ...(all[ticker] || {}), ...patch, scannedAt: Date.now() };
               await kvSetJSON(wsResultsKey, all);
