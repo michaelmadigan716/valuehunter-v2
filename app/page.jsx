@@ -28,12 +28,12 @@ const STOCK_LIMITS = {
 
 // Category filters
 const STOCK_CATEGORIES = {
-  hunt: { name: 'Hunt tier (3-5x capable)', keywords: [] },
+  hunt: { name: 'Eligible (3-5x capable)', keywords: [] },
   all: { name: 'All Stocks', keywords: [] },
   singularity: { name: 'Singularity (70+)', keywords: [], singularityFilter: true },
   watchlist: { name: '⭐ Watchlist', keywords: [] },
-  tierB: { name: 'Watch-only tier (capped sectors / big caps)', keywords: [] },
-  tierC: { name: 'Skip tier (funds, SPACs, shells)', keywords: [] },
+  tierB: { name: 'Watch-only (capped sectors / big caps / illiquid)', keywords: [] },
+  tierC: { name: 'Excluded (funds, SPACs, shells)', keywords: [] },
   tech: { name: 'Tech', keywords: ['software', 'computer', 'semiconductor', 'electronic', 'technology', 'data processing', 'internet', 'cloud', 'cyber', 'digital'] },
   biotech: { name: 'Biotech/Health', keywords: ['biotech', 'pharmaceutical', 'medical', 'drug', 'health', 'therapeutic', 'diagnostic', 'surgical'] },
   energy: { name: 'Energy', keywords: ['oil', 'gas', 'energy', 'solar', 'wind', 'petroleum', 'mining', 'utilities'] },
@@ -3384,12 +3384,12 @@ Respond with ONLY a JSON array:
 
               {/* Scan eligibility tiers */}
               <div className="mb-3 p-3 rounded-lg border" style={{ background: 'rgba(16,185,129,0.05)', borderColor: 'rgba(16,185,129,0.2)' }}>
-                <span className="text-sm text-slate-200">Scan eligibility tiers</span>
-                <p className="text-xs text-slate-500 mb-2">Routine AI scans and the default table view use the Hunt tier. Watch-only stocks still enter via scouts or your ★. Skip tier is hidden dead weight.</p>
+                <span className="text-sm text-slate-200">Scan eligibility</span>
+                <p className="text-xs text-slate-500 mb-2">The full pass and the default table view use the Eligible pool - every stock except the ones filtered out. Watch-only stocks still enter via scouts or your ★. Excluded is hidden dead weight.</p>
                 <div className="text-xs text-slate-400 space-y-1">
-                  <p><span className="text-emerald-400 font-semibold">Hunt:</span> market cap ${TIER_RULES.minMarketCapM}M - ${TIER_RULES.maxMarketCapM / 1000}B, price ${TIER_RULES.minPrice} - ${TIER_RULES.maxPrice}, avg volume ≥ ${(TIER_RULES.minDollarVolume / 1000).toFixed(0)}K/day, not in a capped industry</p>
-                  <p><span className="text-amber-400 font-semibold">Watch-only:</span> {[...new Set(TIER_RULES.cappedSic.map(r => r[2]))].join(', ')}, or outside the cap/price/volume range</p>
-                  <p><span className="text-slate-500 font-semibold">Skip:</span> funds, SPACs/blank checks, trusts, sub-$0.20 or &lt;$100K/day</p>
+                  <p><span className="text-emerald-400 font-semibold">Eligible:</span> market cap ${TIER_RULES.minMarketCapM}M - ${TIER_RULES.maxMarketCapM / 1000}B, avg volume ≥ ${(TIER_RULES.minDollarVolume / 1000).toFixed(0)}K/day, not in a capped industry. Share price is never a factor.</p>
+                  <p><span className="text-amber-400 font-semibold">Watch-only:</span> {[...new Set(TIER_RULES.cappedSic.map(r => r[2]))].join(', ')}, or outside the cap/volume range</p>
+                  <p><span className="text-slate-500 font-semibold">Excluded:</span> funds, SPACs/blank checks, trusts, &lt;$100K/day traded</p>
                   <p className="text-slate-600">Restaurants and consumer names stay eligible on purpose (Monster / Victoria's Secret-type runs).</p>
                 </div>
               </div>
@@ -4147,7 +4147,7 @@ Respond with ONLY a JSON array:
                             <button onClick={(e) => { e.stopPropagation(); toggleWatch(s); }} className="text-sm leading-none" title={watchlist[s.ticker] ? `Watching (${watchlist[s.ticker].route}) - click to unwatch` : 'Add to watchlist (research team will monitor it)'} style={{ color: watchlist[s.ticker] ? '#fbbf24' : '#334155' }}>★</button>
                             <span className="mono font-bold text-lg text-slate-100">{s.ticker}</span>
                             <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: s.change >= 0 ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', color: s.change >= 0 ? '#34d399' : '#f87171' }}>{s.change >= 0 ? '+' : ''}{s.change.toFixed(2)}%</span>
-                            {(() => { const tr = s.tier || classifyTier(s).tier; return tr !== 'A' ? <span className="text-[9px] px-1.5 py-0.5 rounded-full border" title={s.tierReason || (tr === 'B' ? 'Watch-only tier: capped sector or outside cap/price/volume range - scouts and stars can still bring it in' : 'Skip tier: fund / SPAC / shell / illiquid')} style={{ borderColor: tr === 'B' ? 'rgba(245,158,11,0.4)' : 'rgba(100,116,139,0.4)', color: tr === 'B' ? '#fbbf24' : '#64748b' }}>{tr === 'B' ? 'watch-only' : 'skip'}</span> : null; })()}
+                            {(() => { const tr = s.tier || classifyTier(s).tier; return tr !== 'A' ? <span className="text-[9px] px-1.5 py-0.5 rounded-full border" title={s.tierReason || (tr === 'B' ? 'Watch-only: capped sector or outside cap/volume range - scouts and stars can still bring it in' : 'Excluded: fund / SPAC / shell / illiquid')} style={{ borderColor: tr === 'B' ? 'rgba(245,158,11,0.4)' : 'rgba(100,116,139,0.4)', color: tr === 'B' ? '#fbbf24' : '#64748b' }}>{tr === 'B' ? 'watch-only' : 'excluded'}</span> : null; })()}
                             {s.aiAnalysis && <Sparkles className="w-4 h-4 text-emerald-400" title={`Conviction: ${s.insiderConviction}%`} />}
                             {s.technicalAnalysis && <Activity className="w-4 h-4 text-indigo-400" title={`C&H: ${s.cupHandleScore}`} />}
                             {s.explosiveAnalysis && <Zap className="w-4 h-4 text-pink-400" title={`Explosive: ${s.explosiveScore}`} />}
