@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { computeTechnicalOpinion } from '@/lib/technicals';
 import { classifyTier, TIER_RULES } from '@/lib/tiers';
 import { AGENT_DEFS, DEFAULT_PLAYBOOKS, computeMarketMetrics, getAIAnalysis, getTechnicalAnalysis, getValuationAnalysis, getMomentumAnalysis, getBuyoutAnalysis, getLeadershipAnalysis, getPlaybookAnalysis } from '@/lib/scanAgents';
