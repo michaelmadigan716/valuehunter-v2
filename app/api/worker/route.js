@@ -3,7 +3,7 @@
 // cron and immediately ("kick") by the client after enqueueing.
 import { kvGetJSON, kvSetJSON, kvDel, kvLock, kvConfigured, wsKey } from '../_lib/kv';
 import { AGENT_DEFS, setApiBase } from '../../../lib/scanAgents';
-import { getSettings, meetsEscalation } from '../_lib/settings';
+import { getSettings, meetsEscalation, passesFreeGate, passesStage2, CHEAP_AGENTS, LIVE_SEARCH_AGENTS } from '../_lib/settings';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -91,20 +91,53 @@ async function runWorker(request) {
         const existingPatch = ((await kvGetJSON(wsResultsKey)) || {})[ticker] || {};
         const stock = byTicker.get(ticker) ? { ...byTicker.get(ticker), ...existingPatch } : null;
         let patch = {};
+        // Staged scanning applies to the big fast-model passes only; targeted
+        // passes (daily, escalate, manual) always run everything requested.
+        const staged = settings.staging?.enabled !== false && (job.kind === 'weekly' || job.kind === 'eligible-topup');
+        const skippedAgents = [];
+        const runAgents = async (list) => Promise.all(list.map(async (agent) => {
+          try {
+            const result = await agent.fn({ ...stock, ...patch }, job.model, { playbooks: job.playbooks || undefined });
+            const p = agent.apply({}, result);
+            const junk = Object.values(p).some(v => typeof v === 'string' && /^(Error|API Error)/.test(v));
+            if (junk) throw new Error('scan returned error text');
+            return { agent, p };
+          } catch (e) { job.errors++; return { agent, p: null }; }
+        }));
         if (stock) {
-          const results = await Promise.all(remainingAgents.map(async (agent) => {
-            try {
-              const result = await agent.fn(stock, job.model, { playbooks: job.playbooks || undefined });
-              const p = agent.apply({}, result);
-              const junk = Object.values(p).some(v => typeof v === 'string' && /^(Error|API Error)/.test(v));
-              if (junk) throw new Error('scan returned error text');
-              return { agent, p };
-            } catch (e) { job.errors++; return { agent, p: null }; }
-          }));
-          for (const r of results) if (r.p) patch = { ...patch, ...r.p };
+          let results = [];
+          if (staged) {
+            const gate = passesFreeGate(stock, settings);
+            if (!gate.ok) {
+              // stage 0 failed: zero AI spend on this stock this pass
+              skippedAgents.push(...remainingAgents);
+              patch = { stagedOut: 'free-gate', stagedWhy: gate.why };
+            } else {
+              const cheap = remainingAgents.filter(a => CHEAP_AGENTS.includes(a.id));
+              const pricey = remainingAgents.filter(a => LIVE_SEARCH_AGENTS.includes(a.id));
+              results = await runAgents(cheap);
+              for (const r of results) if (r.p) patch = { ...patch, ...r.p };
+              if (pricey.length) {
+                if (passesStage2({ ...stock, ...patch }, settings)) {
+                  const more = await runAgents(pricey);
+                  for (const r of more) if (r.p) patch = { ...patch, ...r.p };
+                  results = results.concat(more);
+                } else {
+                  skippedAgents.push(...pricey);
+                  patch.stagedOut = 'stage-2'; patch.stagedWhy = 'cheap scans did not clear the bar for live-search scans';
+                }
+              }
+              if (!patch.stagedOut) { patch.stagedOut = null; patch.stagedWhy = null; }
+            }
+          } else {
+            results = await runAgents(remainingAgents);
+            for (const r of results) if (r.p) patch = { ...patch, ...r.p };
+          }
+          job.skipped = (job.skipped || 0) + skippedAgents.length;
           if (Object.keys(patch).length) {
             const all = (await kvGetJSON(wsResultsKey)) || {};
-            const merged = { ...(all[ticker] || {}), ...patch, scannedAt: Date.now() };
+            const scannedSomething = Object.keys(patch).some(k => !/^staged/.test(k));
+            const merged = { ...(all[ticker] || {}), ...patch, ...(scannedSomething ? { scannedAt: Date.now() } : {}) };
             // Dynamic strategy: a fast-model scan that clears a threshold earns a
             // smart-model deep re-scan (once per cooldown window)
             const fastPass = job.kind !== 'escalate' && job.model !== settings.smartModel;
@@ -116,9 +149,9 @@ async function runWorker(request) {
             await kvSetJSON(wsResultsKey, all);
             byTicker.set(ticker, { ...stock, ...merged });
           }
-          // mark every attempted agent complete for this stock (failed ones
-          // are retried by the next pass, not looped on forever)
-          for (const r of results) { const done = new Set(job.completed[r.agent.id] || []); done.add(ticker); job.completed[r.agent.id] = [...done]; }
+          // mark every attempted OR staged-out agent complete for this stock
+          // (failed ones are retried by the next pass, not looped on forever)
+          for (const a of [...results.map(r => r.agent), ...skippedAgents]) { const done = new Set(job.completed[a.id] || []); done.add(ticker); job.completed[a.id] = [...done]; }
         } else {
           job.errors++;
           for (const a of remainingAgents) { const done = new Set(job.completed[a.id] || []); done.add(ticker); job.completed[a.id] = [...done]; }

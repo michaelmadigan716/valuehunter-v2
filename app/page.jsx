@@ -3405,6 +3405,28 @@ Respond with ONLY a JSON array:
                 </div>
               </div>
 
+              {/* Staged scanning */}
+              <div className="mb-3 p-3 rounded-lg border" style={{ background: 'rgba(251,191,36,0.05)', borderColor: 'rgba(251,191,36,0.25)' }}>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <span className="text-sm text-slate-200">Staged scanning (cost control)</span>
+                    <p className="text-xs text-slate-500 mt-0.5">Cuts the big fast-model passes down to what's worth paying for. <span className="text-slate-400">Stage 0:</span> no AI at all unless the free composite score ≥ {appSettings.staging?.minComposite ?? 45}, or an insider bought in the last {appSettings.staging?.insiderDays ?? 90} days, or technicals ≥ {appSettings.staging?.minTechScore ?? 85}%. <span className="text-slate-400">Stage 1:</span> the 3 cheap scans (Conviction, Technical, Valuation - no live search). <span className="text-slate-400">Stage 2:</span> the 4 live-search scans (Momentum, Buyout, Leadership, Playbook) only if stage 1 shows Conviction ≥ {appSettings.staging?.stage2?.insiderConviction ?? 50}, Valuation ≥ {appSettings.staging?.stage2?.valuationScore ?? 60} or Cup&amp;Handle ≥ {appSettings.staging?.stage2?.cupHandleScore ?? 60} (or the insider/technicals signals above). Daily targeted and smart re-scans always run everything.</p>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      const on = appSettings.staging?.enabled !== false;
+                      const next = { ...appSettings, staging: { ...(appSettings.staging || {}), enabled: !on } };
+                      setAppSettings(next);
+                      try { const res = await fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ settings: { staging: next.staging } }) }); const d = await res.json(); if (d?.settings) setAppSettings(d.settings); } catch (e) {}
+                    }}
+                    className="w-12 h-6 rounded-full transition-colors shrink-0 mt-1"
+                    style={{ background: appSettings.staging?.enabled !== false ? '#10b981' : 'rgba(51,65,85,0.5)' }}
+                  >
+                    <div className="w-5 h-5 rounded-full bg-white transition-transform" style={{ transform: appSettings.staging?.enabled !== false ? 'translateX(26px)' : 'translateX(2px)' }} />
+                  </button>
+                </div>
+              </div>
+
               {/* Scan eligibility tiers */}
               <div className="mb-3 p-3 rounded-lg border" style={{ background: 'rgba(16,185,129,0.05)', borderColor: 'rgba(16,185,129,0.2)' }}>
                 <span className="text-sm text-slate-200">Scan eligibility</span>
@@ -3534,7 +3556,7 @@ Respond with ONLY a JSON array:
               const color = j.status === 'done' ? '#34d399' : j.status === 'paused' ? '#fbbf24' : '#a78bfa';
               return (
                 <div key={j.id}>
-                  <div className="flex justify-between text-xs mb-1 gap-2"><span className="truncate" style={{ color }}>{j.status === 'queued' ? 'Queued' : j.status === 'paused' ? 'Paused' : j.status === 'done' ? 'Done' : 'Running'}: {j.kind === 'escalate' ? `Smart re-scan of high scorers (${j.tickers.length} stocks)` : j.kind === 'weekly' ? `Full pass (${j.tickers.length} stocks)` : j.kind === 'daily' ? `Daily targeted (${j.tickers.length} stocks)` : j.kind === 'eligible-topup' ? `Newly eligible (${j.tickers.length} stocks)` : labels} <span className="text-slate-600">· {j.model}</span></span><span className="text-slate-500 mono shrink-0">{done}/{total}</span></div>
+                  <div className="flex justify-between text-xs mb-1 gap-2"><span className="truncate" style={{ color }}>{j.status === 'queued' ? 'Queued' : j.status === 'paused' ? 'Paused' : j.status === 'done' ? 'Done' : 'Running'}: {j.kind === 'escalate' ? `Smart re-scan of high scorers (${j.tickers.length} stocks)` : j.kind === 'weekly' ? `Full pass (${j.tickers.length} stocks)` : j.kind === 'daily' ? `Daily targeted (${j.tickers.length} stocks)` : j.kind === 'eligible-topup' ? `Newly eligible (${j.tickers.length} stocks)` : labels} <span className="text-slate-600">· {j.model}</span></span><span className="text-slate-500 mono shrink-0">{done}/{total}{j.skipped ? <span className="text-amber-500/70" title="scans skipped by staged scanning (cost control)"> · {j.skipped} skipped</span> : null}</span></div>
                   <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(30,41,59,0.8)' }}><div className="h-full rounded-full transition-all" style={{ width: `${total ? (done / total) * 100 : 0}%`, background: color }} /></div>
                   {j.progress?.ticker && j.status === 'running' && <p className="text-[10px] text-slate-500 mt-1 truncate">{j.progress.agent}: {j.progress.ticker} - runs on server, safe to refresh</p>}
                   {j.status !== 'done' && (
