@@ -5,6 +5,7 @@
 // Triage (fast model, 1 call per new candidate, capped) decides watch/pass and
 // adds watched stocks to the Main Session table + Watchlist + feed.
 import { kvGetJSON, kvSetJSON, kvDel, kvLock, kvConfigured } from '../_lib/kv';
+import { getSettings, autoScansOn } from '../_lib/settings';
 import { qualifyTicker } from '../_lib/market';
 
 export const dynamic = 'force-dynamic';
@@ -169,6 +170,7 @@ async function runScouts() {
 export async function GET(request) {
   if (!kvConfigured()) return Response.json({ error: 'KV not configured' }, { status: 500 });
   if (!authorized(request)) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!autoScansOn(await getSettings())) return Response.json({ ok: true, skipped: 'automatic scanning is off' });
   return runScouts();
 }
 export async function POST(request) {

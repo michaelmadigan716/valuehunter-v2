@@ -934,8 +934,30 @@ export default function StockResearchApp() {
   });
   const [fullSpectrumPhase, setFullSpectrumPhase] = useState('');
 
-  const calcScores = useCallback((list, w, aiW) => {
-    const aw = aiW || { conviction: 20, upside: 20, cupHandle: 20 };
+  // Which variables count toward the composite score. Switching one off zeroes
+  // its weight (the rest re-normalize) without losing the slider value.
+  const ALL_WEIGHT_VARS = ['pricePosition', 'insiderActivity', 'netCash', 'optionsHeat', 'conviction', 'cupHandle', 'singularity', 'valuation', 'momentum', 'buyout', 'leadership', 'playbook', 'technicals'];
+  const allWeightVarsOn = () => Object.fromEntries(ALL_WEIGHT_VARS.map(k => [k, true]));
+  const [weightEnabled, setWeightEnabled] = useState(allWeightVarsOn);
+  const weightEnabledRef = useRef(weightEnabled);
+  useEffect(() => {
+    try { const saved = JSON.parse(localStorage.getItem('singularityhunter_weightEnabled') || 'null'); if (saved && typeof saved === 'object') { const next = { ...allWeightVarsOn(), ...saved }; weightEnabledRef.current = next; setWeightEnabled(next); } } catch (e) {}
+  }, []);
+  const toggleWeightVar = (k) => {
+    const next = { ...weightEnabledRef.current, [k]: weightEnabledRef.current[k] === false };
+    weightEnabledRef.current = next; setWeightEnabled(next);
+    try { localStorage.setItem('singularityhunter_weightEnabled', JSON.stringify(next)); } catch (e) {}
+    setStocks(prev => calcScores(prev, weights, aiWeights));
+  };
+  const WeightVarToggle = ({ k }) => { const on = weightEnabled[k] !== false; return (
+    <button onClick={() => toggleWeightVar(k)} title={on ? 'Counted in the composite score - click to exclude' : 'Excluded from the composite score - click to include'} className="ml-auto text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-colors" style={on ? { color: '#34d399', borderColor: 'rgba(52,211,153,0.4)', background: 'rgba(52,211,153,0.1)' } : { color: '#f87171', borderColor: 'rgba(248,113,113,0.4)', background: 'rgba(248,113,113,0.1)' }}>{on ? 'ON' : 'OFF'}</button>
+  ); };
+
+  const calcScores = useCallback((list, w0, aiW) => {
+    const en = weightEnabledRef.current || {};
+    const w = Object.fromEntries(Object.entries(w0 || {}).map(([k, v]) => [k, en[k] === false ? 0 : v]));
+    const aw0 = aiW || { conviction: 20, upside: 20, cupHandle: 20 };
+    const aw = Object.fromEntries(Object.entries(aw0).map(([k, v]) => [k, en[k] === false ? 0 : v]));
     
     // Calculate total weight (base + AI)
     const baseTotal = Object.values(w).reduce((a, b) => a + b, 0);
@@ -2879,7 +2901,7 @@ Respond with ONLY a JSON array:
               color: status.type === 'live' ? '#34d399' : '#a5b4fc' 
             }}>
               {(status.type === 'loading' || isAnalyzingAI || isRunningFullSpectrum || isRunningOracle || serverJobs.some(x => x.status === 'running' || x.status === 'queued')) ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Database className="w-3.5 h-3.5" />}
-              <span>{fullSpectrumPhase || (() => { const j = serverJobs.find(x => x.status === 'running') || serverJobs.find(x => x.status === 'queued'); if (j && status.type !== 'loading') { const p = j.progress || {}; return `Server scanning: ${p.agent || j.agentIds[0]} ${p.ticker ? 'on ' + p.ticker + ' ' : ''}(${p.done || 0}/${p.total || j.agentIds.length * j.tickers.length})`; } return status.msg; })()}</span>
+              <span>{fullSpectrumPhase || (() => { const j = serverJobs.find(x => x.status === 'running') || serverJobs.find(x => x.status === 'queued'); if (j && status.type !== 'loading') { const p = j.progress || {}; return `Server scanning: ${p.agent || j.agentIds[0]} ${p.ticker ? 'on ' + p.ticker + ' ' : ''}(${p.done || 0}/${p.total || j.agentIds.length * j.tickers.length})`; } return status.msg; })()}</span>{appSettings.autoScans?.enabled !== true && <span className="ml-2 text-[10px] font-semibold px-1.5 py-0.5 rounded border" style={{ color: '#f87171', borderColor: 'rgba(248,113,113,0.4)', background: 'rgba(248,113,113,0.1)' }} title="Automatic AI scanning is off (Settings) - nothing runs in the background">AUTO SCANS OFF</span>}
               {cacheAge && status.type === 'cached' && <span className="text-slate-500">• {formatCacheAge(cacheAge)}</span>}
             </div>
 
@@ -3351,6 +3373,29 @@ Respond with ONLY a JSON array:
                 </div>
               </div>
               
+              {/* Master switch: automatic AI scanning */}
+              <div className="mb-3 p-3 rounded-lg border" style={{ background: appSettings.autoScans?.enabled ? 'rgba(52,211,153,0.06)' : 'rgba(248,113,113,0.06)', borderColor: appSettings.autoScans?.enabled ? 'rgba(52,211,153,0.35)' : 'rgba(248,113,113,0.35)' }}>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <span className="text-sm text-slate-200 font-medium">Automatic AI scanning {appSettings.autoScans?.enabled ? <span className="text-emerald-400 text-xs ml-1">ON</span> : <span className="text-red-400 text-xs ml-1">OFF</span>}</span>
+                    <p className="text-xs text-slate-500 mt-0.5">Master switch for everything that spends xAI credits on its own: the server scan worker (all queued/paused jobs), the weekly and daily passes, smart-model escalations, the scouts and the morning research team. When OFF nothing runs in the background and no new credits are spent. Scans you start yourself in the browser still work.</p>
+                    {!appSettings.autoScans?.enabled && serverJobs.some(j => ['queued','paused'].includes(j.status)) && <p className="text-xs text-amber-400 mt-1">Jobs are waiting in the queue - they resume only after you turn this on (a paused job also needs Resume in the activity panel).</p>}
+                  </div>
+                  <button
+                    onClick={async () => {
+                      const on = appSettings.autoScans?.enabled === true;
+                      const next = { ...appSettings, autoScans: { enabled: !on } };
+                      setAppSettings(next);
+                      try { const res = await fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ settings: { autoScans: next.autoScans } }) }); const d = await res.json(); if (d?.settings) setAppSettings(d.settings); } catch (e) {}
+                    }}
+                    className="w-12 h-6 rounded-full transition-colors shrink-0 mt-1"
+                    style={{ background: appSettings.autoScans?.enabled ? '#10b981' : 'rgba(248,113,113,0.5)' }}
+                  >
+                    <div className="w-5 h-5 rounded-full bg-white transition-transform" style={{ transform: appSettings.autoScans?.enabled ? 'translateX(26px)' : 'translateX(2px)' }} />
+                  </button>
+                </div>
+              </div>
+
               {/* Scheduled scan passes (Main workspace only) */}
               <div className="mb-3 p-3 rounded-lg border" style={{ background: 'rgba(167,139,250,0.05)', borderColor: 'rgba(167,139,250,0.25)' }}>
                 <span className="text-sm text-slate-200">Scheduled scan passes</span>
@@ -3665,14 +3710,15 @@ Respond with ONLY a JSON array:
           <div className="mb-6 card rounded-2xl border border-slate-800/50 p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold flex items-center gap-2"><Sliders className="w-5 h-5 text-amber-400" />Scoring Weights</h2>
-              <button onClick={() => { setWeights({ pricePosition: 40, insiderActivity: 40, netCash: 20 }); setAiWeights({ conviction: 15, cupHandle: 10, singularity: 20, valuation: 10, momentum: 15, buyout: 15, leadership: 10, playbook: 15, technicals: 10 }); }} className="text-xs text-slate-400 hover:text-white px-3 py-1.5 rounded-lg border" style={{ background: 'rgba(30,41,59,0.5)', borderColor: 'rgba(51,65,85,0.5)' }}>Reset All</button>
+              <button onClick={() => { const on = allWeightVarsOn(); weightEnabledRef.current = on; setWeightEnabled(on); try { localStorage.setItem('singularityhunter_weightEnabled', JSON.stringify(on)); } catch (e) {} setWeights({ pricePosition: 40, insiderActivity: 40, netCash: 20 }); setAiWeights({ conviction: 15, cupHandle: 10, singularity: 20, valuation: 10, momentum: 15, buyout: 15, leadership: 10, playbook: 15, technicals: 10 }); }} className="text-xs text-slate-400 hover:text-white px-3 py-1.5 rounded-lg border" style={{ background: 'rgba(30,41,59,0.5)', borderColor: 'rgba(51,65,85,0.5)' }}>Reset All</button>
             </div>
             
+            <p className="text-xs text-slate-500 mb-3">Each variable has an ON/OFF switch: OFF removes it from the composite score entirely (its slider is kept, the remaining weights re-normalize).</p>
             <p className="text-xs text-slate-500 mb-3">Base Scoring (applied to all stocks)</p>
             <div className="grid grid-cols-3 gap-4 mb-6">
               {analysisAgents.map(a => (
                 <div key={a.id} className="rounded-xl p-4 border" style={{ background: 'rgba(15,23,42,0.5)', borderColor: 'rgba(51,65,85,0.5)' }}>
-                  <div className="flex items-center gap-2 mb-3"><div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `${a.color}20` }}><a.icon className="w-4 h-4" style={{ color: a.color }} /></div><span className="text-sm font-medium text-slate-200">{a.name}</span></div>
+                  <div className="flex items-center gap-2 mb-3"><div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `${a.color}20` }}><a.icon className="w-4 h-4" style={{ color: a.color }} /></div><span className="text-sm font-medium text-slate-200">{a.name}</span><WeightVarToggle k={a.id} /></div>
                   <div className="flex items-center gap-3"><input type="range" min="0" max="100" value={weights[a.id]} onChange={e => handleWeight(a.id, parseInt(e.target.value))} className="flex-1" style={{ accentColor: a.color }} /><span className="mono text-sm font-semibold w-8 text-right" style={{ color: a.color }}>{weights[a.id]}</span></div>
                 </div>
               ))}
@@ -3681,19 +3727,19 @@ Respond with ONLY a JSON array:
             <p className="text-xs text-slate-500 mb-3">AI Bonus Points (added after Grok analysis)</p>
             <div className="grid grid-cols-3 gap-4">
               <div className="rounded-xl p-4 border" style={{ background: 'rgba(239,68,68,0.05)', borderColor: 'rgba(239,68,68,0.2)' }}>
-                <div className="flex items-center gap-2 mb-3"><div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(239,68,68,0.2)' }}><Users className="w-4 h-4 text-red-400" /></div><span className="text-sm font-medium text-slate-200">Conviction</span></div>
+                <div className="flex items-center gap-2 mb-3"><div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(239,68,68,0.2)' }}><Users className="w-4 h-4 text-red-400" /></div><span className="text-sm font-medium text-slate-200">Conviction</span><WeightVarToggle k="conviction" /></div>
                 <div className="flex items-center gap-3"><input type="range" min="0" max="50" value={aiWeights.conviction} onChange={e => { const v = parseInt(e.target.value); setAiWeights(p => ({...p, conviction: v})); setStocks(s => calcScores(s, weights, {...aiWeights, conviction: v})); }} className="flex-1" style={{ accentColor: '#f87171' }} /><span className="mono text-sm font-semibold w-8 text-right text-red-400">+{aiWeights.conviction}</span></div>
               </div>
               <div className="rounded-xl p-4 border" style={{ background: 'rgba(239,68,68,0.05)', borderColor: 'rgba(239,68,68,0.2)' }}>
-                <div className="flex items-center gap-2 mb-3"><div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(239,68,68,0.2)' }}><BarChart3 className="w-4 h-4 text-red-400" /></div><span className="text-sm font-medium text-slate-200">Cup & Handle</span></div>
+                <div className="flex items-center gap-2 mb-3"><div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(239,68,68,0.2)' }}><BarChart3 className="w-4 h-4 text-red-400" /></div><span className="text-sm font-medium text-slate-200">Cup & Handle</span><WeightVarToggle k="cupHandle" /></div>
                 <div className="flex items-center gap-3"><input type="range" min="0" max="50" value={aiWeights.cupHandle} onChange={e => { const v = parseInt(e.target.value); setAiWeights(p => ({...p, cupHandle: v})); setStocks(s => calcScores(s, weights, {...aiWeights, cupHandle: v})); }} className="flex-1" style={{ accentColor: '#f87171' }} /><span className="mono text-sm font-semibold w-8 text-right text-red-400">{aiWeights.cupHandle}</span></div>
               </div>
               <div className="rounded-xl p-4 border" style={{ background: 'rgba(245,158,11,0.05)', borderColor: 'rgba(245,158,11,0.2)' }}>
-                <div className="flex items-center gap-2 mb-3"><div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(245,158,11,0.2)' }}><Zap className="w-4 h-4 text-amber-400" /></div><span className="text-sm font-medium text-slate-200">Singularity</span></div>
+                <div className="flex items-center gap-2 mb-3"><div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(245,158,11,0.2)' }}><Zap className="w-4 h-4 text-amber-400" /></div><span className="text-sm font-medium text-slate-200">Singularity</span><WeightVarToggle k="singularity" /></div>
                 <div className="flex items-center gap-3"><input type="range" min="0" max="50" value={aiWeights.singularity || 0} onChange={e => { const v = parseInt(e.target.value); setAiWeights(p => ({...p, singularity: v})); setStocks(s => calcScores(s, weights, {...aiWeights, singularity: v})); }} className="flex-1" style={{ accentColor: '#f59e0b' }} /><span className="mono text-sm font-semibold w-8 text-right text-amber-400">{aiWeights.singularity || 0}</span></div>
               </div>
               <div className="rounded-xl p-4 border" style={{ background: 'rgba(52,211,153,0.05)', borderColor: 'rgba(52,211,153,0.2)' }}>
-                <div className="flex items-center gap-2 mb-3"><div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(52,211,153,0.2)' }}><DollarSign className="w-4 h-4 text-emerald-400" /></div><span className="text-sm font-medium text-slate-200">Valuation</span></div>
+                <div className="flex items-center gap-2 mb-3"><div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(52,211,153,0.2)' }}><DollarSign className="w-4 h-4 text-emerald-400" /></div><span className="text-sm font-medium text-slate-200">Valuation</span><WeightVarToggle k="valuation" /></div>
                 <div className="flex items-center gap-3"><input type="range" min="0" max="50" value={aiWeights.valuation || 0} onChange={e => { const v = parseInt(e.target.value); setAiWeights(p => ({...p, valuation: v})); setStocks(s => calcScores(s, weights, {...aiWeights, valuation: v})); }} className="flex-1" style={{ accentColor: '#34d399' }} /><span className="mono text-sm font-semibold w-8 text-right text-emerald-400">{aiWeights.valuation || 0}</span></div>
               </div>
               {[
@@ -3704,7 +3750,7 @@ Respond with ONLY a JSON array:
                 { k: 'technicals', label: 'Technical Opinion', color: '#22d3ee' },
               ].map(w => (
                 <div key={w.k} className="rounded-xl p-4 border" style={{ background: 'rgba(30,41,59,0.3)', borderColor: 'rgba(51,65,85,0.4)' }}>
-                  <div className="flex items-center gap-2 mb-3"><div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(51,65,85,0.4)' }}><BarChart3 className="w-4 h-4" style={{ color: w.color }} /></div><span className="text-sm font-medium text-slate-200">{w.label}</span></div>
+                  <div className="flex items-center gap-2 mb-3"><div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(51,65,85,0.4)' }}><BarChart3 className="w-4 h-4" style={{ color: w.color }} /></div><span className="text-sm font-medium text-slate-200">{w.label}</span><WeightVarToggle k={w.k} /></div>
                   <div className="flex items-center gap-3"><input type="range" min="0" max="50" value={aiWeights[w.k] || 0} onChange={e => { const v = parseInt(e.target.value); setAiWeights(p => ({...p, [w.k]: v})); setStocks(st => calcScores(st, weights, {...aiWeights, [w.k]: v})); }} className="flex-1" style={{ accentColor: w.color }} /><span className="mono text-sm font-semibold w-8 text-right" style={{ color: w.color }}>{aiWeights[w.k] || 0}</span></div>
                 </div>
               ))}

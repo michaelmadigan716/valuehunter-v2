@@ -1,6 +1,6 @@
 // Builds and enqueues scheduled deep-scan jobs.
 import { kvGetJSON, kvSetJSON, wsKey, kvHGetAllJSON } from './kv';
-import { getSettings, wsConfig } from './settings';
+import { getSettings, wsConfig, autoScansOn } from './settings';
 import { classifyTier } from '../../../lib/tiers';
 
 const ALL_AGENTS = ['conviction', 'technical', 'valuation', 'momentum', 'buyout', 'leadership', 'playbook'];
@@ -36,6 +36,7 @@ async function enqueue(kind, tickers, cfg, ws) {
 // Weekly: every Hunt-tier stock + the watchlist (capped in testing mode)
 export async function runWeeklyPass(ws = 'main', opts = {}) {
   const settings = await getSettings();
+  if (opts.fromCron && !autoScansOn(settings)) return { ok: true, kind: 'weekly', ws, queued: 0, note: 'automatic scanning is off' };
   if (opts.fromCron && settings.schedules?.weekly?.enabled === false) return { ok: true, kind: 'weekly', ws, queued: 0, note: 'weekly schedule is off' };
   const cfg = wsConfig(ws, settings);
   const { stocks, watchlist } = await loadStocksWithResults(ws);
@@ -51,6 +52,7 @@ export async function runWeeklyPass(ws = 'main', opts = {}) {
 // Daily: only stocks that hit a minimum, not scanned in the last N days
 export async function runDailyPass(ws = 'main', opts = {}) {
   const settings = await getSettings();
+  if (opts.fromCron && !autoScansOn(settings)) return { ok: true, kind: 'daily', ws, queued: 0, note: 'automatic scanning is off' };
   if (opts.fromCron && settings.schedules?.daily?.enabled === false) return { ok: true, kind: 'daily', ws, queued: 0, note: 'daily schedule is off' };
   const cfg = wsConfig(ws, settings);
   const { stocks, watchlist } = await loadStocksWithResults(ws);

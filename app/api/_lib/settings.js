@@ -2,6 +2,10 @@
 import { kvGetJSON, kvConfigured } from './kv';
 
 export const DEFAULT_SETTINGS = {
+  // Master switch for ALL automatic AI spend: job worker, scheduled passes,
+  // escalations, scouts and the research team. Manual scans you start in the
+  // browser are unaffected. Off by default - the user turns it on deliberately.
+  autoScans: { enabled: false },
   testingMode: true,          // cap everything at 100 stocks + fastest model while building
   testingLimit: 100,
   smartModel: 'grok-4.6',
@@ -80,6 +84,10 @@ export async function getSettings() {
 export function modelFor(settings) { return settings.testingMode ? settings.fastModel : settings.smartModel; }
 
 // Per-workspace scan configuration. Test = sandbox: 100 stocks, fast model.
+export function autoScansOn(settings) {
+  return settings?.autoScans?.enabled === true;
+}
+
 export function wsConfig(ws, settings) {
   if (ws === 'test') return { limit: settings.testingLimit || 100, model: settings.fastModel, weeklyModel: settings.fastModel, dailyCap: 10 };
   // Main: weekly breadth pass on the fast model; daily targeted pass on the smart model

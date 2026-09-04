@@ -2,6 +2,7 @@
 // the Main Session. It NEVER writes scan scores - it only appends findings to
 // a feed and suggests which deep scan to re-run.
 import { kvGetJSON, kvSetJSON, kvDel, kvLock, kvConfigured } from '../_lib/kv';
+import { getSettings, autoScansOn } from '../_lib/settings';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -124,6 +125,7 @@ export async function GET(request) {
     return Response.json({ feed: feed || [], config: config || { n: 10, model: 'grok-4.3' }, watchlist: watchlist || {}, scouts: scouts || null });
   }
   if (!cronAuthorized(request)) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!autoScansOn(await getSettings())) return Response.json({ ok: true, skipped: 'automatic scanning is off' });
   return runResearchPass();
 }
 

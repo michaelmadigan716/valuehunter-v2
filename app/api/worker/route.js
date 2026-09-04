@@ -3,7 +3,7 @@
 // cron and immediately ("kick") by the client after enqueueing.
 import { kvGetJSON, kvSetJSON, kvDel, kvLock, kvConfigured, wsKey, kvHSetMany, kvHGetAllJSON, kvHGetJSON } from '../_lib/kv';
 import { AGENT_DEFS, setApiBase, scoreSingularityBatch } from '../../../lib/scanAgents';
-import { getSettings, meetsEscalation, passesFreeGate, passesStage2, CHEAP_AGENTS, LIVE_SEARCH_AGENTS } from '../_lib/settings';
+import { getSettings, autoScansOn, meetsEscalation, passesFreeGate, passesStage2, CHEAP_AGENTS, LIVE_SEARCH_AGENTS } from '../_lib/settings';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -45,9 +45,10 @@ async function escalate(ws, ticker, settings) {
 }
 
 async function runWorker(request) {
+  const settings = await getSettings();
+  if (!autoScansOn(settings)) return Response.json({ ok: true, paused: true, note: 'automatic scanning is off (Settings)' });
   if (!(await kvLock('vh:worker:lock', 290_000))) return Response.json({ ok: true, running: true });
   const deadline = Date.now() + TIME_BUDGET_MS;
-  const settings = await getSettings();
   let escalated = 0;
   // Call our own /api/grok server -> server. Always use the PUBLIC production
   // URL: cron invocations arrive on deployment-specific hosts that sit behind
