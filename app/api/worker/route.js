@@ -60,7 +60,7 @@ async function runWorker(request) {
   setApiBase(base);
   let processed = 0;
   try {
-    const order = ['main', 'test'];
+    const order = (new Date().getUTCMinutes() % 2 === 0) ? ['main', 'test'] : ['test', 'main'];
     let turn = 0, idleTurns = 0;
     while (Date.now() < deadline) {
       // Both workspaces share the worker: round-robin, a few stocks per turn,
@@ -71,7 +71,7 @@ async function runWorker(request) {
       if (!found) { if (++idleTurns >= order.length) break; continue; }
       idleTurns = 0;
       const job = { ...found, ws };
-      const MAX_BATCHES_PER_TURN = 3; // 3 batches x 2 stocks, then yield to the other workspace
+      const MAX_BATCHES_PER_TURN = 1; // one batch (2 stocks), then yield to the other workspace
       const wsMainKey = wsKey(job.ws, 'main');
       const wsResultsKey = wsKey(job.ws, 'scanresults');
       job.status = 'running'; job.updatedAt = Date.now();
