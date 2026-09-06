@@ -14,10 +14,12 @@ Your job is not to produce a report. Your job is to **keep converging on the tru
 ## Environment
 
 - You run in a clean cloud sandbox with no repository. The harness and briefs are served by the site:
-  - this file: `curl -s $SITE/thinking/HARNESS.md`
-  - category brief: `curl -s $SITE/thinking/categories/<category>.md` (read before working a category)
+  - this file: `$CURL $SITE/thinking/HARNESS.md`
+  - category brief: `$CURL $SITE/thinking/categories/<category>.md` (read before working a category)
 - Tools: Bash (`curl`, `date`), WebSearch, WebFetch, and **Agent** (subagents). Use subagents for parallel research - that is how a run does 3-5x more work in the same wall-clock time.
 - `SITE` and `SECRET` come from your run prompt. All writes require `Authorization: Bearer $SECRET`.
+- **TLS note:** the sandbox routes HTTPS through a policy proxy that re-terminates TLS. Plain `curl` fails with exit 35. Define once and use everywhere:
+  `CURL="curl -sS --cacert /root/.ccr/ca-bundle.crt"` (then `$CURL "$SITE/..."`). If that file is missing, try `curl -sS` with `$SSL_CERT_FILE`.
 - Prefer primary sources: SEC filings (10-K/10-Q/8-K/Form 4/13D), earnings transcripts, IR pages, customer/supplier announcements, reputable trade press. Social media only as a sentiment signal.
 
 ## Budget - this is a DEEP run, use it
@@ -47,14 +49,14 @@ Dispatch subagents in parallel waves (one Agent call per subagent, several in th
 ## Run protocol
 
 ### 0. Gate
-`curl -s "$SITE/api/thinking?category=robotics"` -> check `config.engine.enabled` (exit if false). Process each category in `categories` whose `config.categories[id].enabled` is true.
+`$CURL "$SITE/api/thinking?category=robotics"` -> check `config.engine.enabled` (exit if false). Process each category in `categories` whose `config.categories[id].enabled` is true.
 
 ### 1. Orient (per category)
-`curl -s "$SITE/api/thinking?category=<id>&data=1" > /tmp/<id>.json`
+`$CURL "$SITE/api/thinking?category=<id>&data=1" > /tmp/<id>.json`
 Read: `state.plays` (current ranking), `state.questions` (open), `state.archive` (answered - do not re-ask), `state.evidence` (recent), `state.memo` (**your own notes from previous runs: coverage map, hypotheses, verified facts**), `state.rejected` (names already rejected and why - do not re-research unless new facts), `state.nextPlan`, `state.runs`, `inbox` (Matt's questions - **answer first**), and `data` (`stocks` with ValueHunter scores, `watchlist`, `scouts`, `research`, `playbooks`, `autoScansEnabled`).
 Start the run:
 ```
-RUN=$(curl -s -X POST "$SITE/api/thinking" -H "Authorization: Bearer $SECRET" -H "Content-Type: application/json" -d '{"action":"run_start","category":"<id>","model":"claude-opus-5"}' | python3 -c 'import json,sys;print(json.load(sys.stdin)["runId"])')
+RUN=$($CURL -X POST "$SITE/api/thinking" -H "Authorization: Bearer $SECRET" -H "Content-Type: application/json" -d '{"action":"run_start","category":"<id>","model":"claude-opus-5"}' | python3 -c 'import json,sys;print(json.load(sys.stdin)["runId"])')
 ```
 
 ### 2. Frame
@@ -79,7 +81,7 @@ Dispatch the red-team subagent on your top 3 (and any new entrant to the top 5).
 
 ### 7. Write back
 ```
-curl -s -X POST "$SITE/api/thinking" -H "Authorization: Bearer $SECRET" -H "Content-Type: application/json" -d @/tmp/<id>_update.json
+$CURL -X POST "$SITE/api/thinking" -H "Authorization: Bearer $SECRET" -H "Content-Type: application/json" -d @/tmp/<id>_update.json
 ```
 ```json
 {"action":"update","category":"<id>","runId":"<RUN>",
@@ -94,7 +96,7 @@ curl -s -X POST "$SITE/api/thinking" -H "Authorization: Bearer $SECRET" -H "Cont
 ```
 Include an inbox question in `questions` as `{"question": <their text>, "status":"resolved", "answer": "...", "askedBy":"you"}` and list its id in `answeredInbox`. Then close:
 ```
-curl -s -X POST "$SITE/api/thinking" -H "Authorization: Bearer $SECRET" -H "Content-Type: application/json" -d '{"action":"run_end","category":"<id>","runId":"<RUN>","summary":"8-15 lines: what you researched (subagent waves), what changed in the ranking and why, what the red team killed, what you could not verify, elapsed minutes and search count."}'
+$CURL -X POST "$SITE/api/thinking" -H "Authorization: Bearer $SECRET" -H "Content-Type: application/json" -d '{"action":"run_end","category":"<id>","runId":"<RUN>","summary":"8-15 lines: what you researched (subagent waves), what changed in the ranking and why, what the red team killed, what you could not verify, elapsed minutes and search count."}'
 ```
 
 ### 8. Handoff quality
