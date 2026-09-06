@@ -168,7 +168,9 @@ export async function POST(request) {
     if (state.currentRun && Date.now() - state.currentRun.startedAt < 95 * 60000 && !body.force) {
       return Response.json({ ok: false, busy: true, currentRun: state.currentRun, note: 'another run is active for this category - exit without writing' });
     }
-    const run = { id: body.runId || id(), startedAt: Date.now(), model: clampText(body.model, 40) || null, mode: body.mode === 'deep' ? 'deep' : 'test' };
+    const cfgNow = await getConfig();
+    const mode = body.mode === 'deep' || body.mode === 'test' ? body.mode : (cfgNow.mode === 'deep' ? 'deep' : 'test');
+    const run = { id: body.runId || id(), startedAt: Date.now(), model: clampText(body.model, 40) || null, mode };
     state.currentRun = run;
     await kvSetJSON(stateKey(category), state);
     return Response.json({ ok: true, runId: run.id, mode: run.mode });

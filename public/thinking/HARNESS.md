@@ -76,7 +76,7 @@ Dispatch subagents in parallel waves (one Agent call per subagent, several in th
 Read: `state.plays` (current ranking), `state.questions` (open), `state.archive` (answered - do not re-ask), `state.evidence` (recent), `state.memo` (**your own notes from previous runs: coverage map, hypotheses, verified facts**), `state.rejected` (names already rejected and why - do not re-research unless new facts), `state.nextPlan`, `state.runs`, `inbox` (Matt's questions - **answer first**), and `data` (`stocks` with ValueHunter scores, `watchlist`, `scouts`, `research`, `playbooks`, `autoScansEnabled`).
 Start the run:
 ```
-RUN=$($CURL -X POST "$SITE/api/thinking" -H "Authorization: Bearer $SECRET" -H "Content-Type: application/json" -d '{"action":"run_start","category":"<id>","model":"claude-opus-5"}' | python3 -c 'import json,sys;print(json.load(sys.stdin)["runId"])')
+RUN=$($CURL -X POST "$SITE/api/thinking" -H "Authorization: Bearer $SECRET" -H "Content-Type: application/json" -d '{"action":"run_start","category":"<id>","mode":"<test|deep - the config.mode you read>","model":"<the model id you are running as, e.g. claude-fable-5-1>"}' | python3 -c 'import json,sys;print(json.load(sys.stdin)["runId"])')
 ```
 
 ### 2. Frame
