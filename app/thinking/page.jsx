@@ -54,6 +54,11 @@ export default function ThinkingPage() {
               <div className="text-[11px] text-slate-500">{running ? <span className="text-cyan-400">thinking now…</span> : lastRun ? `last run ${fmtAgo(lastRun.endedAt)}` : 'no runs yet'}</div>
             </div>
             <Toggle on={!!cfg.engine?.enabled} onClick={() => post({ action: 'config', config: { engine: { enabled: !cfg.engine?.enabled } } })} />
+            <div className="flex items-center gap-2 rounded-xl border px-3 py-1.5" style={{ borderColor: cfg.mode === 'deep' ? 'rgba(52,211,153,0.4)' : 'rgba(251,191,36,0.4)', background: cfg.mode === 'deep' ? 'rgba(52,211,153,0.06)' : 'rgba(251,191,36,0.06)' }} title="Read by the routine at the start of every run">
+              <span className="text-[11px] text-slate-400">Run mode</span>
+              <button onClick={() => post({ action: 'config', config: { mode: 'test' } })} className="text-xs font-semibold px-2 py-0.5 rounded" style={{ background: cfg.mode !== 'deep' ? 'rgba(251,191,36,0.25)' : 'transparent', color: cfg.mode !== 'deep' ? '#fbbf24' : '#64748b' }}>Test · ~{cfg.budgets?.test?.minutes ?? 5} min</button>
+              <button onClick={() => post({ action: 'config', config: { mode: 'deep' } })} className="text-xs font-semibold px-2 py-0.5 rounded" style={{ background: cfg.mode === 'deep' ? 'rgba(52,211,153,0.25)' : 'transparent', color: cfg.mode === 'deep' ? '#34d399' : '#64748b' }}>Deep · 60-75 min</button>
+            </div>
             <a href="https://claude.ai/code/routines/trig_01KagnxmcSaRRff53hJ8g5fs" target="_blank" rel="noreferrer" className="px-3 py-1.5 rounded-lg text-xs font-medium border" style={{ background: 'rgba(30,41,59,0.5)', borderColor: 'rgba(51,65,85,0.5)', color: '#94a3b8' }} title="The Claude cloud routine that does the thinking - schedule, past runs, live sessions">Cloud routine ↗</a>
           </div>
         </div>
@@ -84,6 +89,8 @@ export default function ThinkingPage() {
                           <span className="text-lg font-semibold" style={{ color: active?.color }}>{p.ticker}</span>
                           <span className="text-sm text-slate-400">{p.name}</span>
                           {p.inValueHunter && <span className="text-[10px] px-1.5 py-0.5 rounded border" style={{ color: '#34d399', borderColor: 'rgba(52,211,153,0.4)' }} title="Also in your ValueHunter eligible pool">in ValueHunter</span>}
+                          {p.horizon && <span className="text-[10px] px-1.5 py-0.5 rounded border text-slate-400" style={{ borderColor: 'rgba(100,116,139,0.5)' }}>{p.horizon} swing</span>}
+                          {p.sinceEntryPct != null && <span className="text-[10px] px-1.5 py-0.5 rounded border mono" style={{ color: p.sinceEntryPct >= 0 ? '#34d399' : '#f87171', borderColor: 'rgba(100,116,139,0.4)' }} title={`Entered the ranking at $${p.entryPrice} on ${new Date(p.entryAt).toLocaleDateString()}; now $${p.currentPrice}`}>{p.sinceEntryPct >= 0 ? '+' : ''}{p.sinceEntryPct}% since pick</span>}
                         </div>
                       </div>
                       <div className="text-right shrink-0 flex items-start gap-4">
@@ -160,8 +167,11 @@ export default function ThinkingPage() {
               <div className="space-y-1 max-h-[300px] overflow-y-auto pr-1">
                 {[...(st.runs || [])].reverse().map(r => (
                   <div key={r.id} className="text-xs">
-                    <button onClick={() => setOpenRun(openRun === r.id ? null : r.id)} className="w-full text-left flex justify-between text-slate-400 hover:text-slate-200"><span>{fmtAgo(r.endedAt)} · {r.minutes}m · {r.plays} plays · {r.evidence} findings</span><span>{openRun === r.id ? '▾' : '▸'}</span></button>
-                    {openRun === r.id && <p className="text-slate-300 mt-1 whitespace-pre-wrap border-l-2 pl-2" style={{ borderColor: 'rgba(51,65,85,0.6)' }}>{r.summary || 'no summary'}</p>}
+                    <button onClick={() => setOpenRun(openRun === r.id ? null : r.id)} className="w-full text-left flex justify-between text-slate-400 hover:text-slate-200"><span>{fmtAgo(r.endedAt)} · {r.mode || 'run'} · {r.minutes}m · {r.plays} plays · {r.evidence} findings{r.searches ? ` · ${r.searches} searches` : ''}{r.model ? ` · ${r.model.replace('claude-', '')}` : ''}</span><span>{openRun === r.id ? '▾' : '▸'}</span></button>
+                    {openRun === r.id && <div className="mt-1 space-y-2">
+                      <p className="text-slate-300 whitespace-pre-wrap border-l-2 pl-2" style={{ borderColor: 'rgba(51,65,85,0.6)' }}>{r.summary || 'no summary'}</p>
+                      {r.feedback && <p className="text-amber-200/90 whitespace-pre-wrap border-l-2 pl-2" style={{ borderColor: 'rgba(251,191,36,0.5)' }}><span className="font-semibold">Engine feedback on the harness:</span> {r.feedback}</p>}
+                    </div>}
                   </div>
                 ))}
               </div>

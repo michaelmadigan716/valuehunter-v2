@@ -22,7 +22,22 @@ Your job is not to produce a report. Your job is to **keep converging on the tru
   `CURL="curl -sS --cacert /root/.ccr/ca-bundle.crt"` (then `$CURL "$SITE/..."`). If that file is missing, try `curl -sS` with `$SSL_CERT_FILE`.
 - Prefer primary sources: SEC filings (10-K/10-Q/8-K/Form 4/13D), earnings transcripts, IR pages, customer/supplier announcements, reputable trade press. Social media only as a sentiment signal.
 
-## Budget - this is a DEEP run, use it
+## Run mode (read it at the gate - it decides your budget)
+
+`config.mode` on the board is either `test` or `deep`. Matt flips it on the dashboard.
+
+**TEST mode (`config.mode == "test"`, ~5 minutes):** the purpose is to let Matt iterate on this harness quickly, so be fast but real:
+- Budget: **5-6 minutes wall-clock, <= 8 searches, no subagents.** Record START and check it.
+- Answer inbox questions first (briefly). Then do ONE small, concrete piece of work that moves the board: verify or add 1-3 plays with real sources, add 3-8 evidence entries, resolve or add 1-3 questions, refresh `memo` and `nextPlan`.
+- If the board is empty, produce a first ranking of 3-5 candidates from the data window and the brief's seed list, clearly marked as lightly verified (confidence <= 45).
+- **Always include `feedback` in `run_end`**: 4-10 lines on the harness itself - which instruction was unclear or wasteful, what data you wished the data window had, which question angles felt highest-value, what you would have done with more time. This is what Matt reads to improve the harness.
+- Pass `"mode":"test"` in `run_start`.
+
+**DEEP mode (`config.mode == "deep"`):** the full run below. Pass `"mode":"deep"` in `run_start`.
+
+If `run_start` returns `{"busy": true}`, another run is active: exit without writing anything.
+
+## Budget for DEEP runs - use it
 
 Matt wants each run to use a large share of his subscription. Do not finish early.
 - **Target 60-75 minutes of wall-clock work.** Record `START=$(date +%s)` at the beginning and check elapsed time at each checkpoint. Hard stop at **80 minutes**: write everything you have.
@@ -63,7 +78,7 @@ RUN=$($CURL -X POST "$SITE/api/thinking" -H "Authorization: Bearer $SECRET" -H "
 Write yourself a short frame: objective (from the brief), what changed since last run (new insider buys, score changes, `research`/`scouts` items, new evidence), where the ranking is most uncertain, which sub-themes the coverage map says are unexplored.
 
 ### 3. Question portfolio
-Build candidates across the angles (mechanism, supply-chain position, customers, unit economics, balance sheet/dilution, insiders/ownership, dated catalysts, valuation vs path, crowding, underfollowed alternatives, kill criteria - see the brief for category-specific versions). Score by **expected information value** x answerability. Compose the run's portfolio:
+Build candidates across the angles (mechanism, supply-chain position, customers, unit economics, balance sheet/dilution, insiders/ownership, dated catalysts, valuation vs path, crowding, underfollowed alternatives, kill criteria - see the brief for category-specific versions). Score by **expected information value** x answerability. **Decision-relevance test:** every question you keep must name the ranking decision it could change ("if X's reducer supply is single-sourced from Y, Y moves into the top 3"). Drop questions that would only be interesting. Compose the run's portfolio:
 - Matt's inbox questions: all of them, first.
 - **Exploit** (deepen/verify current top plays): ~50% of effort while the board is young (< 5 runs), ~65% once it matures.
 - **Explore** (discover new names in uncovered sub-themes): the rest. Never let two consecutive runs explore the same sub-theme unless it produced a candidate.
@@ -74,6 +89,9 @@ Wave 1: scouts for 2-3 uncovered sub-themes + market pulse. Wave 2: analysts on 
 
 ### 5. Rank by expected value
 For each play estimate **expectedMultiple** (target price / current, base case if the thesis works) and **probability** (0-1 that the thesis plays out within the timeframe). Rank primarily by `probability x (expectedMultiple - 1)`, then adjust for liquidity, crowding, and time-to-catalyst. Produce the **top 5-12**. Each play must have: `thesis` (the mechanism, with numbers), `expectedMultiple`, `probability`, `confidence` (0-100 in your own verification), `timeframe` (e.g. "3-9 months"), `setup` (what an entry looks like: base, breakout level, post-earnings, accumulation zone), `invalidation` (the price/fact that says you were wrong), `catalysts` (dated), `risks`, `changeMind`, `upsideCase`, `marketCapM`, `liquidity` (avg $/day), `sources`, `inValueHunter`.
+Also tag each play's `horizon`: `short` (2-8 weeks: breakout/momentum or an imminent dated catalyst), `medium` (2-6 months: earnings inflection, contract ramp), `long` (6-12 months: re-rating as the story gets discovered). Keep a mix when EV is close - Matt trades all three.
+**Base-rate check:** for each top-5 thesis, name one historical analog (a similar small-cap supplier/deployer after a comparable catalyst) and what actually happened to it; adjust `probability` toward that base rate.
+**ValueHunter cross-check:** say in the thesis whether the app's scores (singularity, conviction, technicals, valuation, playbook) agree with you and, if not, why you trust your research more.
 Rules: prefer asymmetric, early, underfollowed setups; penalize megacaps and crowded trades; keep continuity - move names only on evidence and explain moves in the summary; diversify sub-themes only when EV is close.
 
 ### 6. Red team before you publish
@@ -94,9 +112,12 @@ $CURL -X POST "$SITE/api/thinking" -H "Authorization: Bearer $SECRET" -H "Conten
  "recommendedScans":[{"ticker":"ABC","why":"in ValueHunter but never deep-scanned; thesis hinges on insider activity"}],
  "answeredInbox":["<inbox ids you answered>"]}
 ```
+Play objects also accept `"horizon":"short|medium|long"` and `"price":<current price you verified>` (used to stamp the entry price the first time a ticker enters the ranking, so the board can score its own picks later).
+```
+```
 Include an inbox question in `questions` as `{"question": <their text>, "status":"resolved", "answer": "...", "askedBy":"you"}` and list its id in `answeredInbox`. Then close:
 ```
-$CURL -X POST "$SITE/api/thinking" -H "Authorization: Bearer $SECRET" -H "Content-Type: application/json" -d '{"action":"run_end","category":"<id>","runId":"<RUN>","summary":"8-15 lines: what you researched (subagent waves), what changed in the ranking and why, what the red team killed, what you could not verify, elapsed minutes and search count."}'
+$CURL -X POST "$SITE/api/thinking" -H "Authorization: Bearer $SECRET" -H "Content-Type: application/json" -d '{"action":"run_end","category":"<id>","runId":"<RUN>","searches":<number of searches used>,"summary":"8-15 lines (test mode: 3-6): what you researched, what changed in the ranking and why, what the red team killed, what you could not verify, elapsed minutes.","feedback":"REQUIRED in test mode, welcome in deep mode: 4-10 lines on the harness itself - unclear/wasteful instructions, data you wished you had, highest-value angles, what you would do with more time."}'
 ```
 
 ### 8. Handoff quality

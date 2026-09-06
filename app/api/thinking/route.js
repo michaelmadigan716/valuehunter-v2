@@ -75,6 +75,11 @@ export async function GET(request) {
   const st = state || emptyState(category);
   const dis = new Set(dismissed || []);
   st.questions = (st.questions || []).filter(q => !dis.has(q.id));
+  if (st.plays?.length) {
+    const main = await kvGetJSON(wsKey('main', 'main'));
+    const priceOf = new Map((main?.stocks || []).map(s => [s.ticker, s.price]));
+    st.plays = st.plays.map(p => { const cur = priceOf.get(p.ticker) ?? null; const pct = cur != null && p.entryPrice ? Math.round(((cur / p.entryPrice) - 1) * 1000) / 10 : null; return { ...p, currentPrice: cur, sinceEntryPct: pct }; });
+  }
   const out = { config, categories: THINKING_CATEGORIES, category, state: st, inbox: inbox || [] };
   if (url.searchParams.get('data') === '1') out.data = await dataWindow(category);
   return Response.json(out);
@@ -131,17 +136,29 @@ export async function POST(request) {
   if (!runner) return Response.json({ error: 'runner secret required' }, { status: 403 });
   const state = (await kvGetJSON(stateKey(category))) || emptyState(category);
   if (action === 'run_start') {
-    const run = { id: body.runId || id(), startedAt: Date.now(), model: clampText(body.model, 40) || null };
+    // Overlap guard: one run at a time per category (a stale run older than 95 min is ignored)
+    if (state.currentRun && Date.now() - state.currentRun.startedAt < 95 * 60000 && !body.force) {
+      return Response.json({ ok: false, busy: true, currentRun: state.currentRun, note: 'another run is active for this category - exit without writing' });
+    }
+    const run = { id: body.runId || id(), startedAt: Date.now(), model: clampText(body.model, 40) || null, mode: body.mode === 'deep' ? 'deep' : 'test' };
     state.currentRun = run;
     await kvSetJSON(stateKey(category), state);
-    return Response.json({ ok: true, runId: run.id });
+    return Response.json({ ok: true, runId: run.id, mode: run.mode });
   }
   if (action === 'update' || action === 'run_end') {
     const runId = body.runId || state.currentRun?.id || id();
     const now = Date.now();
     if (Array.isArray(body.plays) && body.plays.length) {
+      // Stamp entry price/date the first time a ticker enters the ranking so the board can score itself later
+      const prev = new Map((state.plays || []).map(p => [p.ticker, p]));
+      const main = await kvGetJSON(wsKey('main', 'main'));
+      const priceOf = new Map((main?.stocks || []).map(s => [s.ticker, s.price]));
       state.plays = body.plays.slice(0, 15).map((p, i) => ({
         rank: i + 1, ticker: String(p.ticker || '').toUpperCase().slice(0, 8), name: clampText(p.name, 80),
+        horizon: ['short', 'medium', 'long'].includes(p.horizon) ? p.horizon : null,
+        entryPrice: prev.get(String(p.ticker || '').toUpperCase())?.entryPrice ?? (Number.isFinite(Number(p.price)) ? Number(p.price) : (priceOf.get(String(p.ticker || '').toUpperCase()) ?? null)),
+        entryAt: prev.get(String(p.ticker || '').toUpperCase())?.entryAt ?? now,
+        firstRank: prev.get(String(p.ticker || '').toUpperCase())?.firstRank ?? (i + 1),
         thesis: clampText(p.thesis, 1800), confidence: Math.max(0, Math.min(100, Number(p.confidence) || 0)),
         expectedMultiple: Number.isFinite(Number(p.expectedMultiple)) ? Math.max(0, Math.min(50, Number(p.expectedMultiple))) : null,
         probability: Number.isFinite(Number(p.probability)) ? Math.max(0, Math.min(1, Number(p.probability))) : null,
@@ -183,7 +200,7 @@ export async function POST(request) {
     }
     if (action === 'run_end') {
       const started = state.currentRun?.startedAt || now;
-      state.runs = [...(state.runs || []), { id: runId, startedAt: started, endedAt: now, minutes: Math.round((now - started) / 60000), summary: clampText(body.summary, 1200), plays: state.plays.length, openQuestions: state.questions.length, evidence: Array.isArray(body.evidence) ? body.evidence.length : 0, model: state.currentRun?.model || null }].slice(-60);
+      state.runs = [...(state.runs || []), { id: runId, startedAt: started, endedAt: now, minutes: Math.round((now - started) / 60000), mode: state.currentRun?.mode || null, summary: clampText(body.summary, 1500), feedback: clampText(body.feedback, 2500), searches: Number(body.searches) || null, plays: state.plays.length, openQuestions: state.questions.length, evidence: Array.isArray(body.evidence) ? body.evidence.length : 0, model: state.currentRun?.model || null }].slice(-60);
       state.currentRun = null;
     }
     state.updatedAt = now;
