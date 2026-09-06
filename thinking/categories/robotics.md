@@ -24,6 +24,9 @@ Think in bill-of-materials terms. A humanoid or mobile manipulator needs, per un
 - **A dated catalyst** within 6 months (contract, product, earnings inflection, conference demo with a named customer).
 - Also valid: a **momentum breakout** in a robotics name with a real story (Matt's parabolic playbook), but say explicitly that it is a momentum play.
 
+## Sub-theme coverage map (track in your memo which run covered each)
+actuators/reducers/screws · motors/drives · force-torque & tactile sensing · vision/lidar/depth · dexterous hands · batteries/power for humanoids · rare-earth magnets & materials · edge compute/modules · simulation/teleop data/robot foundation models · warehouse & logistics robots · delivery robots · surgical robotics · agriculture · defense & drones · inspection/security/cleaning · factory automation & machine vision · test equipment & semicap for robot chips · China supply-chain exposure (ADRs) · second-order beneficiaries (gear cutting, bearings, harmonic drive alternatives, connectors, cables)
+
 ## Angles to keep rotating through
 - Who supplies the reducers/screws/motors for the named humanoid programs? Are any of them public small caps or subsidiaries of one?
 - Which sensor companies show robotics revenue in filings (search 10-Q text for "humanoid", "robot", "automation")?
