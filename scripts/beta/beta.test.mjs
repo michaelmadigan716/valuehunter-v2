@@ -62,3 +62,17 @@ test('queue claims are exclusive; pause persists, cancel rejects late writes, sa
     assert.equal(store.has('vh:scanres'), false); assert.equal(store.has('vh:singularity'), false); assert.equal(store.has('vh:settings'), false);
   } finally { globalThis.fetch = originalFetch; }
 });
+
+test('beta controls fail closed and signed cookies cannot be forged', async () => {
+  const { authorized, login } = await import('../../lib/codexBetaAuth.mjs');
+  process.env.SITE_PASSWORD = 'test-only-password';
+  const req = new Request('https://example.test/api/codex-beta');
+  assert.equal(authorized(req), false);
+  assert.equal(login(req, 'incorrect'), null);
+  const cookie = login(req, 'test-only-password');
+  assert.ok(cookie.includes('HttpOnly')); assert.ok(cookie.includes('Secure'));
+  assert.equal(authorized(new Request(req.url, { headers: { cookie } })), true);
+  assert.equal(authorized(new Request(req.url, { headers: { cookie: cookie.replace(/vh_beta_control=./, 'vh_beta_control=0') } })), false);
+  delete process.env.SITE_PASSWORD;
+  assert.equal(authorized(new Request(req.url, { headers: { cookie } })), false);
+});

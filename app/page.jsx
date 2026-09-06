@@ -777,6 +777,7 @@ export default function StockResearchApp() {
   const [dataSource, setDataSource] = useState('grok');
   const dataSourceRef = useRef('grok');
   const [betaResults, setBetaResults] = useState({});
+  const [betaAssessedOnly, setBetaAssessedOnly] = useState(true);
   useEffect(() => {
     try { if (localStorage.getItem('valuehunter_data_source') === 'chatgpt') { dataSourceRef.current = 'chatgpt'; setDataSource('chatgpt'); } } catch {}
   }, []);
@@ -2797,6 +2798,7 @@ Respond with ONLY a JSON array:
     ? stocks.map(s => { const view = betaView(s, betaResults[resultKey(workspace, s.ticker)]); return { ...view, compositeScore: betaComposite(view, weights, aiWeights, weightEnabled) }; })
     : stocks;
   const sorted = [...viewStocks]
+    .filter(s => dataSource !== 'chatgpt' || !betaAssessedOnly || s.betaResult)
     // Filter by top gainers (previous day change)
     .filter(s => !showTopGainers || (s.change >= topGainersThreshold))
     .filter(s => matchesCategory(s, sectorFilter))
@@ -3620,7 +3622,7 @@ Respond with ONLY a JSON array:
       {/* Sessions Panel */}
 
       <div className="max-w-[1800px] mx-auto px-6 py-6 min-h-screen">
-        <CodexBetaPanel source={dataSource} onSource={changeDataSource} workspace={workspace} onResults={setBetaResults} />
+        <CodexBetaPanel source={dataSource} onSource={changeDataSource} workspace={workspace} onResults={setBetaResults} assessedOnly={betaAssessedOnly} onAssessedOnly={setBetaAssessedOnly} />
         {error && <div className="mb-4 p-4 rounded-xl border flex items-center gap-3" style={{ background: 'rgba(239,68,68,0.1)', borderColor: 'rgba(239,68,68,0.3)' }}><AlertCircle className="w-5 h-5 text-red-400" /><p className="text-sm text-red-300 flex-1">{error}</p><button onClick={() => setError(null)} className="text-red-400"><X className="w-4 h-4" /></button></div>}
         {resumeBanner && <div className="mb-4 p-4 rounded-xl border flex items-center gap-3" style={{ background: 'rgba(245,158,11,0.1)', borderColor: 'rgba(245,158,11,0.3)' }}><RefreshCw className="w-5 h-5 text-amber-400 animate-spin" /><p className="text-sm text-amber-300 flex-1">{resumeBanner}</p><button onClick={() => { if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current); clearCheckpoint(); setResumeBanner(null); }} className="px-3 py-1 rounded-lg text-xs border text-amber-400" style={{ borderColor: 'rgba(245,158,11,0.4)' }}>Cancel</button></div>}
 
@@ -3806,8 +3808,8 @@ Respond with ONLY a JSON array:
               </div>
               
               <div className="mt-6 p-4 rounded-xl border" style={{ background: 'rgba(239,68,68,0.05)', borderColor: 'rgba(239,68,68,0.2)' }}>
-                <h3 className="text-sm font-semibold text-red-400 mb-2 flex items-center gap-2"><Sparkles className="w-4 h-4" />Grok AI Deep Analysis</h3>
-                <p className="text-xs text-slate-400 mb-2">Analyzes Stocktwits sentiment, insider conviction, future catalysts, and upside potential.</p>
+                <h3 className="text-sm font-semibold text-red-400 mb-2 flex items-center gap-2"><Sparkles className="w-4 h-4" />{dataSource === 'chatgpt' ? 'ChatGPT Beta Analysis' : 'Grok AI Deep Analysis'}</h3>
+                <p className="text-xs text-slate-400 mb-2">{dataSource === 'chatgpt' ? 'Eight evidence checks in one pass. Open a stock for sources, confidence and unanswered questions.' : 'Analyzes Stocktwits sentiment, insider conviction, future catalysts, and upside potential.'}</p>
                 <p className="text-xs text-slate-500">{stocksWithAI} stocks analyzed</p>
               </div>
             </div>
@@ -4245,7 +4247,7 @@ Respond with ONLY a JSON array:
               
               <div className="divide-y divide-slate-800/30 max-h-[calc(100vh-350px)] overflow-y-auto">
                 {sorted.length === 0 && !isScanning ? (
-                  <div className="p-12 text-center"><Database className="w-12 h-12 text-slate-700 mx-auto mb-4" /><p className="text-slate-400">Click "Run Full Scan" to find small-cap opportunities</p></div>
+                  <div className="p-12 text-center"><Database className="w-12 h-12 text-slate-700 mx-auto mb-4" /><p className="text-slate-400">{dataSource === 'chatgpt' ? 'No beta results match this view yet. Queue a beta batch or adjust the filters.' : 'Click "Run Full Scan" to find small-cap opportunities'}</p></div>
                 ) : sorted.map((s, i) => (
                   <div key={s.ticker} className="row cursor-pointer" onClick={() => setSelected(selected?.ticker === s.ticker ? null : s)} style={{ background: selectedStocks.has(s.ticker) ? 'rgba(99,102,241,0.06)' : undefined }}>
                     <div className="p-4">

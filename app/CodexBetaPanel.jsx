@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { BETA_METRICS } from '../lib/codexBeta.mjs';
 
-export default function CodexBetaPanel({ source, onSource, workspace, onResults }) {
+export default function CodexBetaPanel({ source, onSource, workspace, onResults, assessedOnly, onAssessedOnly }) {
   const [run, setRun] = useState(null), [limit, setLimit] = useState(10), [busy, setBusy] = useState(false), [error, setError] = useState('');
   const [canControl, setCanControl] = useState(false), [password, setPassword] = useState('');
   useEffect(() => {
@@ -41,6 +41,7 @@ export default function CodexBetaPanel({ source, onSource, workspace, onResults 
           : <><button disabled={busy} onClick={() => act(run.status === 'paused' ? 'resume' : 'pause')} className="px-3 py-2 rounded bg-slate-700 text-white">{run.status === 'paused' ? 'Resume beta' : 'Pause beta'}</button><button disabled={busy} onClick={() => act('cancel')} className="px-3 py-2 rounded border border-slate-600 text-slate-300">Cancel beta</button></>}
         <span className="text-xs text-slate-500">Eligible stocks only · skips beta results newer than 7 days</span>
       </div>
+      <label className="flex gap-2 items-center text-xs text-slate-300"><input type="checkbox" checked={assessedOnly} onChange={e => onAssessedOnly(e.target.checked)} />Show assessed stocks only</label>
       <p className="text-xs text-slate-500">Codex must be available to process queued work. Refreshing this page keeps progress. Pause stops new stocks; an already-running assessment may finish. Cancel rejects late results.</p>
     </div>}
     {error && <p role="alert" className="mt-2 text-xs text-amber-400">{error}</p>}
