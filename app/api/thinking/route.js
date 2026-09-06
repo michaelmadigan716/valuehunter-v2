@@ -184,6 +184,8 @@ export async function POST(request) {
       state.plays = body.plays.slice(0, 15).map((p, i) => ({
         rank: i + 1, ticker: String(p.ticker || '').toUpperCase().slice(0, 8), name: clampText(p.name, 80),
         horizon: ['short', 'medium', 'long'].includes(p.horizon) ? p.horizon : null,
+        hook: clampText(p.hook, 140),
+        prevRank: prev.get(String(p.ticker || '').toUpperCase())?.rank ?? null,
         entryPrice: prev.get(String(p.ticker || '').toUpperCase())?.entryPrice ?? (Number.isFinite(Number(p.price)) ? Number(p.price) : (priceOf.get(String(p.ticker || '').toUpperCase()) ?? null)),
         entryAt: prev.get(String(p.ticker || '').toUpperCase())?.entryAt ?? now,
         firstRank: prev.get(String(p.ticker || '').toUpperCase())?.firstRank ?? (i + 1),
