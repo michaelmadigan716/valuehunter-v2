@@ -56,7 +56,7 @@ export default function ThinkingPage() {
             <Toggle on={!!cfg.engine?.enabled} onClick={() => post({ action: 'config', config: { engine: { enabled: !cfg.engine?.enabled } } })} />
             <div className="flex items-center gap-2 rounded-xl border px-3 py-1.5" style={{ borderColor: cfg.mode === 'deep' ? 'rgba(52,211,153,0.4)' : 'rgba(251,191,36,0.4)', background: cfg.mode === 'deep' ? 'rgba(52,211,153,0.06)' : 'rgba(251,191,36,0.06)' }} title="Read by the routine at the start of every run">
               <span className="text-[11px] text-slate-400">Run mode</span>
-              <button onClick={() => post({ action: 'config', config: { mode: 'test' } })} className="text-xs font-semibold px-2 py-0.5 rounded" style={{ background: cfg.mode !== 'deep' ? 'rgba(251,191,36,0.25)' : 'transparent', color: cfg.mode !== 'deep' ? '#fbbf24' : '#64748b' }}>Test · ~{cfg.budgets?.test?.minutes ?? 5} min</button>
+              <button onClick={() => post({ action: 'config', config: { mode: 'test' } })} className="text-xs font-semibold px-2 py-0.5 rounded" style={{ background: cfg.mode !== 'deep' ? 'rgba(251,191,36,0.25)' : 'transparent', color: cfg.mode !== 'deep' ? '#fbbf24' : '#64748b' }} title={`${cfg.budgets?.test?.cycles ?? 6} cycles of ${cfg.budgets?.test?.minutes ?? 5} min with ${cfg.budgets?.test?.pauseMinutes ?? 2} min pauses, every hour`}>Test · {cfg.budgets?.test?.minutes ?? 5}-min cycles</button>
               <button onClick={() => post({ action: 'config', config: { mode: 'deep' } })} className="text-xs font-semibold px-2 py-0.5 rounded" style={{ background: cfg.mode === 'deep' ? 'rgba(52,211,153,0.25)' : 'transparent', color: cfg.mode === 'deep' ? '#34d399' : '#64748b' }}>Deep · 60-75 min</button>
             </div>
             <a href="https://claude.ai/code/routines/trig_01KagnxmcSaRRff53hJ8g5fs" target="_blank" rel="noreferrer" className="px-3 py-1.5 rounded-lg text-xs font-medium border" style={{ background: 'rgba(30,41,59,0.5)', borderColor: 'rgba(51,65,85,0.5)', color: '#94a3b8' }} title="The Claude cloud routine that does the thinking - schedule, past runs, live sessions">Cloud routine ↗</a>
@@ -107,6 +107,7 @@ export default function ThinkingPage() {
                     </div>}
                     <div className="grid md:grid-cols-2 gap-3 mt-3 text-xs">
                       {p.upsideCase && <div><span className="text-emerald-400 font-medium">Upside case:</span> <span className="text-slate-400">{p.upsideCase}</span></div>}
+                      {(p.downsidePct != null || p.downsideCase) && <div><span className="text-rose-400 font-medium">If wrong{p.downsidePct != null ? ` (~${p.downsidePct}%)` : ''}:</span> <span className="text-slate-400">{p.downsideCase}</span></div>}
                       {p.catalysts && <div><span className="text-cyan-400 font-medium">Catalysts:</span> <span className="text-slate-400">{p.catalysts}</span></div>}
                       {p.risks && <div><span className="text-red-400 font-medium">Risks:</span> <span className="text-slate-400">{p.risks}</span></div>}
                       {p.changeMind && <div><span className="text-amber-400 font-medium">Would change my mind:</span> <span className="text-slate-400">{p.changeMind}</span></div>}
@@ -154,6 +155,12 @@ export default function ThinkingPage() {
               </div>
             </Card>
 
+            {(() => { const items = (st.plays || []).flatMap(pl => (pl.catalystDates || []).map(c => ({ ...c, ticker: pl.ticker }))).filter(c => c.date).sort((a, b) => a.date.localeCompare(b.date)); return items.length ? (
+              <Card title={`Upcoming catalysts · ${items.length}`}>
+                <div className="space-y-1 max-h-[260px] overflow-y-auto pr-1">
+                  {items.slice(0, 30).map((c, i) => { const past = c.date < new Date().toISOString().slice(0, 10); return <div key={i} className="text-xs flex gap-2"><span className="mono shrink-0" style={{ color: past ? '#64748b' : '#22d3ee' }}>{c.date}</span><span className="font-semibold text-slate-300">{c.ticker}</span><span className="text-slate-400">{c.what}</span></div>; })}
+                </div>
+              </Card>) : null; })()}
             <Card title="Next run plan">
               <p className="text-xs text-slate-300 whitespace-pre-wrap">{st.nextPlan || 'The engine writes its plan for the next run here.'}</p>
               {!!st.recommendedScans?.length && <div className="mt-3">

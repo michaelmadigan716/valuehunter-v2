@@ -34,6 +34,25 @@ const pick = s => ({
   tier: s.tier || null, scannedAt: s.scannedAt || null,
 });
 
+// Cheap social lead: newest r/wallstreetbets DD posts (cached 60 min; empty if Reddit refuses)
+async function wsbSignals(knownTickers) {
+  try {
+    const cached = await kvGetJSON('vh:signals:wsb');
+    if (cached && Date.now() - cached.at < 60 * 60000) return cached.posts;
+    const res = await fetch('https://www.reddit.com/r/wallstreetbets/search.json?q=flair%3ADD&restrict_sr=1&sort=new&limit=25', { headers: { 'User-Agent': 'valuehunter-thinking/1.0 (research aggregator)' } });
+    if (!res.ok) return cached?.posts || [];
+    const j = await res.json();
+    const posts = (j?.data?.children || []).map(c => c.data).filter(Boolean).map(d => {
+      const text = `${d.title} ${(d.selftext || '').slice(0, 400)}`;
+      const tick = new Set([...text.matchAll(/\$([A-Z]{1,5})\b/g)].map(m => m[1]));
+      for (const w of text.match(/\b[A-Z]{2,5}\b/g) || []) if (knownTickers.has(w)) tick.add(w);
+      return { title: d.title.slice(0, 160), tickers: [...tick].slice(0, 5), ups: d.ups, at: Math.round((d.created_utc || 0) * 1000), url: `https://www.reddit.com${d.permalink}` };
+    });
+    await kvSetJSON('vh:signals:wsb', { at: Date.now(), posts });
+    return posts;
+  } catch { return []; }
+}
+
 async function dataWindow(category) {
   const [main, scanres, singularity, watchlist, scouts, feed, settings] = await Promise.all([
     kvGetJSON(wsKey('main', 'main')), kvHGetAllJSON(wsKey('main', 'scanres')), kvHGetAllJSON(wsKey('main', 'singularity')),
@@ -54,9 +73,11 @@ async function dataWindow(category) {
   } else {
     pool = [...eligible].sort(byComposite);
   }
+  const wsb = await wsbSignals(new Set(stocks.map(s => s.ticker)));
   return {
     asOf: new Date().toISOString(),
     autoScansEnabled: autoScansOn(settings),
+    signals: { wsb },
     universe: { total: stocks.length, eligible: eligible.length, inWindow: Math.min(pool.length, 200) },
     stocks: pool.slice(0, 200).map(pick),
     watchlist: Object.entries(watchlist || {}).map(([t, v]) => ({ ticker: t, ...(typeof v === 'object' ? { note: v.note || v.reason || null, addedAt: v.addedAt || null } : {}) })),
@@ -164,6 +185,8 @@ export async function POST(request) {
         probability: Number.isFinite(Number(p.probability)) ? Math.max(0, Math.min(1, Number(p.probability))) : null,
         timeframe: clampText(p.timeframe, 60), setup: clampText(p.setup, 400), invalidation: clampText(p.invalidation, 400),
         marketCapM: Number.isFinite(Number(p.marketCapM)) ? Number(p.marketCapM) : null, liquidity: clampText(p.liquidity, 60),
+        downsidePct: Number.isFinite(Number(p.downsidePct)) ? Math.max(-100, Math.min(0, -Math.abs(Number(p.downsidePct)))) : null, downsideCase: clampText(p.downsideCase, 300),
+        catalystDates: (Array.isArray(p.catalystDates) ? p.catalystDates : []).slice(0, 6).map(c => ({ date: clampText(c.date, 20), what: clampText(c.what, 160) })).filter(c => c.date),
         upsideCase: clampText(p.upsideCase, 700), risks: clampText(p.risks, 700), changeMind: clampText(p.changeMind, 400),
         catalysts: clampText(p.catalysts, 600), sources: (Array.isArray(p.sources) ? p.sources : []).slice(0, 10).map(s => clampText(s, 300)),
         inValueHunter: !!p.inValueHunter, updatedAt: now, runId,

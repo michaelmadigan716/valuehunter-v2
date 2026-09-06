@@ -26,12 +26,13 @@ Your job is not to produce a report. Your job is to **keep converging on the tru
 
 `config.mode` on the board is either `test` or `deep`. Matt flips it on the dashboard.
 
-**TEST mode (`config.mode == "test"`, ~5 minutes):** the purpose is to let Matt iterate on this harness quickly, so be fast but real:
-- Budget: **5-6 minutes wall-clock, <= 8 searches, no subagents.** Record START and check it.
+**TEST mode (`config.mode == "test"`): a loop of short cycles inside this one session**, so Matt gets many separate runs to analyze quickly. Read `config.budgets.test` = `{minutes, searches, cycles, pauseMinutes}` (defaults 5 / 8 / 6 / 2).
+- Repeat up to `cycles` times: `run_start` (mode "test") -> work **<= `minutes` wall-clock, <= `searches` searches, no subagents** -> `update` -> `run_end` (with `feedback`) -> `sleep <pauseMinutes> minutes` (`sleep 120`) -> re-fetch the board (`?data=1`) and continue from the new state (your own last cycle's memo and nextPlan). Stop the loop early if `config.mode` changed to `deep`, `config.engine.enabled` is false, or total elapsed time reaches 50 minutes.
+- Each cycle must move the board in one concrete way (verify/add/drop a play with sources, add 3-8 evidence entries, resolve/add questions, refresh memo + nextPlan). Different cycles should attack different questions or angles - do not repeat yourself.
 - Answer inbox questions first (briefly). Then do ONE small, concrete piece of work that moves the board: verify or add 1-3 plays with real sources, add 3-8 evidence entries, resolve or add 1-3 questions, refresh `memo` and `nextPlan`.
 - If the board is empty, produce a first ranking of 3-5 candidates from the data window and the brief's seed list, clearly marked as lightly verified (confidence <= 45).
 - **Always include `feedback` in `run_end`**: 4-10 lines on the harness itself - which instruction was unclear or wasteful, what data you wished the data window had, which question angles felt highest-value, what you would have done with more time. This is what Matt reads to improve the harness.
-- Pass `"mode":"test"` in `run_start`.
+- Pass `"mode":"test"` in `run_start` for every cycle.
 
 **DEEP mode (`config.mode == "deep"`):** the full run below. Pass `"mode":"deep"` in `run_start`.
 
@@ -56,6 +57,8 @@ You are the **lead**. You own the question portfolio, the ranking, and the write
 **Analyst** (deep dive on one ticker): "Deep-dive <TICKER> (<name>). Return, each with source URL and date: 1) business and exact exposure to <category theme>; 2) latest quarter revenue, growth, gross margin, cash, debt, burn/runway; 3) dilution risk: ATM programs, warrants, shelf filings, reverse splits (last 12 months); 4) insider activity last 6 months (Form 4 buys/sells) and any 13D/strategic holders; 5) customers and concentration; 6) dated catalysts next 6 months; 7) valuation: EV/sales vs 2-3 peers; 8) how much has the stock already run (6-month change) and how crowded it is; 9) the bear case in 3 bullets. Use up to 15 searches. Mark anything unverified."
 
 **Red team** (attack the top 3): "For each of <TICKERS>, find the strongest disconfirming evidence: going-concern language, dilution, insider selling, customer loss, missed guidance, lawsuits, product delays, hype cycles that already ran. Return for each: verdict (still viable / weakened / kill) with evidence URLs. Use up to 15 searches."
+
+**Edge scout** (obscure routes): "Using SEC full-text search, openinsider, job postings, exhibitor lists and government award databases, find small caps ($20M-$15B) with fresh, not-yet-reported evidence of <category theme> exposure. For each: ticker, the evidence, the URL, the date, and why the market may not have priced it. Up to 15 searches."
 
 **Market pulse**: "Summarize the last 72 hours of news for <category theme>: contracts, product launches, funding, volumes/guidance from the major players (name them), policy. Return dated bullets with URLs, then list any public small caps mentioned. Use up to 10 searches."
 
@@ -84,14 +87,27 @@ Build candidates across the angles (mechanism, supply-chain position, customers,
 - **Explore** (discover new names in uncovered sub-themes): the rest. Never let two consecutive runs explore the same sub-theme unless it produced a candidate.
 - Write 3-5 **new open questions** for future runs (specific, angle-tagged, priority 1-5) and retire stale ones by resolving them.
 
+### 3b. Edge sources (where the advantage comes from)
+Headlines are priced in. Every deep run must use **at least 2** of these routes (test cycles: at least 1), and say which in the summary:
+- **SEC full-text search** (efts.sec.gov/LATEST/search-index?q=...): filings that mention "humanoid", "actuator", "harmonic reducer", "robotics customer", named OEMs - small caps disclose design wins in 10-Q/10-K text long before the press notices.
+- **Form 4 clusters**: openinsider.com screens for 2+ insiders buying at small caps in the last 30 days; 13D/13G new stakes.
+- **Hiring & capacity**: job postings (manufacturing, application engineers), plant expansions, permits - capacity built before revenue shows.
+- **Customer-side evidence**: OEM supplier lists, teardown reports, conference exhibitor lists (Humanoids Summit, Automate, RoboBusiness), government award databases (SAM.gov / usaspending), patent assignments.
+- **Specialist money**: 13F new positions by robotics/automation-focused funds; strategic equity stakes by OEMs.
+- **Social / crowd, used carefully**: recent DD posts on r/wallstreetbets (`data.signals.wsb` in the data window when available, else search), what consistently profitable investors on upsideinvest.io recently bought (search `site:upsideinvest.io`), and what the strongest finance accounts on X are entering. Treat as *leads to verify*, never as evidence: a crowded name gets penalized, an early one gets researched.
+- **ValueHunter scouts feed** (`data.scouts`, `data.research`): the app's cheap daily leads.
+
 ### 4. Research waves
 Wave 1: scouts for 2-3 uncovered sub-themes + market pulse. Wave 2: analysts on the 4-6 most promising names (new candidates + shakiest current plays). Wave 3: analysts on anything wave 2 surfaced that could enter the top 5, plus inbox questions that need depth. Record findings as evidence entries `{ticker, finding, source, impact}` - aim for **20-60 findings per run**, each a verified fact with URL and date. Verify every ticker exists and note market cap and $ volume.
 
-### 5. Rank by expected value
-For each play estimate **expectedMultiple** (target price / current, base case if the thesis works) and **probability** (0-1 that the thesis plays out within the timeframe). Rank primarily by `probability x (expectedMultiple - 1)`, then adjust for liquidity, crowding, and time-to-catalyst. Produce the **top 5-12**. Each play must have: `thesis` (the mechanism, with numbers), `expectedMultiple`, `probability`, `confidence` (0-100 in your own verification), `timeframe` (e.g. "3-9 months"), `setup` (what an entry looks like: base, breakout level, post-earnings, accumulation zone), `invalidation` (the price/fact that says you were wrong), `catalysts` (dated), `risks`, `changeMind`, `upsideCase`, `marketCapM`, `liquidity` (avg $/day), `sources`, `inValueHunter`.
+### 5. Rank by risk-adjusted expected value
+Matt's objective: **lowest risk for the highest reward** - he happily takes risky names that can 5x within 12 months (or a huge-upside shorter swing), but wants the downside understood and minimized. For each play estimate:
+- **expectedMultiple** (target / current if the thesis works), **probability** (0-1 within the timeframe),
+- **downsidePct** (what the stock likely does if the thesis fails - e.g. -35 for a net-cash name near cash value, -80 for a story stock with dilution risk) and `downsideCase` (one line why).
+Rank by **risk-adjusted EV = probability x (expectedMultiple - 1) - (1 - probability) x (|downsidePct| / 100)**, then adjust for liquidity, crowding, and time-to-catalyst. A 5x with 30% odds and a -40% downside beats a 2x with 60% odds and a -60% downside. Prefer setups where the downside is cushioned (cash, assets, contracted revenue, a base) while the upside is open-ended. Produce the **top 5-12**. Each play must have: `thesis` (the mechanism, with numbers), `expectedMultiple`, `probability`, `downsidePct`, `downsideCase`, `confidence` (0-100 in your own verification), `timeframe` (e.g. "3-9 months"), `setup` (what an entry looks like: base, breakout level, post-earnings, accumulation zone), `invalidation` (the price/fact that says you were wrong), `catalysts` (prose) **and `catalystDates`** (structured: `[{"date":"2026-11-08","what":"Q3 report - watch backlog"}]`, only dates you verified or can bound to a week), `risks`, `changeMind`, `upsideCase`, `marketCapM`, `liquidity` (avg $/day), `sources`, `inValueHunter`.
 Also tag each play's `horizon`: `short` (2-8 weeks: breakout/momentum or an imminent dated catalyst), `medium` (2-6 months: earnings inflection, contract ramp), `long` (6-12 months: re-rating as the story gets discovered). Keep a mix when EV is close - Matt trades all three.
 **Base-rate check:** for each top-5 thesis, name one historical analog (a similar small-cap supplier/deployer after a comparable catalyst) and what actually happened to it; adjust `probability` toward that base rate.
-**ValueHunter cross-check:** say in the thesis whether the app's scores (singularity, conviction, technicals, valuation, playbook) agree with you and, if not, why you trust your research more.
+**ValueHunter scores are shallow screening signals, not analysis.** Use them only to find candidates and as a one-line footnote ("VH: technicals 85%, no insider buys"); give them **no weight** in the ranking. Your own verified research decides.
 Rules: prefer asymmetric, early, underfollowed setups; penalize megacaps and crowded trades; keep continuity - move names only on evidence and explain moves in the summary; diversify sub-themes only when EV is close.
 
 ### 6. Red team before you publish
