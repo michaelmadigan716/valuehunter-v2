@@ -19,7 +19,9 @@ const validCat = c => THINKING_CATEGORIES.some(x => x.id === c);
 
 async function getConfig() {
   const saved = (await kvGetJSON(CFG_KEY)) || {};
-  return { ...DEFAULT_THINKING_CONFIG, ...saved, engine: { ...DEFAULT_THINKING_CONFIG.engine, ...(saved.engine || {}) }, categories: { ...DEFAULT_THINKING_CONFIG.categories, ...(saved.categories || {}) } };
+  const D = DEFAULT_THINKING_CONFIG;
+  return { ...D, ...saved, engine: { ...D.engine, ...(saved.engine || {}) }, categories: { ...D.categories, ...(saved.categories || {}) },
+    budgets: { test: { ...D.budgets.test, ...(saved.budgets?.test || {}) }, deep: { ...D.budgets.deep, ...(saved.budgets?.deep || {}) } } };
 }
 
 const ROBOTICS_RE = /robot|automation|actuator|sensor|lidar|motor|drive|servo|gear|magnet|rare earth|machine vision|drone|autonom|humanoid|cobot|precision|motion control|semicap|photonic/i;
@@ -34,20 +36,25 @@ const pick = s => ({
   tier: s.tier || null, scannedAt: s.scannedAt || null,
 });
 
-// Cheap social lead: newest r/wallstreetbets DD posts (cached 60 min; empty if Reddit refuses)
+// Cheap social lead: newest r/wallstreetbets DD posts via RSS (the JSON API refuses scripts); cached 60 min
 async function wsbSignals(knownTickers) {
   try {
     const cached = await kvGetJSON('vh:signals:wsb');
     if (cached && Date.now() - cached.at < 60 * 60000) return cached.posts;
-    const res = await fetch('https://www.reddit.com/r/wallstreetbets/search.json?q=flair%3ADD&restrict_sr=1&sort=new&limit=25', { headers: { 'User-Agent': 'valuehunter-thinking/1.0 (research aggregator)' } });
+    const res = await fetch('https://www.reddit.com/r/wallstreetbets/search.rss?q=flair%3ADD&restrict_sr=1&sort=new&limit=25', { headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36', Accept: 'application/atom+xml,application/xml' } });
     if (!res.ok) return cached?.posts || [];
-    const j = await res.json();
-    const posts = (j?.data?.children || []).map(c => c.data).filter(Boolean).map(d => {
-      const text = `${d.title} ${(d.selftext || '').slice(0, 400)}`;
-      const tick = new Set([...text.matchAll(/\$([A-Z]{1,5})\b/g)].map(m => m[1]));
+    const xml = await res.text();
+    const posts = [...xml.matchAll(/<entry>([\s\S]*?)<\/entry>/g)].map(m => m[1]).map(e => {
+      const g = (re) => { const x = e.match(re); return x ? x[1] : ''; };
+      const title = g(/<title>([\s\S]*?)<\/title>/).replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+      const link = g(/<link href="([^"]+)"/);
+      const updated = g(/<updated>([^<]+)<\/updated>/);
+      const body = g(/<content[^>]*>([\s\S]*?)<\/content>/).replace(/&lt;[^&]*&gt;/g, ' ').slice(0, 600);
+      const text = `${title} ${body}`;
+      const tick = new Set([...text.matchAll(/\$([A-Z]{1,5})\b/g)].map(x => x[1]));
       for (const w of text.match(/\b[A-Z]{2,5}\b/g) || []) if (knownTickers.has(w)) tick.add(w);
-      return { title: d.title.slice(0, 160), tickers: [...tick].slice(0, 5), ups: d.ups, at: Math.round((d.created_utc || 0) * 1000), url: `https://www.reddit.com${d.permalink}` };
-    });
+      return { title: title.slice(0, 160), tickers: [...tick].slice(0, 5), at: updated ? Date.parse(updated) : null, url: link };
+    }).filter(p => p.title);
     await kvSetJSON('vh:signals:wsb', { at: Date.now(), posts });
     return posts;
   } catch { return []; }
@@ -223,7 +230,7 @@ export async function POST(request) {
     }
     if (action === 'run_end') {
       const started = state.currentRun?.startedAt || now;
-      state.runs = [...(state.runs || []), { id: runId, startedAt: started, endedAt: now, minutes: Math.round((now - started) / 60000), mode: state.currentRun?.mode || null, summary: clampText(body.summary, 1500), feedback: clampText(body.feedback, 2500), searches: Number(body.searches) || null, plays: state.plays.length, openQuestions: state.questions.length, evidence: Array.isArray(body.evidence) ? body.evidence.length : 0, model: state.currentRun?.model || null }].slice(-60);
+      state.runs = [...(state.runs || []), { id: runId, startedAt: started, endedAt: now, minutes: Math.round((now - started) / 60000), mode: state.currentRun?.mode || null, summary: clampText(body.summary, 1500), feedback: clampText(body.feedback, 2500), searches: Number(body.searches) || null, plays: state.plays.length, openQuestions: state.questions.length, evidence: (state.evidence || []).filter(e => e.runId === runId).length, model: state.currentRun?.model || null }].slice(-60);
       state.currentRun = null;
     }
     state.updatedAt = now;
