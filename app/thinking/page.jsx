@@ -82,15 +82,13 @@ export default function ThinkingPage() {
   const [d, setD] = useState(null);
   const [q, setQ] = useState('');
   const [busy, setBusy] = useState(false);
-  const [design, setDesign] = useState('spotlight');
   const [open, setOpen] = useState(null);      // expanded play ticker
   const [tab, setTab] = useState('changes');
   const [sort, setSort] = useState('ev');
 
   const load = useCallback(async (c) => { try { const r = await fetch(`/api/thinking?category=${c}`, { cache: 'no-store' }); const j = await r.json(); if (!j.error) setD(j); } catch (e) {} }, []);
-  useEffect(() => { try { const s = localStorage.getItem('vh_thinking_cat'); if (s) setCat(s); const g = localStorage.getItem('vh_thinking_design'); if (g) setDesign(g); } catch (e) {} }, []);
+  useEffect(() => { try { const s = localStorage.getItem('vh_thinking_cat'); if (s) setCat(s); } catch (e) {} }, []);
   useEffect(() => { load(cat); try { localStorage.setItem('vh_thinking_cat', cat); } catch (e) {} const t = setInterval(() => load(cat), 60000); return () => clearInterval(t); }, [cat, load]);
-  useEffect(() => { try { localStorage.setItem('vh_thinking_design', design); } catch (e) {} }, [design]);
   const post = async (body) => { setBusy(true); try { await fetch('/api/thinking', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ category: cat, ...body }) }); await load(cat); } catch (e) {} setBusy(false); };
   const ask = () => { if (!q.trim()) return; post({ action: 'ask', question: q.trim() }); setQ(''); };
 
@@ -206,51 +204,6 @@ export default function ThinkingPage() {
       {(p.entryAt || 0) >= (changes.since || 0) && lastRun && <Pill color={C.up}>new</Pill>}
     </div>); };
 
-  const Spotlight = () => (
-    <div className="grid lg:grid-cols-12 gap-5">
-      <div className="lg:col-span-8 space-y-3">
-        {!plays.length && <Box><p className="text-sm text-slate-500">Nothing on the board yet. {!cfg.categories?.[cat]?.enabled && 'This category is switched off.'}</p></Box>}
-        {plays.slice(0, 3).map(p => (
-          <Box key={p.ticker} className="hover:border-slate-600 transition-colors">
-            <div className="flex items-start justify-between gap-3 cursor-pointer" onClick={() => setOpen(open === p.ticker ? null : p.ticker)}>
-              <div className="min-w-0">
-                <div className="flex items-baseline gap-2 flex-wrap"><span className="mono text-slate-500 text-xs">#{p.rank}</span><span className="text-2xl font-bold" style={{ color }}>{p.ticker}</span><span className="text-sm text-slate-400 truncate">{p.name}</span></div>
-                <p className="text-sm text-slate-200 mt-1">{p.hook || firstLine(p.thesis)}</p>
-                <div className="mt-2"><Chips p={p} /></div>
-              </div>
-              <span className="text-slate-600 text-lg shrink-0">{open === p.ticker ? '▾' : '▸'}</span>
-            </div>
-            <div className="mt-3"><NumRow p={p} /></div>
-            {open === p.ticker && <div className="mt-4 pt-4 border-t" style={{ borderColor: 'rgba(51,65,85,0.5)' }}><PlayDetails p={p} color={color} /></div>}
-          </Box>
-        ))}
-        {plays.length > 3 && <Box title="Rest of the board" pad="p-3">
-          <div className="divide-y" style={{ borderColor: 'rgba(51,65,85,0.4)' }}>
-            {plays.slice(3).map(p => (
-              <div key={p.ticker} className="py-2">
-                <div className="flex items-center gap-3 cursor-pointer" onClick={() => setOpen(open === p.ticker ? null : p.ticker)}>
-                  <span className="mono text-slate-500 text-xs w-5">#{p.rank}</span>
-                  <span className="font-semibold w-16" style={{ color }}>{p.ticker}</span>
-                  <span className="flex-1 text-xs text-slate-300 truncate">{p.hook || firstLine(p.thesis, 90)}</span>
-                  <span className="mono text-xs" style={{ color: C.up }}>{p.expectedMultiple != null ? `${p.expectedMultiple}x` : '–'}</span>
-                  <span className="mono text-xs text-slate-400 w-9 text-right">{p.probability != null ? `${Math.round(p.probability * 100)}%` : '–'}</span>
-                  <span className="mono text-xs w-12 text-right" style={{ color: C.cyan }}>{p.ev != null ? p.ev.toFixed(2) : '–'}</span>
-                  <span className="text-slate-600">{open === p.ticker ? '▾' : '▸'}</span>
-                </div>
-                {open === p.ticker && <div className="mt-3 pl-8"><NumRow p={p} /><div className="mt-3"><PlayDetails p={p} color={color} /></div></div>}
-              </div>))}
-          </div>
-        </Box>}
-      </div>
-      <div className="lg:col-span-4 space-y-4">
-        <Box title="What changed" right={<span className="text-[10px] text-slate-500">{changes.last ? ago(changes.last.endedAt) : ''}</span>}><ChangesList /></Box>
-        <Box title="Upcoming catalysts"><CatalystList /></Box>
-        <Box title="Open questions" right={<span className="text-[10px] text-slate-500">{openQs.length}</span>}><QuestionsList /></Box>
-        <Fold title="Engine internals · evidence, memo, runs"><div className="mt-2 space-y-3"><EvidenceList /><EngineNotes /><RunsList /></div></Fold>
-      </div>
-    </div>
-  );
-
   const Leaderboard = () => (
     <div className="space-y-5">
       <Box pad="p-0">
@@ -286,52 +239,12 @@ export default function ThinkingPage() {
     </div>
   );
 
-  const Feed = () => {
-    const events = [];
-    for (const r of st.runs || []) events.push({ at: r.endedAt, kind: 'run', color: C.mute, title: `Run · ${r.mode || ''} ${r.minutes}m · ${r.plays} plays · ${r.evidence} findings`, body: r.summary, extra: r.feedback });
-    for (const p of st.plays || []) if (p.entryAt) events.push({ at: p.entryAt, kind: 'new play', color: C.up, title: `${p.ticker} entered the board`, body: p.hook || firstLine(p.thesis), p });
-    for (const x of st.rejected || []) events.push({ at: x.at, kind: 'rejected', color: C.down, title: x.ticker, body: x.why });
-    for (const q of st.archive || []) events.push({ at: q.updatedAt, kind: 'answered', color: C.cyan, title: q.question, body: q.answer });
-    for (const c of catalysts) if (c.date >= today()) events.push({ at: Date.parse(c.date), kind: 'upcoming', color: C.warn, title: `${c.date} · ${c.ticker}`, body: c.what, future: true });
-    const past = events.filter(e => !e.future).sort((a, b) => (b.at || 0) - (a.at || 0)).slice(0, 60);
-    const future = events.filter(e => e.future).sort((a, b) => a.at - b.at).slice(0, 10);
-    return (
-      <div className="grid lg:grid-cols-12 gap-5">
-        <div className="lg:col-span-8 space-y-4">
-          <Box title="Board right now" pad="p-3">
-            <div className="flex gap-2 overflow-x-auto pb-1">{plays.map(p => <button key={p.ticker} onClick={() => setOpen(open === p.ticker ? null : p.ticker)} className="shrink-0 rounded-xl border px-3 py-2 text-left" style={{ borderColor: open === p.ticker ? color : 'rgba(51,65,85,0.5)', background: 'rgba(2,6,23,0.4)' }}><div className="text-xs text-slate-500">#{p.rank}</div><div className="font-bold" style={{ color }}>{p.ticker}</div><div className="mono text-[11px]"><span style={{ color: C.up }}>{p.expectedMultiple != null ? `${p.expectedMultiple}x` : '–'}</span> <span className="text-slate-400">{p.probability != null ? `${Math.round(p.probability * 100)}%` : ''}</span></div></button>)}</div>
-            {open && plays.find(p => p.ticker === open) && <div className="mt-3 pt-3 border-t" style={{ borderColor: 'rgba(51,65,85,0.5)' }}>{(() => { const p = plays.find(x => x.ticker === open); return <><div className="flex items-baseline gap-2"><span className="text-xl font-bold" style={{ color }}>{p.ticker}</span><span className="text-sm text-slate-400">{p.name}</span></div><p className="text-sm text-slate-200 mt-1">{p.hook || firstLine(p.thesis)}</p><div className="mt-2"><Chips p={p} /></div><div className="mt-3"><NumRow p={p} /></div><div className="mt-3"><PlayDetails p={p} color={color} /></div></>; })()}</div>}
-          </Box>
-          {!!future.length && <Box title="Coming up"><div className="space-y-1 text-xs">{future.map((e, i) => <div key={i}><span className="mono" style={{ color: C.warn }}>{e.title}</span> <span className="text-slate-400">{e.body}</span></div>)}</div></Box>}
-          <Box title="Activity, newest first">
-            <div className="space-y-2">{past.map((e, i) => (
-              <details key={i} className="group text-xs"><summary className="cursor-pointer list-none flex gap-2 items-start"><span className="mono shrink-0 w-14 text-slate-500">{ago(e.at)}</span><span className="mono shrink-0 w-16" style={{ color: e.color }}>{e.kind}</span><span className="text-slate-200 flex-1">{e.title}</span><span className="text-slate-600 group-open:rotate-90">▸</span></summary><div className="pl-[8.5rem] pr-2 pt-1 text-slate-400 whitespace-pre-wrap">{e.body}{e.extra && <p className="mt-1 text-amber-200/80"><b>Engine feedback:</b> {e.extra}</p>}</div></details>))}
-              {!past.length && <p className="text-xs text-slate-500">Nothing yet.</p>}
-            </div>
-          </Box>
-        </div>
-        <div className="lg:col-span-4 space-y-4">
-          <Box title="Open questions"><QuestionsList /></Box>
-          <Fold title="Engine notes · plan, memo, rejected"><div className="mt-2"><EngineNotes /></div></Fold>
-          <Fold title="All evidence" count={st.evidence?.length || 0}><div className="mt-2"><EvidenceList /></div></Fold>
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div className="min-h-screen text-slate-200" style={{ background: 'radial-gradient(1000px 500px at 20% -10%, rgba(34,211,238,0.07), transparent), #020617' }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5">
         <Header />
         {active && <p className="text-[11px] text-slate-500 mb-4">{active.objective}</p>}
-        {design === 'spotlight' && <Spotlight />}
-        {design === 'leaderboard' && <Leaderboard />}
-        {design === 'feed' && <Feed />}
-      </div>
-      {/* dev mode: design switcher */}
-      <div className="fixed bottom-3 right-3 z-50 flex items-center gap-1 rounded-full border px-2 py-1 text-[11px] shadow-lg" style={{ background: 'rgba(2,6,23,0.9)', borderColor: 'rgba(71,85,105,0.6)' }}>
-        <span className="text-slate-500 px-1">dev · design</span>
-        {[['spotlight', 'A Spotlight'], ['leaderboard', 'B Leaderboard'], ['feed', 'C Feed']].map(([k, l]) => <button key={k} onClick={() => setDesign(k)} className="px-2 py-0.5 rounded-full" style={{ color: design === k ? '#020617' : '#94a3b8', background: design === k ? C.cyan : 'transparent' }}>{l}</button>)}
+        <Leaderboard />
       </div>
     </div>
   );
