@@ -142,9 +142,13 @@ export async function POST(request) {
     if (Array.isArray(body.plays) && body.plays.length) {
       state.plays = body.plays.slice(0, 15).map((p, i) => ({
         rank: i + 1, ticker: String(p.ticker || '').toUpperCase().slice(0, 8), name: clampText(p.name, 80),
-        thesis: clampText(p.thesis, 1500), confidence: Math.max(0, Math.min(100, Number(p.confidence) || 0)),
-        upsideCase: clampText(p.upsideCase, 600), risks: clampText(p.risks, 600), changeMind: clampText(p.changeMind, 400),
-        catalysts: clampText(p.catalysts, 500), sources: (Array.isArray(p.sources) ? p.sources : []).slice(0, 8).map(s => clampText(s, 300)),
+        thesis: clampText(p.thesis, 1800), confidence: Math.max(0, Math.min(100, Number(p.confidence) || 0)),
+        expectedMultiple: Number.isFinite(Number(p.expectedMultiple)) ? Math.max(0, Math.min(50, Number(p.expectedMultiple))) : null,
+        probability: Number.isFinite(Number(p.probability)) ? Math.max(0, Math.min(1, Number(p.probability))) : null,
+        timeframe: clampText(p.timeframe, 60), setup: clampText(p.setup, 400), invalidation: clampText(p.invalidation, 400),
+        marketCapM: Number.isFinite(Number(p.marketCapM)) ? Number(p.marketCapM) : null, liquidity: clampText(p.liquidity, 60),
+        upsideCase: clampText(p.upsideCase, 700), risks: clampText(p.risks, 700), changeMind: clampText(p.changeMind, 400),
+        catalysts: clampText(p.catalysts, 600), sources: (Array.isArray(p.sources) ? p.sources : []).slice(0, 10).map(s => clampText(s, 300)),
         inValueHunter: !!p.inValueHunter, updatedAt: now, runId,
       }));
     }
@@ -161,10 +165,17 @@ export async function POST(request) {
       state.archive = [...(state.archive || []), ...all.filter(q => q.status === 'resolved' && !(state.archive || []).some(a => a.id === q.id))].slice(-150);
     }
     if (Array.isArray(body.evidence)) {
-      const ev = body.evidence.slice(0, 40).map(e => ({ id: id(), at: now, runId, ticker: e.ticker ? String(e.ticker).toUpperCase().slice(0, 8) : null, finding: clampText(e.finding, 800), source: clampText(e.source, 300), impact: ['bullish', 'bearish', 'neutral'].includes(e.impact) ? e.impact : 'neutral' }));
-      state.evidence = [...(state.evidence || []), ...ev].slice(-300);
+      const ev = body.evidence.slice(0, 80).map(e => ({ id: id(), at: now, runId, ticker: e.ticker ? String(e.ticker).toUpperCase().slice(0, 8) : null, finding: clampText(e.finding, 800), source: clampText(e.source, 300), impact: ['bullish', 'bearish', 'neutral'].includes(e.impact) ? e.impact : 'neutral' }));
+      state.evidence = [...(state.evidence || []), ...ev].slice(-500);
     }
-    if (typeof body.nextPlan === 'string') state.nextPlan = clampText(body.nextPlan, 2000);
+    if (typeof body.nextPlan === 'string') state.nextPlan = clampText(body.nextPlan, 3000);
+    // The engine's own persistent notes (coverage map, hypotheses, what is verified) and its reject list
+    if (typeof body.memo === 'string') state.memo = clampText(body.memo, 6000);
+    if (Array.isArray(body.rejected)) {
+      const cur = new Map((state.rejected || []).map(x => [x.ticker, x]));
+      for (const x of body.rejected.slice(0, 40)) { const t = String(x.ticker || '').toUpperCase().slice(0, 8); if (t) cur.set(t, { ticker: t, why: clampText(x.why, 240), at: now }); }
+      state.rejected = [...cur.values()].slice(-120);
+    }
     if (Array.isArray(body.recommendedScans)) state.recommendedScans = body.recommendedScans.slice(0, 20).map(r => ({ ticker: String(r.ticker || r).toUpperCase().slice(0, 8), why: clampText(r.why, 200) }));
     if (Array.isArray(body.answeredInbox) && body.answeredInbox.length) {
       const inbox = ((await kvGetJSON(inboxKey(category))) || []).filter(x => !body.answeredInbox.includes(x.id));

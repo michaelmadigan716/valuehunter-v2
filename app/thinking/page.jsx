@@ -45,7 +45,7 @@ export default function ThinkingPage() {
             <a href="/" className="px-3 py-1.5 rounded-lg text-xs font-medium border" style={{ background: 'rgba(30,41,59,0.5)', borderColor: 'rgba(51,65,85,0.5)', color: '#94a3b8' }}>← ValueHunter</a>
             <div>
               <h1 className="text-xl font-semibold flex items-center gap-2"><span className="text-cyan-400">◉</span> Always Thinking</h1>
-              <p className="text-xs text-slate-500">A Claude routine reasons about each enabled category {cfg.cadence || 'every 2 hours'}, asks itself the best next questions, researches them, and updates this board. Uses your Max subscription, not xAI credits.</p>
+              <p className="text-xs text-slate-500">A Claude routine reasons about each enabled category {cfg.cadence || 'every 4 hours'}: it asks itself the best next questions, fans research out to parallel subagents, red-teams its own favorites, and updates this board. Uses your Max subscription, not xAI credits.</p>
             </div>
           </div>
           <div className="flex items-center gap-3 shrink-0">
@@ -85,12 +85,18 @@ export default function ThinkingPage() {
                           {p.inValueHunter && <span className="text-[10px] px-1.5 py-0.5 rounded border" style={{ color: '#34d399', borderColor: 'rgba(52,211,153,0.4)' }} title="Also in your ValueHunter eligible pool">in ValueHunter</span>}
                         </div>
                       </div>
-                      <div className="text-right shrink-0">
-                        <div className="text-xs text-slate-500">confidence</div>
-                        <div className="text-base font-semibold mono" style={{ color: p.confidence >= 70 ? '#34d399' : p.confidence >= 45 ? '#fbbf24' : '#f87171' }}>{p.confidence}</div>
+                      <div className="text-right shrink-0 flex items-start gap-4">
+                        {p.expectedMultiple != null && <div><div className="text-xs text-slate-500">target</div><div className="text-base font-semibold mono text-cyan-300">{p.expectedMultiple}x</div></div>}
+                        {p.probability != null && <div><div className="text-xs text-slate-500">odds</div><div className="text-base font-semibold mono text-slate-200">{Math.round(p.probability * 100)}%</div></div>}
+                        <div><div className="text-xs text-slate-500">confidence</div><div className="text-base font-semibold mono" style={{ color: p.confidence >= 70 ? '#34d399' : p.confidence >= 45 ? '#fbbf24' : '#f87171' }}>{p.confidence}</div></div>
                       </div>
                     </div>
+                    {(p.timeframe || p.marketCapM || p.liquidity) && <div className="text-[11px] text-slate-500 mt-1">{[p.timeframe && `horizon ${p.timeframe}`, p.marketCapM && `cap $${p.marketCapM >= 1000 ? (p.marketCapM / 1000).toFixed(1) + 'B' : Math.round(p.marketCapM) + 'M'}`, p.liquidity && `liquidity ${p.liquidity}`].filter(Boolean).join(' · ')}</div>}
                     <p className="text-sm text-slate-300 mt-2 whitespace-pre-wrap">{p.thesis}</p>
+                    {(p.setup || p.invalidation) && <div className="grid md:grid-cols-2 gap-3 mt-2 text-xs">
+                      {p.setup && <div><span className="text-violet-300 font-medium">Entry setup:</span> <span className="text-slate-400">{p.setup}</span></div>}
+                      {p.invalidation && <div><span className="text-rose-300 font-medium">Invalidation:</span> <span className="text-slate-400">{p.invalidation}</span></div>}
+                    </div>}
                     <div className="grid md:grid-cols-2 gap-3 mt-3 text-xs">
                       {p.upsideCase && <div><span className="text-emerald-400 font-medium">Upside case:</span> <span className="text-slate-400">{p.upsideCase}</span></div>}
                       {p.catalysts && <div><span className="text-cyan-400 font-medium">Catalysts:</span> <span className="text-slate-400">{p.catalysts}</span></div>}
@@ -160,6 +166,14 @@ export default function ThinkingPage() {
               </div>
             </Card>
 
+            {!!st.memo && <Card title="Engine notes (its own memory)">
+              <p className="text-xs text-slate-300 whitespace-pre-wrap max-h-[360px] overflow-y-auto pr-1">{st.memo}</p>
+            </Card>}
+            {!!st.rejected?.length && <Card title={`Rejected names · ${st.rejected.length}`}>
+              <div className="space-y-1 max-h-[260px] overflow-y-auto pr-1">
+                {[...st.rejected].reverse().map(x => <div key={x.ticker} className="text-xs"><span className="text-slate-300 font-semibold">{x.ticker}</span> <span className="text-slate-500">{x.why}</span></div>)}
+              </div>
+            </Card>}
             {!!st.archive?.length && <Card title={`Answered questions · ${st.archive.length}`}>
               <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
                 {[...st.archive].reverse().slice(0, 40).map(x => (
