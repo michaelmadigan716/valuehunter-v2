@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import CodexBetaPanel, { BetaEvidence } from './CodexBetaPanel';
+import { betaView, betaComposite, resultKey } from '@/lib/codexBeta.mjs';
 import { computeTechnicalOpinion } from '@/lib/technicals';
 import { classifyTier, TIER_RULES } from '@/lib/tiers';
 import { AGENT_DEFS, DEFAULT_PLAYBOOKS, computeMarketMetrics, getAIAnalysis, getTechnicalAnalysis, getValuationAnalysis, getMomentumAnalysis, getBuyoutAnalysis, getLeadershipAnalysis, getPlaybookAnalysis } from '@/lib/scanAgents';
@@ -772,6 +774,21 @@ function formatMoney(amount) {
 
 export default function StockResearchApp() {
   const [stocks, setStocks] = useState([]);
+  const [dataSource, setDataSource] = useState('grok');
+  const dataSourceRef = useRef('grok');
+  const [betaResults, setBetaResults] = useState({});
+  useEffect(() => {
+    try { if (localStorage.getItem('valuehunter_data_source') === 'chatgpt') { dataSourceRef.current = 'chatgpt'; setDataSource('chatgpt'); } } catch {}
+  }, []);
+  const changeDataSource = source => {
+    dataSourceRef.current = source; setDataSource(source); setSelected(null);
+    try { localStorage.setItem('valuehunter_data_source', source); } catch {}
+  };
+  const betaBlocksGrok = () => {
+    if (dataSourceRef.current !== 'chatgpt') return false;
+    setError('ChatGPT Beta uses the beta queue below. Switch to Grok to run a paid Grok scan.');
+    return true;
+  };
   const [weights, setWeights] = useState({
     pricePosition: 30,
     insiderActivity: 30,
@@ -1255,6 +1272,7 @@ export default function StockResearchApp() {
   }, []);
 
   const enqueueJob = async (agentIds, tickers) => {
+    if (betaBlocksGrok()) return;
     try {
       const res = await fetch('/api/jobs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ws: workspaceRef.current, agentIds, tickers, model: workspaceRef.current === 'test' ? appSettingsRef.current.fastModel : grokModel, playbooks: playbooksRef.current }) });
       const d = await res.json();
@@ -1377,6 +1395,7 @@ export default function StockResearchApp() {
   // Runs each agent over the ticker list sequentially, checkpointing after
   // every stock so a page refresh (or deploy) can resume where it left off.
   const runAgentQueue = async (agentIds, tickers, completedMap = {}, opts = {}) => {
+    if (betaBlocksGrok()) return;
     const agents = AGENT_REGISTRY.filter(a => agentIds.includes(a.id));
     if (agents.length === 0 || tickers.length === 0) return;
     const model = opts.model || (workspaceRef.current === 'test' ? appSettingsRef.current.fastModel : grokModel);
@@ -1598,6 +1617,7 @@ export default function StockResearchApp() {
 
   // Separate Grok AI Analysis function - Insider Conviction focus
   const runGrokAnalysis = async (stocksInOrder) => {
+    if (betaBlocksGrok()) return;
     if (stocks.length === 0) return;
     
     setIsAnalyzingAI(true);
@@ -1635,6 +1655,7 @@ export default function StockResearchApp() {
 
   // Technical Analysis - Cup and Handle deep dive
   const runTechnicalAnalysis = async (stocksInOrder) => {
+    if (betaBlocksGrok()) return;
     if (stocks.length === 0) return;
     
     setIsAnalyzingTechnical(true);
@@ -1673,6 +1694,7 @@ export default function StockResearchApp() {
   // Upside Scan - Independent 8 Month Price Target Research
   // Explosive Growth Analysis - Singularity contract/demand potential
   const runExplosiveGrowthAnalysis = async (stocksInOrder) => {
+    if (betaBlocksGrok()) return;
     if (stocks.length === 0) return;
     
     setIsAnalyzingExplosive(true);
@@ -1710,6 +1732,7 @@ export default function StockResearchApp() {
 
   // Team Analysis - Management evaluation
   const runTeamAnalysis = async (stocksInOrder) => {
+    if (betaBlocksGrok()) return;
     if (stocks.length === 0) return;
     
     setIsAnalyzingTeam(true);
@@ -1747,6 +1770,7 @@ export default function StockResearchApp() {
 
   // Parabolic Continuation Analysis - for top gainers
   const runParabolicAnalysis = async (stocksInOrder) => {
+    if (betaBlocksGrok()) return;
     if (stocks.length === 0) return;
     
     setIsAnalyzingParabolic(true);
@@ -1784,6 +1808,7 @@ export default function StockResearchApp() {
 
   // Valuation Analysis - Under/Overvalued Assessment
   const runValuationAnalysis = async (stocksInOrder) => {
+    if (betaBlocksGrok()) return;
     if (stocks.length === 0) return;
     
     setIsAnalyzingValuation(true);
@@ -2101,6 +2126,7 @@ export default function StockResearchApp() {
 
   // Clear specific column data
   const clearColumnData = (columnType) => {
+    if (betaBlocksGrok()) return;
     setStocks(prev => prev.map(s => {
       switch (columnType) {
         case 'conviction':
@@ -2149,6 +2175,7 @@ export default function StockResearchApp() {
 
   // Batch scan for SINGULARITY SCORE (0-100) and category detection
   const runSingularityScan = async (stocksInOrder) => {
+    if (betaBlocksGrok()) return;
     if (isScanningSupplyChain || stocks.length === 0) return;
     
     setIsScanningSupplyChain(true);
@@ -2257,6 +2284,7 @@ Respond with ONLY a JSON array:
 
   // Run Oracle Analysis on filtered stocks
   const runOracleAnalysis = async (stockList) => {
+    if (betaBlocksGrok()) return;
     if (isRunningOracle || !stockList || stockList.length === 0) return;
     
     setIsRunningOracle(true);
@@ -2440,6 +2468,7 @@ Respond with ONLY a JSON array:
 
   // Full Spectrum Scan - runs all scans in sequence
   const runFullSpectrumScan = async () => {
+    if (betaBlocksGrok()) return;
     if (isScanning || isAnalyzingAI || isScanningSupplyChain) return;
     
     setShowFullSpectrumModal(false);
@@ -2764,7 +2793,10 @@ Respond with ONLY a JSON array:
     setStocks(p => calcScores(p, w, aiWeights));
   };
 
-  const sorted = [...stocks]
+  const viewStocks = dataSource === 'chatgpt'
+    ? stocks.map(s => { const view = betaView(s, betaResults[resultKey(workspace, s.ticker)]); return { ...view, compositeScore: betaComposite(view, weights, aiWeights, weightEnabled) }; })
+    : stocks;
+  const sorted = [...viewStocks]
     // Filter by top gainers (previous day change)
     .filter(s => !showTopGainers || (s.change >= topGainersThreshold))
     .filter(s => matchesCategory(s, sectorFilter))
@@ -2842,8 +2874,8 @@ Respond with ONLY a JSON array:
     return Math.max(scores.compute || 0, scores.energy || 0, scores.robotics || 0, scores.agi_interface || 0);
   };
 
-  const stocksWithSingularity = stocks.filter(s => getMaxSingularity(s) >= 7).length;
-  const stocksWithOracle = stocks.filter(s => s.prediction).length;
+  const stocksWithSingularity = viewStocks.filter(s => getMaxSingularity(s) >= 7).length;
+  const stocksWithOracle = viewStocks.filter(s => s.prediction).length;
 
   const StatusIcon = ({ s }) => {
     if (s === 'running') return <RefreshCw className="w-4 h-4 text-amber-400 animate-spin" />;
@@ -2878,7 +2910,7 @@ Respond with ONLY a JSON array:
   };
 
   const progressPct = scanProgress.total > 0 ? (scanProgress.current / scanProgress.total) * 100 : 0;
-  const stocksWithAI = stocks.filter(s => s.aiAnalysis).length;
+  const stocksWithAI = viewStocks.filter(s => dataSource === 'chatgpt' ? s.betaResult : s.aiAnalysis).length;
 
   return (
     <div className="min-h-screen text-slate-100" style={{ fontFamily: "system-ui, sans-serif", background: '#0a0e17' }}>
@@ -3588,6 +3620,7 @@ Respond with ONLY a JSON array:
       {/* Sessions Panel */}
 
       <div className="max-w-[1800px] mx-auto px-6 py-6 min-h-screen">
+        <CodexBetaPanel source={dataSource} onSource={changeDataSource} workspace={workspace} onResults={setBetaResults} />
         {error && <div className="mb-4 p-4 rounded-xl border flex items-center gap-3" style={{ background: 'rgba(239,68,68,0.1)', borderColor: 'rgba(239,68,68,0.3)' }}><AlertCircle className="w-5 h-5 text-red-400" /><p className="text-sm text-red-300 flex-1">{error}</p><button onClick={() => setError(null)} className="text-red-400"><X className="w-4 h-4" /></button></div>}
         {resumeBanner && <div className="mb-4 p-4 rounded-xl border flex items-center gap-3" style={{ background: 'rgba(245,158,11,0.1)', borderColor: 'rgba(245,158,11,0.3)' }}><RefreshCw className="w-5 h-5 text-amber-400 animate-spin" /><p className="text-sm text-amber-300 flex-1">{resumeBanner}</p><button onClick={() => { if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current); clearCheckpoint(); setResumeBanner(null); }} className="px-3 py-1 rounded-lg text-xs border text-amber-400" style={{ borderColor: 'rgba(245,158,11,0.4)' }}>Cancel</button></div>}
 
@@ -4377,12 +4410,13 @@ Respond with ONLY a JSON array:
                           <div className="mono text-[10px] font-semibold" style={{ color: s.fromLow < 20 ? '#34d399' : s.fromLow < 50 ? '#fbbf24' : '#f87171' }}>{s.fromLow?.toFixed(1)}%</div>
                         </div>
                         </>)}
-                        <div className="w-14"><div className="flex items-center justify-between mb-1"><span className="mono text-xs font-bold text-indigo-400">{s.compositeScore.toFixed(1)}</span></div><div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(30,41,59,0.5)' }}><div className="h-full rounded-full" style={{ width: `${s.compositeScore}%`, background: 'linear-gradient(90deg, #6366f1, #8b5cf6)' }} /></div></div>
+                        <div className="w-14"><div className="flex items-center justify-between mb-1"><span className="mono text-xs font-bold text-indigo-400" title={dataSource === 'chatgpt' ? 'Beta composite uses only available enabled scores. Missing evidence is excluded, not scored zero.' : undefined}>{s.compositeScore.toFixed(1)}</span></div><div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(30,41,59,0.5)' }}><div className="h-full rounded-full" style={{ width: `${s.compositeScore}%`, background: 'linear-gradient(90deg, #6366f1, #8b5cf6)' }} /></div></div>
                         <div className="w-6">{selected?.ticker === s.ticker ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}</div>
                       </div>
                       
                       {selected?.ticker === s.ticker && (
                         <div className="mt-4 pt-4 border-t border-slate-800/30">
+                          {dataSource === 'chatgpt' && <BetaEvidence result={s.betaResult} />}
                           {s.aiAnalysis && (
                             <div className="mb-4 p-4 rounded-xl border" style={{ background: 'rgba(16,185,129,0.08)', borderColor: 'rgba(16,185,129,0.3)' }}>
                               <h4 className="text-sm font-semibold text-emerald-400 mb-2 flex items-center gap-2">
@@ -4572,7 +4606,7 @@ Respond with ONLY a JSON array:
                             </div>
                           )}
                           
-                          {!s.aiAnalysis && !s.explosiveAnalysis && !s.teamAnalysis && !s.technicalAnalysis && !s.parabolicAnalysis && !s.valuationAnalysis && i < 10 && (
+                          {dataSource === 'grok' && !s.aiAnalysis && !s.explosiveAnalysis && !s.teamAnalysis && !s.technicalAnalysis && !s.parabolicAnalysis && !s.valuationAnalysis && i < 10 && (
                             <div className="mb-4 p-3 rounded-xl border" style={{ background: 'rgba(99,102,241,0.05)', borderColor: 'rgba(99,102,241,0.2)' }}>
                               <p className="text-sm text-slate-400 flex items-center gap-2"><Sparkles className="w-4 h-4 text-indigo-400" />Run AI scans (Conviction, C&H, Valuation, Momentum, Buyout, Leadership, Playbook) to analyze</p>
                             </div>
