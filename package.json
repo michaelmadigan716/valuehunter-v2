@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "prebuild": "rm -rf public/thinking && mkdir -p public/thinking && cp -R thinking/. public/thinking/"
   },
   "dependencies": {
     "lucide-react": "^0.562.0",
