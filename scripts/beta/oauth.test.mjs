@@ -27,9 +27,18 @@ test('OAuth binds code to owner login, redirect, audience and PKCE; rejects repl
       code_challenge_method: 'S256', code_challenge: createHash('sha256').update(verifier).digest('base64url'), state: 'fixture-state' });
     const page = await oauthRequest(new Request(`${ISSUER}/api/codex-beta/oauth/authorize?${params}`), 'authorize');
     assert.equal(page.status, 200);
+    assert.equal(page.headers.get('referrer-policy'), 'same-origin');
     assert.ok(page.headers.get('content-security-policy').includes(`form-action 'self' ${callback};`));
     const cookie = page.headers.get('set-cookie').split(';')[0];
     const flow = (await page.text()).match(/name="flow" value="([^"]+)"/)[1];
+    const secondTab = await oauthRequest(new Request(`${ISSUER}/api/codex-beta/oauth/authorize?${params}`, { headers: { cookie } }), 'authorize');
+    assert.equal(secondTab.headers.get('set-cookie').split(';')[0], cookie, 'opening another sign-in tab must not invalidate the first');
+    const expired = await post('authorize', new URLSearchParams({ flow: sign({ p: Object.fromEntries(params), nonce: cookie.split('=')[1] }, 'flow', -1), password: 'fixture' }), { origin: ISSUER, cookie });
+    assert.equal(expired.status, 400); assert.match(await expired.text(), /sign-in has expired/);
+    const noOrigin = await post('authorize', new URLSearchParams({ flow, password: 'fixture' }), { origin: 'null', cookie });
+    assert.equal(noOrigin.status, 403); assert.match(await noOrigin.text(), /browser could not verify/);
+    const incorrect = await post('authorize', new URLSearchParams({ flow, password: 'wrong' }), { origin: ISSUER, cookie });
+    assert.equal(incorrect.status, 401); assert.match(await incorrect.text(), /password was not recognized/);
     assert.equal((await post('authorize', new URLSearchParams({ flow, password: 'fixture' }), { origin: 'https://evil.example', cookie })).status, 403);
     const accepted = await post('authorize', new URLSearchParams({ flow, password: 'fixture' }), { origin: ISSUER, cookie });
     assert.equal(accepted.status, 303);
