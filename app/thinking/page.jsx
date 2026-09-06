@@ -45,7 +45,7 @@ export default function ThinkingPage() {
             <a href="/" className="px-3 py-1.5 rounded-lg text-xs font-medium border" style={{ background: 'rgba(30,41,59,0.5)', borderColor: 'rgba(51,65,85,0.5)', color: '#94a3b8' }}>← ValueHunter</a>
             <div>
               <h1 className="text-xl font-semibold flex items-center gap-2"><span className="text-cyan-400">◉</span> Always Thinking</h1>
-              <p className="text-xs text-slate-500">A Claude routine reasons about each enabled category {cfg.cadence || 'every 4 hours'}: it asks itself the best next questions, fans research out to parallel subagents, red-teams its own favorites, and updates this board. Uses your Max subscription, not xAI credits.</p>
+              <p className="text-xs text-slate-500">A Claude cloud routine (see claude.ai/code → Routines; each run also appears as a session in your claude.ai/code sidebar and the mobile app) reasons about each enabled category {cfg.cadence || 'every 4 hours'}: it asks itself the best next questions, fans research out to parallel subagents, red-teams its own favorites, and updates this board. Uses your Max subscription, not xAI credits.</p>
             </div>
           </div>
           <div className="flex items-center gap-3 shrink-0">
@@ -54,6 +54,7 @@ export default function ThinkingPage() {
               <div className="text-[11px] text-slate-500">{running ? <span className="text-cyan-400">thinking now…</span> : lastRun ? `last run ${fmtAgo(lastRun.endedAt)}` : 'no runs yet'}</div>
             </div>
             <Toggle on={!!cfg.engine?.enabled} onClick={() => post({ action: 'config', config: { engine: { enabled: !cfg.engine?.enabled } } })} />
+            <a href="https://claude.ai/code/routines/trig_01KagnxmcSaRRff53hJ8g5fs" target="_blank" rel="noreferrer" className="px-3 py-1.5 rounded-lg text-xs font-medium border" style={{ background: 'rgba(30,41,59,0.5)', borderColor: 'rgba(51,65,85,0.5)', color: '#94a3b8' }} title="The Claude cloud routine that does the thinking - schedule, past runs, live sessions">Cloud routine ↗</a>
           </div>
         </div>
 
