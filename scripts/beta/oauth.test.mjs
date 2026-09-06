@@ -27,6 +27,7 @@ test('OAuth binds code to owner login, redirect, audience and PKCE; rejects repl
       code_challenge_method: 'S256', code_challenge: createHash('sha256').update(verifier).digest('base64url'), state: 'fixture-state' });
     const page = await oauthRequest(new Request(`${ISSUER}/api/codex-beta/oauth/authorize?${params}`), 'authorize');
     assert.equal(page.status, 200);
+    assert.ok(page.headers.get('content-security-policy').includes(`form-action 'self' ${callback};`));
     const cookie = page.headers.get('set-cookie').split(';')[0];
     const flow = (await page.text()).match(/name="flow" value="([^"]+)"/)[1];
     assert.equal((await post('authorize', new URLSearchParams({ flow, password: 'fixture' }), { origin: 'https://evil.example', cookie })).status, 403);
