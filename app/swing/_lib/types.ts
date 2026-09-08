@@ -12,6 +12,7 @@ export interface Exec {
 }
 
 export interface Position {
+  provisional?: boolean;
   id: string;
   account: Account;
   symbol: string;
@@ -60,6 +61,7 @@ export interface Execution {
 }
 
 export interface VanguardTotals {
+  as_of?: string;
   investment_returns: number;
   market: number;
   income: number;
@@ -69,6 +71,8 @@ export interface VanguardTotals {
 }
 
 export interface Summary {
+  prices_label?: string;
+  cash_reconciliation_difference?: number;
   realized: number;
   realized_closed: number;
   realized_open: number;
@@ -125,6 +129,7 @@ export interface TaxEstimate {
 }
 
 export interface TradeData {
+  refresh_note?: string;
   generated: string;
   as_of: string;
   first_date: string;

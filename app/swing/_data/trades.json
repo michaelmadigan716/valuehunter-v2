@@ -1,44 +1,45 @@
 {
-"generated": "08/30/2026",
-"as_of": "08/28/2026",
+"generated": "09/08/2026",
+"as_of": "09/08/2026",
 "first_date": "05/15/2019",
 "accounts": [
 "Brokerage",
 "SEP-IRA"
 ],
 "summary": {
-"realized": 3903444.5,
-"realized_closed": 2679403.42,
-"realized_open": 1224624.66,
+"realized": 3915194.72,
+"realized_closed": 2667240.56,
+"realized_open": 1248537.74,
 "taxable_realized": 3879393.27,
-"unrealized": 5225499.66,
-"vanguard_unrealized": 5221873.02,
-"wash_deferred": -3626.64,
-"market_value": 10979891.8,
-"open_cost": 5754392.14,
-"income": 62286.02,
+"unrealized": 4947956.61,
+"vanguard_unrealized": null,
+"wash_deferred": null,
+"market_value": 12504485.55,
+"open_cost": 7556528.94,
+"income": 62292.03,
 "fees": 2202.43,
 "other": -3403.29,
 "deposits": 4300364.2,
 "withdrawals": 3795243.82,
 "net_deposits": 505120.38,
-"account_value": 9712642.15,
-"cash": -1267249.65,
-"ledger_cash": -1267249.65,
+"account_value": 9446848.77,
+"cash": -3057636.78,
+"ledger_cash": -3057630.22,
 "ledger_cash_by_account": {
-"Brokerage": -1269214.49,
-"SEP-IRA": 1964.84
+"Brokerage": -3065959.07,
+"SEP-IRA": 8328.85
 },
-"prices_as_of": "08/28/2026",
+"prices_as_of": "09/08/2026",
 "vanguard": {
-"investment_returns": 9191231.76,
-"market": 9128945.74,
-"income": 62286.02000000001,
+"investment_returns": 9255103.32,
+"market": 9192811.29,
+"income": 62292.03,
 "flows": 521410.39,
-"ending": 9712642.15,
-"since": "05/01/2019"
+"ending": 9776513.71,
+"since": "05/01/2019",
+"as_of": "09/04/2026"
 },
-"components_total": 9191230.18,
+"components_total": 8925443.36,
 "advisor": {
 "positions": 17,
 "value_in": 100539.86,
@@ -47,7 +48,9 @@
 "transferred": "03/31/2020",
 "liquidated": "04/01/2020 \u2013 04/20/2020"
 },
-"realized_trades": 3904028.08
+"realized_trades": 3915778.3,
+"prices_label": "09/08/2026 11:18 AM ET (delayed intraday)",
+"cash_reconciliation_difference": -6.56
 },
 "tax_estimate": {
 "years": [
@@ -13924,12 +13927,12 @@
 "price": 13.015
 }
 ],
-"last_price": 13.94,
-"market_value": 8648403.88,
-"unrealized": 4024603.41,
+"last_price": 13.37,
+"market_value": 8291672.73,
+"unrealized": 3667872.26,
 "category": "trade",
 "status": "open",
-"days": 365,
+"days": 376,
 "return_pct": null,
 "dividends": 0.0,
 "id": "Bro-IMMX-08282025"
@@ -16238,12 +16241,12 @@
 "price": 4.3962
 }
 ],
-"last_price": 11.35,
-"market_value": 888988.75,
-"unrealized": 584021.05,
+"last_price": 11.46,
+"market_value": 897604.5,
+"unrealized": 592636.8,
 "category": "trade",
 "status": "open",
-"days": 203,
+"days": 214,
 "return_pct": null,
 "dividends": 0.0,
 "id": "Bro-ABCL-02062026"
@@ -16291,12 +16294,12 @@
 "price": 2.9679
 }
 ],
-"last_price": 11.35,
-"market_value": 284510.45,
-"unrealized": 210115.04,
+"last_price": 11.46,
+"market_value": 287267.82,
+"unrealized": 212872.41,
 "category": "trade",
 "status": "open",
-"days": 203,
+"days": 214,
 "return_pct": null,
 "dividends": 0.0,
 "id": "SEP-ABCL-02062026"
@@ -17751,12 +17754,12 @@
 "price": 8.9492
 }
 ],
-"last_price": 13.94,
-"market_value": 1135942.72,
-"unrealized": 416118.98,
+"last_price": 13.37,
+"market_value": 1089087.12,
+"unrealized": 369263.38,
 "category": "trade",
 "status": "open",
-"days": 120,
+"days": 131,
 "return_pct": null,
 "dividends": 0.0,
 "id": "SEP-IMMX-04302026"
@@ -18862,14 +18865,14 @@
 "symbol": "SMXT",
 "name": "SOLARMAX TECHNOLOGY INC",
 "opened": "06/30/2026",
-"closed": null,
+"closed": "09/08/2026",
 "buys": 1,
-"sells": 0,
+"sells": 1,
 "qty_bought": 60606.0,
 "cost": 20606.04,
-"proceeds": 0.0,
+"proceeds": 12883.96,
 "fees": 0.0,
-"realized": 0.0,
+"realized": -7722.08,
 "tax_realized": 0.0,
 "max_qty": 60606.0,
 "execs": [
@@ -18887,27 +18890,33 @@
 "price": null,
 "amount": 0.0,
 "note": "60606 \u2192 5050"
+},
+{
+"date": "09/08/2026",
+"type": "Sell",
+"qty": -5050,
+"price": 2.55,
+"amount": 12883.96,
+"provisional": true,
+"note": "Executed; settlement 09/09/2026. Sale fees and lot P&L provisional.",
+"pnl": -7722.08,
+"tax_pnl": null
 }
 ],
 "basis_known": true,
-"open_qty": 5050.0,
-"open_cost": 20606.04,
-"open_lots": [
-{
-"date": "06/30/2026",
-"qty": 5050.0,
-"price": 4.0804
-}
-],
+"open_qty": 0,
+"open_cost": 0,
+"open_lots": [],
 "last_price": 2.92,
-"market_value": 14746.0,
-"unrealized": -5860.04,
+"market_value": 0,
+"unrealized": 0,
 "category": "trade",
-"status": "open",
-"days": 59,
-"return_pct": null,
+"status": "closed",
+"days": 70,
+"return_pct": -37.47,
 "dividends": 0.0,
-"id": "Bro-SMXT-06302026"
+"id": "Bro-SMXT-06302026",
+"provisional": true
 },
 {
 "account": "Brokerage",
@@ -18955,14 +18964,14 @@
 "symbol": "SMXT",
 "name": "SOLARMAX TECHNOLOGY INC",
 "opened": "07/02/2026",
-"closed": null,
+"closed": "09/08/2026",
 "buys": 1,
-"sells": 0,
+"sells": 1,
 "qty_bought": 30000.0,
 "cost": 10798.78,
-"proceeds": 0.0,
+"proceeds": 6358.0,
 "fees": 0.0,
-"realized": 0.0,
+"realized": -4440.78,
 "tax_realized": 0.0,
 "max_qty": 30000.0,
 "execs": [
@@ -18980,27 +18989,33 @@
 "price": null,
 "amount": 0.0,
 "note": "30000 \u2192 2500"
+},
+{
+"date": "09/08/2026",
+"type": "Sell",
+"qty": -2500,
+"price": 2.54,
+"amount": 6358.0,
+"provisional": true,
+"note": "Executed; settlement 09/09/2026. Sale fees and lot P&L provisional.",
+"pnl": -4440.78,
+"tax_pnl": null
 }
 ],
 "basis_known": true,
-"open_qty": 2500.0,
-"open_cost": 10798.78,
-"open_lots": [
-{
-"date": "07/02/2026",
-"qty": 2500.0,
-"price": 4.3195
-}
-],
+"open_qty": 0,
+"open_cost": 0,
+"open_lots": [],
 "last_price": 2.92,
-"market_value": 7300.0,
-"unrealized": -3498.78,
+"market_value": 0,
+"unrealized": 0,
 "category": "trade",
-"status": "open",
-"days": 57,
-"return_pct": null,
+"status": "closed",
+"days": 68,
+"return_pct": -41.12,
 "dividends": 0.0,
-"id": "SEP-SMXT-07022026"
+"id": "SEP-SMXT-07022026",
+"provisional": true
 },
 {
 "account": "Brokerage",
@@ -19042,6 +19057,362 @@
 "return_pct": 6.66,
 "dividends": 0.0,
 "id": "Bro-ASPI-07162026"
+},
+{
+"id": "Bro-ASPI-09012026",
+"account": "Brokerage",
+"symbol": "ASPI",
+"name": "ASP ISOTOPES INC",
+"opened": "09/01/2026",
+"closed": null,
+"status": "open",
+"buys": 3,
+"sells": 1,
+"qty_bought": 281871,
+"max_qty": 281871,
+"cost": 1105017.81,
+"proceeds": 298259.43,
+"fees": 0,
+"realized": 23913.08,
+"tax_realized": 0,
+"return_pct": null,
+"days": 7,
+"basis_known": true,
+"category": "trade",
+"dividends": 0,
+"open_qty": 212587,
+"open_cost": 830671.46,
+"open_lots": [
+{
+"date": "09/02/2026",
+"qty": 110716,
+"price": 3.959736
+},
+{
+"date": "09/01/2026",
+"qty": 62189,
+"price": 3.88
+},
+{
+"date": "09/01/2026",
+"qty": 39682,
+"price": 3.8045463938309565
+}
+],
+"execs": [
+{
+"date": "09/01/2026",
+"type": "Buy",
+"qty": 62189,
+"price": 3.88,
+"amount": -241293.32
+},
+{
+"date": "09/01/2026",
+"type": "Buy",
+"qty": 39682,
+"price": 3.8,
+"amount": -150972.01
+},
+{
+"date": "09/02/2026",
+"type": "Buy",
+"qty": 180000,
+"price": 3.96,
+"amount": -712752.48
+},
+{
+"date": "09/08/2026",
+"type": "Sell",
+"qty": -69284,
+"price": 4.3,
+"amount": 298259.43,
+"provisional": true,
+"note": "Executed; settlement 09/09/2026. Sale fees and lot P&L provisional.",
+"pnl": 23913.08,
+"tax_pnl": null
+}
+],
+"provisional": true,
+"last_price": 4.37,
+"market_value": 928388.69,
+"unrealized": 97717.23
+},
+{
+"id": "Bro-IREN-09082026",
+"account": "Brokerage",
+"symbol": "IREN",
+"name": "IREN LTD",
+"opened": "09/08/2026",
+"closed": null,
+"status": "open",
+"buys": 1,
+"sells": 0,
+"qty_bought": 5232,
+"max_qty": 5232,
+"cost": 250507.64,
+"proceeds": 0,
+"fees": 0,
+"realized": 0,
+"tax_realized": 0,
+"return_pct": null,
+"days": 0,
+"basis_known": true,
+"category": "trade",
+"dividends": 0,
+"open_qty": 5232,
+"open_cost": 250507.64,
+"open_lots": [
+{
+"date": "09/08/2026",
+"qty": 5232,
+"price": 47.8799006116208
+}
+],
+"execs": [
+{
+"date": "09/08/2026",
+"type": "Buy",
+"qty": 5232,
+"price": 47.88,
+"amount": -250507.64,
+"provisional": true,
+"note": "Executed; settlement 09/09/2026. Sale fees and lot P&L provisional."
+}
+],
+"last_price": 48.43,
+"market_value": 253359.6,
+"unrealized": 2851.96
+},
+{
+"id": "Bro-MRVL-09082026",
+"account": "Brokerage",
+"symbol": "MRVL",
+"name": "MARVELL TECHNOLOGY INC",
+"opened": "09/08/2026",
+"closed": null,
+"status": "open",
+"buys": 1,
+"sells": 0,
+"qty_bought": 438,
+"max_qty": 438,
+"cost": 99956.3,
+"proceeds": 0,
+"fees": 0,
+"realized": 0,
+"tax_realized": 0,
+"return_pct": null,
+"days": 0,
+"basis_known": true,
+"category": "trade",
+"dividends": 0,
+"open_qty": 438,
+"open_cost": 99956.3,
+"open_lots": [
+{
+"date": "09/08/2026",
+"qty": 438,
+"price": 228.2107305936073
+}
+],
+"execs": [
+{
+"date": "09/08/2026",
+"type": "Buy",
+"qty": 438,
+"price": 228.21,
+"amount": -99956.3,
+"provisional": true,
+"note": "Executed; settlement 09/09/2026. Sale fees and lot P&L provisional."
+}
+],
+"last_price": 231.34,
+"market_value": 101326.92,
+"unrealized": 1370.62
+},
+{
+"id": "Bro-VST-09082026",
+"account": "Brokerage",
+"symbol": "VST",
+"name": "VISTRA CORP",
+"opened": "09/08/2026",
+"closed": null,
+"status": "open",
+"buys": 1,
+"sells": 0,
+"qty_bought": 648,
+"max_qty": 648,
+"cost": 99643.2,
+"proceeds": 0,
+"fees": 0,
+"realized": 0,
+"tax_realized": 0,
+"return_pct": null,
+"days": 0,
+"basis_known": true,
+"category": "trade",
+"dividends": 0,
+"open_qty": 648,
+"open_cost": 99643.2,
+"open_lots": [
+{
+"date": "09/08/2026",
+"qty": 648,
+"price": 153.77037037037036
+}
+],
+"execs": [
+{
+"date": "09/08/2026",
+"type": "Buy",
+"qty": 648,
+"price": 153.77,
+"amount": -99643.2,
+"provisional": true,
+"note": "Executed; settlement 09/09/2026. Sale fees and lot P&L provisional."
+}
+],
+"last_price": 153.9,
+"market_value": 99727.2,
+"unrealized": 84.0
+},
+{
+"id": "Bro-NVDA-09082026",
+"account": "Brokerage",
+"symbol": "NVDA",
+"name": "NVIDIA CORP",
+"opened": "09/08/2026",
+"closed": null,
+"status": "open",
+"buys": 1,
+"sells": 0,
+"qty_bought": 660,
+"max_qty": 660,
+"cost": 149958.6,
+"proceeds": 0,
+"fees": 0,
+"realized": 0,
+"tax_realized": 0,
+"return_pct": null,
+"days": 0,
+"basis_known": true,
+"category": "trade",
+"dividends": 0,
+"open_qty": 660,
+"open_cost": 149958.6,
+"open_lots": [
+{
+"date": "09/08/2026",
+"qty": 660,
+"price": 227.21
+}
+],
+"execs": [
+{
+"date": "09/08/2026",
+"type": "Buy",
+"qty": 660,
+"price": 227.21,
+"amount": -149958.6,
+"provisional": true,
+"note": "Executed; settlement 09/09/2026. Sale fees and lot P&L provisional."
+}
+],
+"last_price": 227.54,
+"market_value": 150176.33,
+"unrealized": 217.73
+},
+{
+"id": "Bro-SNDK-09082026",
+"account": "Brokerage",
+"symbol": "SNDK",
+"name": "SANDISK CORP",
+"opened": "09/08/2026",
+"closed": null,
+"status": "open",
+"buys": 1,
+"sells": 0,
+"qty_bought": 112,
+"max_qty": 112,
+"cost": 199636.42,
+"proceeds": 0,
+"fees": 0,
+"realized": 0,
+"tax_realized": 0,
+"return_pct": null,
+"days": 0,
+"basis_known": true,
+"category": "trade",
+"dividends": 0,
+"open_qty": 112,
+"open_cost": 199636.42,
+"open_lots": [
+{
+"date": "09/08/2026",
+"qty": 112,
+"price": 1782.4680357142859
+}
+],
+"execs": [
+{
+"date": "09/08/2026",
+"type": "Buy",
+"qty": 112,
+"price": 1782.47,
+"amount": -199636.42,
+"provisional": true,
+"note": "Executed; settlement 09/09/2026. Sale fees and lot P&L provisional."
+}
+],
+"last_price": 1793.72,
+"market_value": 200896.64,
+"unrealized": 1260.22
+},
+{
+"id": "Bro-MU-09082026",
+"account": "Brokerage",
+"symbol": "MU",
+"name": "MICRON TECHNOLOGY INC",
+"opened": "09/08/2026",
+"closed": null,
+"status": "open",
+"buys": 1,
+"sells": 0,
+"qty_bought": 200,
+"max_qty": 200,
+"cost": 203168.0,
+"proceeds": 0,
+"fees": 0,
+"realized": 0,
+"tax_realized": 0,
+"return_pct": null,
+"days": 0,
+"basis_known": true,
+"category": "trade",
+"dividends": 0,
+"open_qty": 200,
+"open_cost": 203168.0,
+"open_lots": [
+{
+"date": "09/08/2026",
+"qty": 200,
+"price": 1015.84
+}
+],
+"execs": [
+{
+"date": "09/08/2026",
+"type": "Buy",
+"qty": 200,
+"price": 1015.84,
+"amount": -203168.0,
+"provisional": true,
+"note": "Executed; settlement 09/09/2026. Sale fees and lot P&L provisional."
+}
+],
+"last_price": 1024.89,
+"market_value": 204978.0,
+"unrealized": 1810.0
 }
 ],
 "executions": [
@@ -37939,6 +38310,162 @@
 "fees": 0.0,
 "amount": -100189.47,
 "category": "trade"
+},
+{
+"date": "09/01/2026",
+"account": "Brokerage",
+"symbol": "ASPI",
+"type": "Buy",
+"qty": 62189,
+"price": 3.88,
+"amount": -241293.32,
+"fees": 0,
+"category": "trade"
+},
+{
+"date": "09/01/2026",
+"account": "Brokerage",
+"symbol": "ASPI",
+"type": "Buy",
+"qty": 39682,
+"price": 3.8,
+"amount": -150972.01,
+"fees": 0,
+"category": "trade"
+},
+{
+"date": "09/02/2026",
+"account": "Brokerage",
+"symbol": "ASPI",
+"type": "Buy",
+"qty": 180000,
+"price": 3.96,
+"amount": -712752.48,
+"fees": 0,
+"category": "trade"
+},
+{
+"date": "09/08/2026",
+"account": "Brokerage",
+"symbol": "IREN",
+"type": "Buy",
+"qty": 5232,
+"price": 47.88,
+"amount": -250507.64,
+"fees": 0,
+"category": "trade",
+"provisional": true,
+"note": "Executed; settlement 09/09/2026. Sale fees and lot P&L provisional."
+},
+{
+"date": "09/08/2026",
+"account": "Brokerage",
+"symbol": "MRVL",
+"type": "Buy",
+"qty": 438,
+"price": 228.21,
+"amount": -99956.3,
+"fees": 0,
+"category": "trade",
+"provisional": true,
+"note": "Executed; settlement 09/09/2026. Sale fees and lot P&L provisional."
+},
+{
+"date": "09/08/2026",
+"account": "Brokerage",
+"symbol": "VST",
+"type": "Buy",
+"qty": 648,
+"price": 153.77,
+"amount": -99643.2,
+"fees": 0,
+"category": "trade",
+"provisional": true,
+"note": "Executed; settlement 09/09/2026. Sale fees and lot P&L provisional."
+},
+{
+"date": "09/08/2026",
+"account": "Brokerage",
+"symbol": "NVDA",
+"type": "Buy",
+"qty": 660,
+"price": 227.21,
+"amount": -149958.6,
+"fees": 0,
+"category": "trade",
+"provisional": true,
+"note": "Executed; settlement 09/09/2026. Sale fees and lot P&L provisional."
+},
+{
+"date": "09/08/2026",
+"account": "Brokerage",
+"symbol": "SNDK",
+"type": "Buy",
+"qty": 112,
+"price": 1782.47,
+"amount": -199636.42,
+"fees": 0,
+"category": "trade",
+"provisional": true,
+"note": "Executed; settlement 09/09/2026. Sale fees and lot P&L provisional."
+},
+{
+"date": "09/08/2026",
+"account": "Brokerage",
+"symbol": "MU",
+"type": "Buy",
+"qty": 200,
+"price": 1015.84,
+"amount": -203168.0,
+"fees": 0,
+"category": "trade",
+"provisional": true,
+"note": "Executed; settlement 09/09/2026. Sale fees and lot P&L provisional."
+},
+{
+"date": "09/08/2026",
+"account": "Brokerage",
+"symbol": "ASPI",
+"type": "Sell",
+"qty": -69284,
+"price": 4.3,
+"amount": 298259.43,
+"fees": 0,
+"category": "trade",
+"provisional": true,
+"note": "Executed; settlement 09/09/2026. Sale fees and lot P&L provisional.",
+"pnl": 23913.08,
+"tax_pnl": null
+},
+{
+"date": "09/08/2026",
+"account": "SEP-IRA",
+"symbol": "SMXT",
+"type": "Sell",
+"qty": -2500,
+"price": 2.54,
+"amount": 6358.0,
+"fees": 0,
+"category": "trade",
+"provisional": true,
+"note": "Executed; settlement 09/09/2026. Sale fees and lot P&L provisional.",
+"pnl": -4440.78,
+"tax_pnl": null
+},
+{
+"date": "09/08/2026",
+"account": "Brokerage",
+"symbol": "SMXT",
+"type": "Sell",
+"qty": -5050,
+"price": 2.55,
+"amount": 12883.96,
+"fees": 0,
+"category": "trade",
+"provisional": true,
+"note": "Executed; settlement 09/09/2026. Sale fees and lot P&L provisional.",
+"pnl": -7722.08,
+"tax_pnl": null
 }
 ],
 "cashflows": [
@@ -38806,19 +39333,19 @@
 "total_gain": 2143861.07
 },
 "2026": {
-"realized": 2719513.79,
+"realized": 2731264.01,
 "taxable": 2723142.62,
 "disallowed": 588578.4,
-"closed": 61,
+"closed": 63,
 "wins": 21,
-"source": "Vanguard cost-basis report",
-"total_gain": 6531655.6
+"source": "Finalized Vanguard lots + provisional 09/08 executed sales (economic only)",
+"total_gain": 6595527.16
 }
 },
 "by_symbol": {
 "VTSAX": {
 "realized": 1904.45,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": 1904.45,
 "trades": 1,
 "wins": 1,
@@ -38828,7 +39355,7 @@
 },
 "QCOM": {
 "realized": 153.96,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": 153.96,
 "trades": 1,
 "wins": 1,
@@ -38838,7 +39365,7 @@
 },
 "VFIFX": {
 "realized": 4419.99,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": 4419.99,
 "trades": 1,
 "wins": 1,
@@ -38848,7 +39375,7 @@
 },
 "MGI": {
 "realized": 1099847.09,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": 1099847.09,
 "trades": 7,
 "wins": 4,
@@ -38858,7 +39385,7 @@
 },
 "SNAP": {
 "realized": 28170.92,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": 28170.92,
 "trades": 6,
 "wins": 2,
@@ -38868,7 +39395,7 @@
 },
 "PLNT": {
 "realized": -35.74,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -35.74,
 "trades": 1,
 "wins": 0,
@@ -38878,7 +39405,7 @@
 },
 "MTCH": {
 "realized": -4653.77,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -4653.77,
 "trades": 3,
 "wins": 1,
@@ -38888,7 +39415,7 @@
 },
 "MELI": {
 "realized": -132475.51,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -132475.51,
 "trades": 3,
 "wins": 0,
@@ -38898,7 +39425,7 @@
 },
 "PYPL": {
 "realized": -59227.51,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -59227.51,
 "trades": 2,
 "wins": 0,
@@ -38908,7 +39435,7 @@
 },
 "FSLY": {
 "realized": 521.87,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": 521.87,
 "trades": 2,
 "wins": 2,
@@ -38918,7 +39445,7 @@
 },
 "MEET": {
 "realized": 228302.75,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": 228302.75,
 "trades": 2,
 "wins": 2,
@@ -38928,7 +39455,7 @@
 },
 "RAD": {
 "realized": 13491.47,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": 13491.47,
 "trades": 2,
 "wins": 2,
@@ -38938,7 +39465,7 @@
 },
 "DPW": {
 "realized": 6066.7,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": 6066.7,
 "trades": 1,
 "wins": 1,
@@ -38948,7 +39475,7 @@
 },
 "ONCY": {
 "realized": -141.62,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -141.62,
 "trades": 1,
 "wins": 0,
@@ -38958,7 +39485,7 @@
 },
 "AMC": {
 "realized": 3849.48,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": 3849.48,
 "trades": 1,
 "wins": 1,
@@ -38968,7 +39495,7 @@
 },
 "TWTR": {
 "realized": 147.65,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": 147.65,
 "trades": 2,
 "wins": 2,
@@ -38978,7 +39505,7 @@
 },
 "MOMO": {
 "realized": -103638.17,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -103638.17,
 "trades": 6,
 "wins": 1,
@@ -38988,7 +39515,7 @@
 },
 "NCLH": {
 "realized": 9.5,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": 9.5,
 "trades": 2,
 "wins": 1,
@@ -38998,7 +39525,7 @@
 },
 "PMT": {
 "realized": 10144.74,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": 10144.74,
 "trades": 1,
 "wins": 1,
@@ -39008,7 +39535,7 @@
 },
 "DENN": {
 "realized": 101775.98,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": 101775.98,
 "trades": 1,
 "wins": 1,
@@ -39018,7 +39545,7 @@
 },
 "PISIX": {
 "realized": -130.85,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -130.85,
 "trades": 0,
 "wins": 0,
@@ -39028,7 +39555,7 @@
 },
 "PDGIX": {
 "realized": -465.5,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -465.5,
 "trades": 0,
 "wins": 0,
@@ -39038,7 +39565,7 @@
 },
 "IWF": {
 "realized": -159.3,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -159.3,
 "trades": 0,
 "wins": 0,
@@ -39048,7 +39575,7 @@
 },
 "PRWCX": {
 "realized": -364.04,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -364.04,
 "trades": 0,
 "wins": 0,
@@ -39058,7 +39585,7 @@
 },
 "PRJIX": {
 "realized": -271.22,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -271.22,
 "trades": 0,
 "wins": 0,
@@ -39068,7 +39595,7 @@
 },
 "IEI": {
 "realized": 0.93,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": 0.93,
 "trades": 0,
 "wins": 0,
@@ -39078,7 +39605,7 @@
 },
 "MANKX": {
 "realized": -92.33,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -92.33,
 "trades": 0,
 "wins": 0,
@@ -39088,7 +39615,7 @@
 },
 "SPDW": {
 "realized": -16.83,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -16.83,
 "trades": 0,
 "wins": 0,
@@ -39098,7 +39625,7 @@
 },
 "MAMTX": {
 "realized": -48.07,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -48.07,
 "trades": 0,
 "wins": 0,
@@ -39108,7 +39635,7 @@
 },
 "VTMFX": {
 "realized": -60.93,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -60.93,
 "trades": 0,
 "wins": 0,
@@ -39118,7 +39645,7 @@
 },
 "FNPFX": {
 "realized": -431.48,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -431.48,
 "trades": 0,
 "wins": 0,
@@ -39128,7 +39655,7 @@
 },
 "PONAX": {
 "realized": -55.93,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -55.93,
 "trades": 0,
 "wins": 0,
@@ -39138,7 +39665,7 @@
 },
 "DIN": {
 "realized": -30638.07,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -30638.07,
 "trades": 1,
 "wins": 0,
@@ -39148,7 +39675,7 @@
 },
 "CCL": {
 "realized": 9446.37,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": 9446.37,
 "trades": 1,
 "wins": 1,
@@ -39158,7 +39685,7 @@
 },
 "DNR": {
 "realized": -1649.18,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -1649.18,
 "trades": 1,
 "wins": 0,
@@ -39168,7 +39695,7 @@
 },
 "OXY": {
 "realized": 5080.44,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": 5080.44,
 "trades": 2,
 "wins": 1,
@@ -39178,7 +39705,7 @@
 },
 "DTMMX": {
 "realized": -50.6,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -50.6,
 "trades": 0,
 "wins": 0,
@@ -39188,7 +39715,7 @@
 },
 "DTMIX": {
 "realized": -25.3,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -25.3,
 "trades": 0,
 "wins": 0,
@@ -39198,7 +39725,7 @@
 },
 "WAPAX": {
 "realized": 260.05,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": 260.05,
 "trades": 0,
 "wins": 0,
@@ -39208,7 +39735,7 @@
 },
 "AAPL": {
 "realized": 673.11,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": 673.11,
 "trades": 1,
 "wins": 1,
@@ -39218,7 +39745,7 @@
 },
 "DFQTX": {
 "realized": 1327.82,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": 1327.82,
 "trades": 0,
 "wins": 0,
@@ -39228,7 +39755,7 @@
 },
 "WES": {
 "realized": 374.35,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": 374.35,
 "trades": 1,
 "wins": 1,
@@ -39238,7 +39765,7 @@
 },
 "SHOP": {
 "realized": 734.9,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": 734.9,
 "trades": 1,
 "wins": 1,
@@ -39248,7 +39775,7 @@
 },
 "STNG": {
 "realized": -174565.21,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -174565.21,
 "trades": 8,
 "wins": 4,
@@ -39258,7 +39785,7 @@
 },
 "SFL": {
 "realized": 10611.23,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": 10611.23,
 "trades": 4,
 "wins": 4,
@@ -39268,7 +39795,7 @@
 },
 "DNKN": {
 "realized": 9502.34,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": 9502.34,
 "trades": 1,
 "wins": 1,
@@ -39278,7 +39805,7 @@
 },
 "QSR": {
 "realized": 24021.22,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": 24021.22,
 "trades": 2,
 "wins": 2,
@@ -39288,7 +39815,7 @@
 },
 "PVL": {
 "realized": 4394.37,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": 4394.37,
 "trades": 1,
 "wins": 1,
@@ -39298,7 +39825,7 @@
 },
 "GRIN": {
 "realized": -5026.99,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -5026.99,
 "trades": 1,
 "wins": 0,
@@ -39308,7 +39835,7 @@
 },
 "DHT": {
 "realized": -2088.53,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -2088.53,
 "trades": 1,
 "wins": 0,
@@ -39318,7 +39845,7 @@
 },
 "EURN": {
 "realized": 640.04,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": 640.04,
 "trades": 1,
 "wins": 1,
@@ -39328,7 +39855,7 @@
 },
 "NAT": {
 "realized": 22884.88,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": 22884.88,
 "trades": 3,
 "wins": 3,
@@ -39338,7 +39865,7 @@
 },
 "EAT": {
 "realized": 59369.83,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": 59369.83,
 "trades": 1,
 "wins": 1,
@@ -39348,7 +39875,7 @@
 },
 "FRO": {
 "realized": -9451.04,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -9451.04,
 "trades": 1,
 "wins": 0,
@@ -39358,7 +39885,7 @@
 },
 "MPC": {
 "realized": -5530.58,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -5530.58,
 "trades": 1,
 "wins": 0,
@@ -39368,7 +39895,7 @@
 },
 "PXS": {
 "realized": -85491.62,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -85491.62,
 "trades": 5,
 "wins": 1,
@@ -39378,7 +39905,7 @@
 },
 "TRMD": {
 "realized": -16133.67,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -16133.67,
 "trades": 2,
 "wins": 0,
@@ -39388,7 +39915,7 @@
 },
 "BRK": {
 "realized": 96243.63,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": 96243.63,
 "trades": 7,
 "wins": 4,
@@ -39398,7 +39925,7 @@
 },
 "BB": {
 "realized": -17581.69,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -17581.69,
 "trades": 2,
 "wins": 0,
@@ -39408,7 +39935,7 @@
 },
 "BMBL": {
 "realized": -6636.4,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -6636.4,
 "trades": 3,
 "wins": 1,
@@ -39418,7 +39945,7 @@
 },
 "AMZN": {
 "realized": -752.86,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -752.86,
 "trades": 1,
 "wins": 0,
@@ -39428,7 +39955,7 @@
 },
 "HIMS": {
 "realized": -361119.41,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -361119.41,
 "trades": 5,
 "wins": 1,
@@ -39438,7 +39965,7 @@
 },
 "TCS": {
 "realized": -40869.95,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -40869.95,
 "trades": 1,
 "wins": 0,
@@ -39448,7 +39975,7 @@
 },
 "SE": {
 "realized": -4739.24,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -4739.24,
 "trades": 1,
 "wins": 0,
@@ -39458,7 +39985,7 @@
 },
 "CVNA": {
 "realized": 4675.46,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": 4675.46,
 "trades": 1,
 "wins": 1,
@@ -39468,7 +39995,7 @@
 },
 "META": {
 "realized": -202563.19,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -202563.19,
 "trades": 3,
 "wins": 1,
@@ -39478,7 +40005,7 @@
 },
 "VOO": {
 "realized": -17253.14,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -17253.14,
 "trades": 3,
 "wins": 0,
@@ -39488,7 +40015,7 @@
 },
 "O": {
 "realized": 416.1,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": 416.1,
 "trades": 1,
 "wins": 1,
@@ -39498,17 +40025,17 @@
 },
 "NVDA": {
 "realized": -27723.88,
-"unrealized": 0.0,
-"total": -27723.88,
+"unrealized": 217.73,
+"total": -27506.15,
 "trades": 4,
 "wins": 1,
 "losses": 3,
-"open": false,
+"open": true,
 "advisor": false
 },
 "TBLA": {
 "realized": 184588.25,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": 184588.25,
 "trades": 2,
 "wins": 2,
@@ -39518,7 +40045,7 @@
 },
 "TRUE": {
 "realized": 623251.55,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": 623251.55,
 "trades": 5,
 "wins": 5,
@@ -39528,7 +40055,7 @@
 },
 "PLL": {
 "realized": -12763.62,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -12763.62,
 "trades": 2,
 "wins": 0,
@@ -39538,7 +40065,7 @@
 },
 "INOD": {
 "realized": -37386.55,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -37386.55,
 "trades": 2,
 "wins": 0,
@@ -39548,7 +40075,7 @@
 },
 "APLD": {
 "realized": 23506.94,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": 23506.94,
 "trades": 4,
 "wins": 2,
@@ -39558,7 +40085,7 @@
 },
 "PUBM": {
 "realized": -12193.06,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -12193.06,
 "trades": 1,
 "wins": 0,
@@ -39568,7 +40095,7 @@
 },
 "OPEN": {
 "realized": 269019.21,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": 269019.21,
 "trades": 1,
 "wins": 1,
@@ -39578,7 +40105,7 @@
 },
 "OMEX": {
 "realized": -1577.2,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -1577.2,
 "trades": 1,
 "wins": 0,
@@ -39588,7 +40115,7 @@
 },
 "GOOG": {
 "realized": -31390.05,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -31390.05,
 "trades": 6,
 "wins": 2,
@@ -39598,8 +40125,8 @@
 },
 "ABCL": {
 "realized": 6120.95,
-"unrealized": 794136.09,
-"total": 800257.04,
+"unrealized": 805509.21,
+"total": 811630.16,
 "trades": 3,
 "wins": 2,
 "losses": 1,
@@ -39608,7 +40135,7 @@
 },
 "LUNR": {
 "realized": 5923.95,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": 5923.95,
 "trades": 1,
 "wins": 1,
@@ -39618,7 +40145,7 @@
 },
 "DNUT": {
 "realized": -9919.21,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -9919.21,
 "trades": 1,
 "wins": 0,
@@ -39628,7 +40155,7 @@
 },
 "AEO": {
 "realized": 6213.04,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": 6213.04,
 "trades": 1,
 "wins": 1,
@@ -39638,7 +40165,7 @@
 },
 "UNH": {
 "realized": -30289.49,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -30289.49,
 "trades": 2,
 "wins": 0,
@@ -39648,7 +40175,7 @@
 },
 "JBLU": {
 "realized": 448.51,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": 448.51,
 "trades": 1,
 "wins": 1,
@@ -39658,7 +40185,7 @@
 },
 "DMAC": {
 "realized": -1937.72,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -1937.72,
 "trades": 2,
 "wins": 1,
@@ -39668,7 +40195,7 @@
 },
 "CVM": {
 "realized": -5195.12,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -5195.12,
 "trades": 1,
 "wins": 0,
@@ -39678,7 +40205,7 @@
 },
 "TSSI": {
 "realized": -74087.57,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -74087.57,
 "trades": 4,
 "wins": 1,
@@ -39688,7 +40215,7 @@
 },
 "CTM": {
 "realized": -20572.27,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -20572.27,
 "trades": 1,
 "wins": 0,
@@ -39698,7 +40225,7 @@
 },
 "PTLO": {
 "realized": -8353.46,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -8353.46,
 "trades": 1,
 "wins": 0,
@@ -39708,7 +40235,7 @@
 },
 "ABP": {
 "realized": -864.03,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -864.03,
 "trades": 1,
 "wins": 0,
@@ -39718,7 +40245,7 @@
 },
 "AGL": {
 "realized": 1471228.38,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": 1471228.38,
 "trades": 9,
 "wins": 5,
@@ -39728,7 +40255,7 @@
 },
 "VNDA": {
 "realized": 10415.93,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": 10415.93,
 "trades": 2,
 "wins": 2,
@@ -39738,7 +40265,7 @@
 },
 "NVNI": {
 "realized": -21183.57,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -21183.57,
 "trades": 4,
 "wins": 0,
@@ -39748,7 +40275,7 @@
 },
 "RVSN": {
 "realized": -34620.53,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -34620.53,
 "trades": 2,
 "wins": 0,
@@ -39758,8 +40285,8 @@
 },
 "IMMX": {
 "realized": 1632318.4,
-"unrealized": 4440722.39,
-"total": 6073040.79,
+"unrealized": 4037135.64,
+"total": 5669454.04,
 "trades": 1,
 "wins": 1,
 "losses": 0,
@@ -39768,7 +40295,7 @@
 },
 "CRNT": {
 "realized": -7854.65,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -7854.65,
 "trades": 2,
 "wins": 0,
@@ -39777,18 +40304,18 @@
 "advisor": false
 },
 "ASPI": {
-"realized": -468007.59,
-"unrealized": 0.0,
-"total": -468007.59,
+"realized": -444094.51,
+"unrealized": 97717.23,
+"total": -346377.28,
 "trades": 11,
 "wins": 3,
 "losses": 8,
-"open": false,
+"open": true,
 "advisor": false
 },
 "POET": {
 "realized": -3917.0,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -3917.0,
 "trades": 1,
 "wins": 0,
@@ -39798,7 +40325,7 @@
 },
 "FN": {
 "realized": 1948.5,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": 1948.5,
 "trades": 1,
 "wins": 1,
@@ -39808,7 +40335,7 @@
 },
 "MRAM": {
 "realized": 172128.21,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": 172128.21,
 "trades": 3,
 "wins": 2,
@@ -39818,7 +40345,7 @@
 },
 "CLS": {
 "realized": -708.07,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -708.07,
 "trades": 1,
 "wins": 0,
@@ -39828,7 +40355,7 @@
 },
 "LITE": {
 "realized": -10675.61,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -10675.61,
 "trades": 1,
 "wins": 0,
@@ -39837,18 +40364,18 @@
 "advisor": false
 },
 "SMXT": {
-"realized": -158763.64,
-"unrealized": -9358.82,
-"total": -168122.46,
-"trades": 2,
+"realized": -170926.5,
+"unrealized": 0,
+"total": -170926.5,
+"trades": 4,
 "wins": 0,
-"losses": 2,
-"open": true,
+"losses": 4,
+"open": false,
 "advisor": false
 },
 "SLV": {
 "realized": -21957.29,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -21957.29,
 "trades": 2,
 "wins": 0,
@@ -39858,7 +40385,7 @@
 },
 "COPX": {
 "realized": -1864.43,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -1864.43,
 "trades": 1,
 "wins": 0,
@@ -39868,7 +40395,7 @@
 },
 "MAIA": {
 "realized": -17669.3,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -17669.3,
 "trades": 2,
 "wins": 0,
@@ -39878,7 +40405,7 @@
 },
 "GRAB": {
 "realized": -11864.13,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -11864.13,
 "trades": 2,
 "wins": 0,
@@ -39888,7 +40415,7 @@
 },
 "LLY": {
 "realized": -3628.25,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -3628.25,
 "trades": 2,
 "wins": 0,
@@ -39898,7 +40425,7 @@
 },
 "GLD": {
 "realized": -36323.21,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -36323.21,
 "trades": 1,
 "wins": 0,
@@ -39908,7 +40435,7 @@
 },
 "DARE": {
 "realized": -97456.21,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -97456.21,
 "trades": 1,
 "wins": 0,
@@ -39918,7 +40445,7 @@
 },
 "DUOL": {
 "realized": -168316.03,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -168316.03,
 "trades": 2,
 "wins": 0,
@@ -39928,17 +40455,17 @@
 },
 "MU": {
 "realized": 378661.07,
-"unrealized": 0.0,
-"total": 378661.07,
+"unrealized": 1810.0,
+"total": 380471.07,
 "trades": 4,
 "wins": 3,
 "losses": 1,
-"open": false,
+"open": true,
 "advisor": false
 },
 "BTDR": {
 "realized": -23556.58,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -23556.58,
 "trades": 1,
 "wins": 0,
@@ -39948,7 +40475,7 @@
 },
 "NOK": {
 "realized": -30846.14,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -30846.14,
 "trades": 1,
 "wins": 0,
@@ -39958,17 +40485,17 @@
 },
 "SNDK": {
 "realized": 47767.48,
-"unrealized": 0.0,
-"total": 47767.48,
+"unrealized": 1260.22,
+"total": 49027.7,
 "trades": 1,
 "wins": 1,
 "losses": 0,
-"open": false,
+"open": true,
 "advisor": false
 },
 "HIVE": {
 "realized": -20103.68,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": -20103.68,
 "trades": 2,
 "wins": 1,
@@ -39978,22 +40505,42 @@
 },
 "IREN": {
 "realized": -21545.8,
-"unrealized": 0.0,
-"total": -21545.8,
+"unrealized": 2851.96,
+"total": -18693.84,
 "trades": 1,
 "wins": 0,
 "losses": 1,
-"open": false,
+"open": true,
 "advisor": false
 },
 "TE": {
 "realized": 39990.92,
-"unrealized": 0.0,
+"unrealized": 0,
 "total": 39990.92,
 "trades": 1,
 "wins": 1,
 "losses": 0,
 "open": false,
+"advisor": false
+},
+"MRVL": {
+"realized": 0,
+"unrealized": 1370.62,
+"total": 1370.62,
+"trades": 0,
+"wins": 0,
+"losses": 0,
+"open": true,
+"advisor": false
+},
+"VST": {
+"realized": 0,
+"unrealized": 84.0,
+"total": 84.0,
+"trades": 0,
+"wins": 0,
+"losses": 0,
+"open": true,
 "advisor": false
 }
 },
@@ -40117,7 +40664,9 @@
 "BTDR": "BITDEER TECHNOLOGIES GROUP CL A",
 "TE": "T1 ENERGY INC",
 "HIVE": "HIVE DIGITAL TECHOLOGIES LTD",
-"IREN": "IREN LTD"
+"IREN": "IREN LTD",
+"MRVL": "MARVELL TECHNOLOGY INC",
+"VST": "VISTRA CORP"
 },
 "balance_history": [
 {
@@ -40905,13 +41454,26 @@
 },
 {
 "date": "2026-08-31",
-"value": 9712642.15,
-"net_deposits": 521410.39,
-"gain": 9191231.76,
 "month": "08/2026",
-"market": 4274311.7,
-"income": 64.93
+"market": 4350885.01,
+"income": 70.94,
+"gain": 9267811.08,
+"value": 9789221.47,
+"net_deposits": 521410.39
+},
+{
+"date": "2026-09-04",
+"month": "09/2026",
+"market": -12707.76,
+"income": 0,
+"gain": 9255103.32,
+"value": 9776513.71,
+"net_deposits": 521410.39
 }
 ],
-"warnings": []
+"warnings": [
+"Includes nine executed orders settling September 9. Today\u2019s sale P&L uses the stated FIFO/HIFO method and is provisional until final lot and fee records post. Tax figures remain finalized through 08/28/2026.",
+"Intraday broker cash differs from the execution ledger by $-6.56; unsettled sale fees are not finalized."
+],
+"refresh_note": "Includes nine executed orders settling September 9. Today\u2019s sale P&L uses the stated FIFO/HIFO method and is provisional until final lot and fee records post. Tax figures remain finalized through 08/28/2026."
 }

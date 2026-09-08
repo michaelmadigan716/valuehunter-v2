@@ -47,7 +47,7 @@ export default async function PositionPage({ params }: { params: Promise<{ id: s
           label={p.status === "open" ? "Realized so far" : "Realized P&L"}
           value={pnl(p.realized)}
           tone={p.realized >= 0 ? "gain" : "loss"}
-          sub={`${p.return_pct !== null ? `${pct(p.return_pct)} on cost` : ""}${p.tax_realized !== undefined && Math.abs(p.tax_realized - p.realized) > 1 ? ` · taxable ${pnl(p.tax_realized)}` : ""}`}
+          sub={`${p.return_pct !== null ? `${pct(p.return_pct)} on cost` : ""}${p.provisional ? " · provisional pending final lot records" : p.tax_realized !== undefined && Math.abs(p.tax_realized - p.realized) > 1 ? ` · taxable ${pnl(p.tax_realized)}` : ""}`}
         />
         <StatTile label="Total cost" value={money(p.cost)} sub={`${shares(p.qty_bought)} sh @ ${price(avgBuy)} avg`} />
         <StatTile label="Total proceeds" value={money(p.proceeds)} sub={soldQty ? `${shares(soldQty)} sh @ ${price(avgSell)} avg` : "no sells yet"} />

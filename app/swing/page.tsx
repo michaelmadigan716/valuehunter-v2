@@ -8,6 +8,7 @@ import { days, money, pct, pnl, pnlClass, shares } from "@/app/swing/_lib/format
 export default function Overview() {
   const sm = data.summary;
   const vg = sm.vanguard;
+  const priceLabel = sm.prices_label ?? `${sm.prices_as_of} close`;
   const stats = computeStats(closedPositions);
   const yearRows = Object.entries(data.by_year).map(([year, v]) => ({ year, ...v }));
   const cum = cumulativeSeries();
@@ -35,7 +36,7 @@ export default function Overview() {
         <h1 className="text-2xl font-semibold tracking-tight">Trading record</h1>
         <p className="text-sm text-ink-2 mt-1">
           Vanguard Brokerage + SEP-IRA · {data.first_date} to {data.as_of} · {data.executions.length.toLocaleString()} executions across{" "}
-          {data.positions.length} positions · reconciled to Vanguard&apos;s performance and cost-basis records
+          {data.positions.length} positions · updated from Vanguard holdings, executions and performance records
         </p>
       </section>
 
@@ -44,7 +45,7 @@ export default function Overview() {
           label="Investment returns (Vanguard)"
           value={pnl(vg.investment_returns)}
           tone={vg.investment_returns >= 0 ? "gain" : "loss"}
-          sub={`${money(vg.flows)} net money in → ${money(vg.ending)} · ${multiple.toFixed(1)}× on capital`}
+          sub={`${money(vg.flows)} net money in → ${money(vg.ending)} · ${multiple.toFixed(1)}× on capital · through ${vg.as_of ?? data.as_of}`}
         />
         <StatTile
           label="Realized P&L"
@@ -56,7 +57,7 @@ export default function Overview() {
           label="Unrealized (open)"
           value={pnl(sm.unrealized)}
           tone={sm.unrealized >= 0 ? "gain" : "loss"}
-          sub={`${money(sm.market_value)} market value · ${money(sm.open_cost)} cost · ${sm.prices_as_of} close`}
+          sub={`${money(sm.market_value)} market value · ${money(sm.open_cost)} cost · ${priceLabel}`}
         />
         <StatTile label="Closed positions" value={String(stats.closed)} sub={`${stats.wins} wins · ${stats.losses} losses`} />
       </section>
@@ -103,7 +104,7 @@ export default function Overview() {
         <section className="space-y-2">
           <div className="flex items-baseline justify-between">
             <h2 className="font-medium">Open positions</h2>
-            <span className="text-xs text-muted">Lots and prices as shown on Vanguard&apos;s Holdings page, {sm.prices_as_of} close</span>
+            <span className="text-xs text-muted">Vanguard holdings snapshot · {priceLabel}</span>
           </div>
           <div className="card overflow-x-auto">
             <table className="data">
@@ -150,7 +151,7 @@ export default function Overview() {
       <section className="card p-4 space-y-3">
         <div className="flex items-baseline justify-between">
           <h2 className="font-medium">How this ties to Vanguard</h2>
-          <span className="text-xs text-muted">as of {sm.prices_as_of} close</span>
+          <span className="text-xs text-muted">Holdings: {priceLabel} · performance through {vg.as_of ?? sm.prices_as_of}</span>
         </div>
         <div className="grid md:grid-cols-2 gap-6 text-sm">
           <div>
@@ -169,23 +170,24 @@ export default function Overview() {
             <div className="text-xs text-ink-2 uppercase tracking-wide mb-1">This site, from every transaction plus Vanguard&apos;s lot records</div>
             <table className="data">
               <tbody>
-                <tr><td>Realized on your trades (Vanguard&apos;s lots, original cost)</td><td className="num">{pnl(sm.realized_trades, true)}</td></tr>
+                <tr><td>Realized on your trades (includes labeled provisional sales)</td><td className="num">{pnl(sm.realized_trades, true)}</td></tr>
                 <tr><td>Realized on the advisor holdings liquidated Apr 2020</td><td className="num">{pnl(sm.advisor.realized, true)}</td></tr>
                 <tr><td>Unrealized on open lots</td><td className="num">{pnl(sm.unrealized, true)}</td></tr>
                 <tr><td>Dividends &amp; interest income</td><td className="num">{pnl(sm.income, true)}</td></tr>
                 <tr><td className="font-medium">Total</td><td className={`num font-medium ${pnlClass(sm.components_total)}`}>{pnl(sm.components_total, true)}</td></tr>
                 <tr><td>Ledger cash / margin balance (Vanguard: {money(sm.cash, true)})</td><td className="num">{money(sm.ledger_cash, true)}</td></tr>
-                <tr><td>Holdings × Vanguard prices + cash (Vanguard: {money(sm.account_value, true)})</td><td className="num">{money(sm.market_value + sm.ledger_cash, true)}</td></tr>
+                <tr><td>Vanguard holding values + broker cash</td><td className="num">{money(sm.market_value + sm.cash, true)}</td></tr>
+                {!!sm.cash_reconciliation_difference && <tr><td>Broker cash minus execution-ledger cash (unsettled)</td><td className="num">{pnl(sm.cash_reconciliation_difference, true)}</td></tr>}
               </tbody>
             </table>
           </div>
         </div>
         <p className="text-xs text-muted">
-          Every sale from 2020 on uses the exact lots Vanguard assigned (the ones on the 1099-B); 2019 sales predate Vanguard&apos;s cost-basis
+          Finalized sales from 2020 on use the lots Vanguard assigned; 2019 sales predate Vanguard&apos;s cost-basis
           report and are matched first-in-first-out. Lot costs are original purchase prices, so wash-sale basis adjustments — a tax-timing
-          effect — are left out here and shown in the tax view. Vanguard&apos;s Holdings page reports unrealized of{" "}
-          {money(sm.vanguard_unrealized ?? 0)}, {money(Math.abs(sm.wash_deferred ?? 0))} lower, because that much disallowed loss is currently
-          embedded in the basis of an open IMMX lot.
+          effect — are left out here and shown in the tax view. Today&apos;s executed sales are provisional until final lot and fee records post.
+          Performance and intraday holdings have different cutoff dates, so their totals will differ. Holding values use Vanguard&apos;s
+          displayed balances; its quoted prices are rounded. Broker unrealized totals for unsettled positions are not used as finalized cost-basis evidence.
         </p>
       </section>
 

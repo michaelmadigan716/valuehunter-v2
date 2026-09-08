@@ -1,0 +1,192 @@
+{
+  "checked_at": "2026-09-08",
+  "source": "Vanguard transaction history; all accounts, all holdings, all types, one month, hide sweeps OFF; footer 1\u201317 of 17",
+  "baseline_cutoff": "08/28/2026",
+  "old_overlap_rows_matched": 12,
+  "new_posted_rows_accounted_for": 5,
+  "new_trade_executions": 3,
+  "new_income": 6.01,
+  "settlement_reinvestment": -6.01,
+  "reinvestment_handling": "Settlement reinvestment retained here as evidence; not counted twice as portfolio cash flow, consistent with original builder.",
+  "today_unsettled_executions_separately_included": 9,
+  "missing_overlap_rows": 0,
+  "extra_overlap_rows": 0,
+  "historical_executions_preserved": 1524,
+  "limitations": [
+    "Current executed orders are provisional until settlement.",
+    "Broker cash differs from the execution ledger by -6.56; no fabricated balancing transaction.",
+    "This verifies the refresh boundary, not a new audit of all pre-existing historical records."
+  ],
+  "posted_rows": [
+    {
+      "date": "09/02/2026",
+      "symbol": "ASPI",
+      "account": "Brokerage",
+      "type": "Buy",
+      "quantity": "180000",
+      "price": "3.96",
+      "fees": "0",
+      "amount": "-712752.48"
+    },
+    {
+      "date": "09/01/2026",
+      "symbol": "ASPI",
+      "account": "Brokerage",
+      "type": "Buy",
+      "quantity": "39682",
+      "price": "3.80",
+      "fees": "0",
+      "amount": "-150972.01"
+    },
+    {
+      "date": "09/01/2026",
+      "symbol": "ASPI",
+      "account": "Brokerage",
+      "type": "Buy",
+      "quantity": "62189",
+      "price": "3.88",
+      "fees": "0",
+      "amount": "-241293.32"
+    },
+    {
+      "date": "08/31/2026",
+      "symbol": "VMFXX",
+      "account": "SEP-IRA",
+      "type": "Dividend",
+      "quantity": "",
+      "price": "",
+      "fees": "",
+      "amount": "6.01"
+    },
+    {
+      "date": "08/31/2026",
+      "symbol": "VMFXX",
+      "account": "SEP-IRA",
+      "type": "Reinvestment",
+      "quantity": "",
+      "price": "",
+      "fees": "",
+      "amount": "-6.01"
+    },
+    {
+      "date": "08/28/2026",
+      "symbol": "",
+      "account": "Brokerage",
+      "type": "Interest charge",
+      "quantity": "",
+      "price": "",
+      "fees": "",
+      "amount": "-3369.30"
+    },
+    {
+      "date": "08/20/2026",
+      "symbol": "IMMX",
+      "account": "Brokerage",
+      "type": "Buy",
+      "quantity": "7698",
+      "price": "13.02",
+      "fees": "0",
+      "amount": "-100189.47"
+    },
+    {
+      "date": "08/13/2026",
+      "symbol": "SMXT",
+      "account": "Brokerage",
+      "type": "Stock split",
+      "quantity": "-60606",
+      "price": "",
+      "fees": "",
+      "amount": "0"
+    },
+    {
+      "date": "08/13/2026",
+      "symbol": "SMXT",
+      "account": "SEP-IRA",
+      "type": "Stock split",
+      "quantity": "2500",
+      "price": "",
+      "fees": "",
+      "amount": "0"
+    },
+    {
+      "date": "08/13/2026",
+      "symbol": "SMXT",
+      "account": "Brokerage",
+      "type": "Corp Action (Cash in Lieu)",
+      "quantity": "",
+      "price": "",
+      "fees": "",
+      "amount": "2.19"
+    },
+    {
+      "date": "08/13/2026",
+      "symbol": "SMXT",
+      "account": "SEP-IRA",
+      "type": "Stock split",
+      "quantity": "-30000",
+      "price": "",
+      "fees": "",
+      "amount": "0"
+    },
+    {
+      "date": "08/13/2026",
+      "symbol": "SMXT",
+      "account": "Brokerage",
+      "type": "Stock split",
+      "quantity": "5050",
+      "price": "",
+      "fees": "",
+      "amount": "0"
+    },
+    {
+      "date": "08/10/2026",
+      "symbol": "IMMX",
+      "account": "Brokerage",
+      "type": "Buy",
+      "quantity": "50000",
+      "price": "10.10",
+      "fees": "0",
+      "amount": "-504943.60"
+    },
+    {
+      "date": "08/10/2026",
+      "symbol": "IMMX",
+      "account": "Brokerage",
+      "type": "Buy",
+      "quantity": "30000",
+      "price": "9.88",
+      "fees": "0",
+      "amount": "-296386.70"
+    },
+    {
+      "date": "08/10/2026",
+      "symbol": "",
+      "account": "Brokerage",
+      "type": "Transfer (Outgoing)",
+      "quantity": "",
+      "price": "",
+      "fees": "",
+      "amount": "-64.93"
+    },
+    {
+      "date": "08/10/2026",
+      "symbol": "",
+      "account": "Brokerage",
+      "type": "Transfer (incoming)",
+      "quantity": "",
+      "price": "",
+      "fees": "",
+      "amount": "64.93"
+    },
+    {
+      "date": "08/10/2026",
+      "symbol": "IMMX",
+      "account": "Brokerage",
+      "type": "Buy",
+      "quantity": "22000",
+      "price": "10.00",
+      "fees": "0",
+      "amount": "-219981.21"
+    }
+  ]
+}

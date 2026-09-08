@@ -1,0 +1,44 @@
+{
+  "baseline_as_of": "08/28/2026",
+  "as_of": "09/08/2026",
+  "holdings_at": "09/08/2026 11:18 AM ET (delayed intraday)",
+  "performance_as_of": "09/04/2026",
+  "tax_as_of": "08/28/2026",
+  "sources": ["Vanguard Holdings", "Vanguard Transaction history, all accounts, one month", "Vanguard Order status, executed order details", "Vanguard Performance, all accounts, all history"],
+  "accounts": {
+    "Brokerage": {"value": 8062165.12, "cash": -3065965.49},
+    "SEP-IRA": {"value": 1384683.65, "cash": 8328.71}
+  },
+  "holdings": [
+    {"account":"Brokerage","symbol":"ABCL","qty":78325,"price":11.46,"value":897604.50},
+    {"account":"Brokerage","symbol":"ASPI","qty":212587,"price":4.37,"value":928388.69},
+    {"account":"Brokerage","symbol":"IMMX","qty":620402,"price":13.37,"value":8291672.73},
+    {"account":"Brokerage","symbol":"IREN","qty":5232,"price":48.43,"value":253359.60},
+    {"account":"Brokerage","symbol":"MRVL","qty":438,"price":231.34,"value":101326.92},
+    {"account":"Brokerage","symbol":"MU","qty":200,"price":1024.89,"value":204978.00},
+    {"account":"Brokerage","symbol":"NVDA","qty":660,"price":227.54,"value":150176.33},
+    {"account":"Brokerage","symbol":"SNDK","qty":112,"price":1793.72,"value":200896.64},
+    {"account":"Brokerage","symbol":"VST","qty":648,"price":153.90,"value":99727.20},
+    {"account":"SEP-IRA","symbol":"ABCL","qty":25067,"price":11.46,"value":287267.82},
+    {"account":"SEP-IRA","symbol":"IMMX","qty":81488,"price":13.37,"value":1089087.12}
+  ],
+  "income": {"account":"SEP-IRA","date":"08/31/2026","symbol":"VMFXX","amount":6.01},
+  "executions": [
+    {"date":"09/01/2026","account":"Brokerage","symbol":"ASPI","name":"ASP ISOTOPES INC","type":"Buy","qty":62189,"price":3.88,"amount":-241293.32},
+    {"date":"09/01/2026","account":"Brokerage","symbol":"ASPI","name":"ASP ISOTOPES INC","type":"Buy","qty":39682,"price":3.80,"amount":-150972.01},
+    {"date":"09/02/2026","account":"Brokerage","symbol":"ASPI","name":"ASP ISOTOPES INC","type":"Buy","qty":180000,"price":3.96,"amount":-712752.48},
+    {"date":"09/08/2026","account":"Brokerage","symbol":"IREN","name":"IREN LTD","type":"Buy","qty":5232,"price":47.88,"amount":-250507.64,"provisional":true},
+    {"date":"09/08/2026","account":"Brokerage","symbol":"MRVL","name":"MARVELL TECHNOLOGY INC","type":"Buy","qty":438,"price":228.21,"amount":-99956.30,"provisional":true},
+    {"date":"09/08/2026","account":"Brokerage","symbol":"VST","name":"VISTRA CORP","type":"Buy","qty":648,"price":153.77,"amount":-99643.20,"provisional":true},
+    {"date":"09/08/2026","account":"Brokerage","symbol":"NVDA","name":"NVIDIA CORP","type":"Buy","qty":660,"price":227.21,"amount":-149958.60,"provisional":true},
+    {"date":"09/08/2026","account":"Brokerage","symbol":"SNDK","name":"SANDISK CORP","type":"Buy","qty":112,"price":1782.47,"amount":-199636.42,"provisional":true},
+    {"date":"09/08/2026","account":"Brokerage","symbol":"MU","name":"MICRON TECHNOLOGY INC","type":"Buy","qty":200,"price":1015.84,"amount":-203168.00,"provisional":true},
+    {"date":"09/08/2026","account":"Brokerage","symbol":"ASPI","name":"ASP ISOTOPES INC","type":"Sell","qty":-69284,"price":4.30,"amount":298259.43,"method":"HIFO","provisional":true},
+    {"date":"09/08/2026","account":"SEP-IRA","symbol":"SMXT","name":"SOLARMAX TECHNOLOGY INC","type":"Sell","qty":-2500,"price":2.54,"amount":6358.00,"method":"FIFO","provisional":true},
+    {"date":"09/08/2026","account":"Brokerage","symbol":"SMXT","name":"SOLARMAX TECHNOLOGY INC","type":"Sell","qty":-5050,"price":2.55,"amount":12883.96,"method":"FIFO","provisional":true}
+  ],
+  "performance_months": [
+    {"date":"2026-08-31","month":"08/2026","market":4350885.01,"income":70.94,"gain":9267811.08,"value":9789221.47,"net_deposits":521410.39},
+    {"date":"2026-09-04","month":"09/2026","market":-12707.76,"income":0,"gain":9255103.32,"value":9776513.71,"net_deposits":521410.39}
+  ]
+}
