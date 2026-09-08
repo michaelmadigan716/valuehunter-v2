@@ -1,3 +1,4 @@
+import { MarginRisk } from "@/app/swing/_components/MarginRisk";
 import Link from "next/link";
 import { StatTile } from "@/app/swing/_components/StatTile";
 import { PnlBySymbol, PnlByYear, TotalGainOverTime } from "@/app/swing/_components/Charts";
@@ -147,6 +148,8 @@ export default function Overview() {
           </div>
         </section>
       )}
+
+      <MarginRisk holdings={openPositions.filter(p => p.account === "Brokerage").map(p => { if (p.open_qty == null || p.market_value == null) throw new Error("Margin snapshot is missing holding quantities or values"); return {symbol:p.symbol,qty:p.open_qty,value:p.market_value}; })} asOf={priceLabel} />
 
       <section className="card p-4 space-y-3">
         <div className="flex items-baseline justify-between">

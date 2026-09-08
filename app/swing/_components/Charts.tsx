@@ -173,11 +173,13 @@ type GainRow = { date: string; value: number; net_deposits: number; gain: number
 
 /** Total gain over time = account value − cumulative net money in, from Vanguard balance history. */
 export function TotalGainOverTime({ rows, realized }: { rows: GainRow[]; realized: CumRow[] }) {
-  const data = rows.map((r) => ({ ...r, t: Date.parse(r.date) }));
-  const y0 = Number(rows[0]?.date.slice(0, 4) ?? 2019);
-  const y1 = Number(rows[rows.length - 1]?.date.slice(0, 4) ?? 2026);
-  const ticks: number[] = [];
-  for (let y = y0; y <= y1 + 1; y++) ticks.push(Date.UTC(y, 0, 1));
+  const [range, setRange] = useState<"1D" | "1Y" | "2Y" | "All">("1Y");
+  const all = rows.map((r) => ({ ...r, t: Date.parse(r.date) })).sort((a,b) => a.t-b.t);
+  const end = all.at(-1)?.t ?? 0;
+  const cutoff = new Date(end);
+  cutoff.setUTCFullYear(cutoff.getUTCFullYear() - (range === "2Y" ? 2 : 1));
+  const start = range === "All" ? all[0]?.t ?? end : cutoff.getTime();
+  const data = all.filter(r => r.t >= start);
   // realized series resampled onto the same timeline (step)
   const realizedAt = (t: number) => {
     let v = 0;
@@ -186,10 +188,16 @@ export function TotalGainOverTime({ rows, realized }: { rows: GainRow[]; realize
   };
   const merged = data.map((d) => ({ ...d, realized: realizedAt(d.t) }));
   return (
+    <div className="space-y-3">
+      <div role="group" aria-label="Total gain time range" className="flex flex-wrap gap-2">
+        {(["1D", "1Y", "2Y", "All"] as const).map(r => <button key={r} aria-pressed={range === r} className="chip" style={range === r ? {background:"var(--text)",color:"var(--surface)"} : {}} onClick={() => setRange(r)}>{r === "All" ? "All time" : r}</button>)}
+      </div>
+      {range === "1D" ? <div className="h-[260px] flex items-center justify-center text-sm text-ink-2 p-6 text-center" role="status">Intraday gain history is not available yet. The imported Vanguard performance record contains monthly observations, most recently {all.at(-1)?.date}. Choose 1Y, 2Y or All time to view recorded gains.</div> : <>
+      <p className="text-xs text-muted">{new Date(start).toLocaleDateString("en-US",{timeZone:"UTC"})} – {new Date(end).toLocaleDateString("en-US",{timeZone:"UTC"})} · cumulative gain since inception, zoomed to this range · monthly observations</p>
     <ResponsiveContainer width="100%" height={260}>
       <LineChart data={merged} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
         <CartesianGrid vertical={false} stroke="var(--grid)" />
-        <XAxis dataKey="t" type="number" domain={[ticks[0], ticks[ticks.length - 1]]} ticks={ticks} tick={axisStyle} axisLine={{ stroke: "var(--border)" }} tickLine={false} tickFormatter={(t: number) => String(new Date(t).getUTCFullYear())} />
+        <XAxis dataKey="t" type="number" domain={[start, end]} tickCount={5} tick={axisStyle} axisLine={{ stroke: "var(--border)" }} tickLine={false} tickFormatter={(t: number) => new Date(t).toLocaleDateString("en-US", {month: "short", year:"2-digit",timeZone:"UTC"})} />
         <YAxis tick={axisStyle} axisLine={false} tickLine={false} tickFormatter={(v) => compact(v)} width={64} />
         <ReferenceLine y={0} stroke="var(--text-3)" />
         <Tooltip
@@ -199,7 +207,7 @@ export function TotalGainOverTime({ rows, realized }: { rows: GainRow[]; realize
             const r = payload[0].payload as GainRow & { realized: number };
             return (
               <div className="viz-tip">
-                <div className="font-medium">End of {r.month}</div>
+                <div className="font-medium">As of {r.date}</div>
                 <div>Cumulative investment returns <span className={r.gain >= 0 ? "text-gain" : "text-loss"}>{pnl(r.gain)}</span></div>
                 <div className="text-ink-2">This month: {pnl(r.market + r.income)} · realized to date {pnl(r.realized)}</div>
                 <div className="text-ink-2">Balance {money(r.value)} · net money in {money(r.net_deposits)}</div>
@@ -207,9 +215,11 @@ export function TotalGainOverTime({ rows, realized }: { rows: GainRow[]; realize
             );
           }}
         />
-        <Line type="monotone" dataKey="gain" name="Total gain" stroke="var(--series-1)" strokeWidth={2} dot={false} activeDot={{ r: 5, stroke: "var(--surface)", strokeWidth: 2 }} isAnimationActive={false} />
+        <Line type="linear" dataKey="gain" name="Total gain" stroke="var(--series-1)" strokeWidth={2} dot={false} activeDot={{ r: 5, stroke: "var(--surface)", strokeWidth: 2 }} isAnimationActive={false} />
         <Line type="stepAfter" dataKey="realized" name="Realized" stroke="var(--series-2)" strokeWidth={2} dot={false} activeDot={{ r: 5, stroke: "var(--surface)", strokeWidth: 2 }} isAnimationActive={false} />
       </LineChart>
     </ResponsiveContainer>
+    </>}
+    </div>
   );
 }
