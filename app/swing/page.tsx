@@ -282,6 +282,7 @@ export default function Overview() {
                 {money(s.brk_taxable_after)}; estimated tax {money(s.est_total_after)} instead of{" "}
                 {money(s.est_total_after + s.saving)} — about <strong>{money(s.saving)} less</strong>.
                 Only counts if no {s.symbol} is bought in either account (including the SEP-IRA) for 30 days after the sale.
+                Uses Vanguard&apos;s basis, which ignores earlier SEP-IRA buys; counting those, the saving is closer to $121K–$141K (see notes below).
               </div>
             </div>
           ))}

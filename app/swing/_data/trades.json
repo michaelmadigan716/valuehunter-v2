@@ -162,8 +162,9 @@
 "ST/LT is split by each lot's actual holding period; wash-sale holding-period tacking can shift a small amount between buckets (net effect on the estimate is minimal)",
 "Ignores other income, deductions and estimated-payment timing \u2014 a rough planning number, not tax advice",
 "2026 taxable figures are Vanguard's realized gain/loss report through 11/12/2026: Brokerage +$2,158,794 net, all short-term, after Vanguard disallowed $2,156,944 of wash-sale losses (ASPI alone $1,775,255)",
-"Vanguard only applies wash-sale rules within one account. Buying ASPI in the SEP-IRA within 30 days of a Brokerage ASPI loss sale (Sept\u2013Nov 2026 overlaps) can permanently disallow part of that loss \u2014 not reflected in Vanguard's numbers; have a CPA check before filing",
-"The ASPI what-if uses Vanguard's 11/12 close and tax basis; the actual result depends on the sale price, and any ASPI purchase in either account within 30 days after the sale would defer or (in the IRA) permanently disallow the loss"
+"Vanguard only applies wash-sale rules within one account. A simulation of every ASPI trade (it reproduces Vanguard's Brokerage figures to the dollar) finds SEP-IRA ASPI buys within 30 days of Brokerage ASPI loss sales, mostly the 10/13 IRA buy vs the 11/05 sales, plus Sept 8/28/29 and late June/early July. About $327K\u2013$354K of 2026 losses are then permanently disallowed (~$6\u201312K in 2025). Estimated effect: 2026 Brokerage taxable gain ~$2.23\u20132.26M rather than $2.16M, and selling all Brokerage ASPI now would realize only ~$296K\u2013$345K of loss (\u2248$121\u2013141K less tax, not $233K). Have a CPA confirm before filing",
+"The ASPI what-if uses Vanguard's 11/12 close and tax basis; the actual result depends on the sale price, and any ASPI purchase in either account within 30 days after the sale would defer or (in the IRA) permanently disallow the loss",
+"Florida move date: the estimate assumes NY residency ended 06/30/2026. Brokerage sales in July netted \u2212$324K and there were none in August, so if the move was in late July or August, NY tax falls to ~$181K (from ~$210K). The date that counts is when you actually moved and changed domicile (Declaration of Domicile, lease and license dates are the evidence)"
 ],
 "as_of": "11/12/2026",
 "realized_rows": [
@@ -44238,6 +44239,46 @@
 "open": false,
 "advisor": false
 },
+"SLNH": {
+"realized": -9987.89,
+"unrealized": 0,
+"total": -9987.89,
+"trades": 2,
+"wins": 0,
+"losses": 2,
+"open": false,
+"advisor": false
+},
+"INTC": {
+"realized": -28935.66,
+"unrealized": 29003.7,
+"total": 68.04,
+"trades": 1,
+"wins": 0,
+"losses": 1,
+"open": true,
+"advisor": false
+},
+"TSM": {
+"realized": -2833.31,
+"unrealized": 0,
+"total": -2833.31,
+"trades": 2,
+"wins": 0,
+"losses": 2,
+"open": false,
+"advisor": false
+},
+"TWST": {
+"realized": -8566.23,
+"unrealized": 0,
+"total": -8566.23,
+"trades": 1,
+"wins": 0,
+"losses": 1,
+"open": false,
+"advisor": false
+},
 "MRVL": {
 "realized": 4154.64,
 "unrealized": 0,
@@ -44245,6 +44286,36 @@
 "trades": 1,
 "wins": 1,
 "losses": 0,
+"open": false,
+"advisor": false
+},
+"NAUT": {
+"realized": -1591.04,
+"unrealized": 0,
+"total": -1591.04,
+"trades": 2,
+"wins": 0,
+"losses": 2,
+"open": false,
+"advisor": false
+},
+"VST": {
+"realized": -6653.87,
+"unrealized": 0,
+"total": -6653.87,
+"trades": 2,
+"wins": 0,
+"losses": 2,
+"open": false,
+"advisor": false
+},
+"ARM": {
+"realized": -19012.68,
+"unrealized": 0,
+"total": -19012.68,
+"trades": 1,
+"wins": 0,
+"losses": 1,
 "open": false,
 "advisor": false
 },
@@ -44256,16 +44327,6 @@
 "wins": 0,
 "losses": 0,
 "open": true,
-"advisor": false
-},
-"MOD": {
-"realized": -256176.1,
-"unrealized": 0,
-"total": -256176.1,
-"trades": 4,
-"wins": 0,
-"losses": 4,
-"open": false,
 "advisor": false
 },
 "AAOI": {
@@ -44288,74 +44349,14 @@
 "open": false,
 "advisor": false
 },
-"TSM": {
-"realized": -2833.31,
+"MOD": {
+"realized": -256176.1,
 "unrealized": 0,
-"total": -2833.31,
-"trades": 2,
+"total": -256176.1,
+"trades": 4,
 "wins": 0,
-"losses": 2,
+"losses": 4,
 "open": false,
-"advisor": false
-},
-"ARM": {
-"realized": -19012.68,
-"unrealized": 0,
-"total": -19012.68,
-"trades": 1,
-"wins": 0,
-"losses": 1,
-"open": false,
-"advisor": false
-},
-"TWST": {
-"realized": -8566.23,
-"unrealized": 0,
-"total": -8566.23,
-"trades": 1,
-"wins": 0,
-"losses": 1,
-"open": false,
-"advisor": false
-},
-"SLNH": {
-"realized": -9987.89,
-"unrealized": 0,
-"total": -9987.89,
-"trades": 2,
-"wins": 0,
-"losses": 2,
-"open": false,
-"advisor": false
-},
-"VST": {
-"realized": -6653.87,
-"unrealized": 0,
-"total": -6653.87,
-"trades": 2,
-"wins": 0,
-"losses": 2,
-"open": false,
-"advisor": false
-},
-"NAUT": {
-"realized": -1591.04,
-"unrealized": 0,
-"total": -1591.04,
-"trades": 2,
-"wins": 0,
-"losses": 2,
-"open": false,
-"advisor": false
-},
-"INTC": {
-"realized": -28935.66,
-"unrealized": 29003.7,
-"total": 68.04,
-"trades": 1,
-"wins": 0,
-"losses": 1,
-"open": true,
 "advisor": false
 }
 },
