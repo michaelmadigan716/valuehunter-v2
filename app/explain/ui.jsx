@@ -1,7 +1,7 @@
 'use client';
-// Shared bits for the Stock Explainers pages.
+// Shared bits for the StockVids pages.
 export const C = { up: '#34d399', down: '#f87171', warn: '#fbbf24', cyan: '#22d3ee', mute: '#64748b', text: '#cbd5e1' };
-export const BRAND = 'Stock Explainers';
+export const BRAND = 'StockVids';
 
 export const ago = (ts) => { if (!ts) return ''; const m = Math.round((Date.now() - ts) / 60000); if (m < 60) return `${Math.max(1, m)}m ago`; const h = Math.round(m / 60); if (h < 48) return `${h}h ago`; return `${Math.round(h / 24)}d ago`; };
 export const cleanTicker = (t) => String(t || '').trim().toUpperCase().replace(/^\$/, '').replace(/[^A-Z0-9.\-]/g, '').slice(0, 10);

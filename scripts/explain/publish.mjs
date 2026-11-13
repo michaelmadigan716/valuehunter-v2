@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Publish research files to the Stock Explainers board.
+// Publish research files to the StockVids board.
 //   node scripts/explain/publish.mjs explain/stocks/MOD.json [more.json ...] [--site https://...]
 // The secret is read from EXPLAIN_SECRET / THINKING_SECRET (env or .env.local) and never printed.
 import fs from 'node:fs';

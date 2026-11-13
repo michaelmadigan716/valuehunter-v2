@@ -2927,7 +2927,7 @@ Respond with ONLY a JSON array:
               <p className="text-xs text-slate-500">Hidden Suppliers to AGI • Robotics • Infinite Energy</p>
             </div>
             <a href="/swing" className="ml-4 px-3 py-1.5 rounded-lg text-xs font-medium border" style={{ background: 'rgba(30,41,59,0.5)', borderColor: 'rgba(51,65,85,0.5)', color: '#94a3b8' }} title="Your trade history - positions, executions, realized P&L">Swing Trade Hunter ↗</a>
-            <a href="/explain" className="ml-2 px-3 py-1.5 rounded-lg text-xs font-medium border" style={{ background: 'rgba(52,211,153,0.08)', borderColor: 'rgba(52,211,153,0.35)', color: '#34d399' }} title="Stock Explainers - look up a stock and watch the researched explainer">▶ Explainers ↗</a>
+            <a href="/explain" className="ml-2 px-3 py-1.5 rounded-lg text-xs font-medium border" style={{ background: 'rgba(52,211,153,0.08)', borderColor: 'rgba(52,211,153,0.35)', color: '#34d399' }} title="StockVids - look up a stock and watch the researched explainer">▶ StockVids ↗</a>
             <a href="/thinking" className="ml-2 px-3 py-1.5 rounded-lg text-xs font-medium border" style={{ background: 'rgba(34,211,238,0.08)', borderColor: 'rgba(34,211,238,0.35)', color: '#22d3ee' }} title="Always Thinking - a Claude routine that keeps reasoning about your best plays every 2 hours">◉ Always Thinking ↗</a>
           </div>
           <div className="flex items-center gap-3 flex-wrap">

@@ -1,4 +1,4 @@
-// Stock Explainers: one research file per stock, written by Claude research
+// StockVids: one research file per stock, written by Claude research
 // sessions (subscription, not the API) and rendered at /explain.
 //
 // GET  /api/explain                 -> { stocks:[index rows, newest first], requests:[...] }

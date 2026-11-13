@@ -1,4 +1,4 @@
-# Stock Explainers: research harness
+# StockVids: research harness
 
 One research file per stock. A Claude session (Matt's subscription, never the paid API) researches a stock, writes `explain/stocks/<TICKER>.json`, and publishes it with `node scripts/explain/publish.mjs explain/stocks/<TICKER>.json --site <site>`. The page `/explain/<TICKER>` renders the file. The video pipeline (hope-video/v2) builds the video from the same file.
 
