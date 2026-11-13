@@ -120,12 +120,26 @@ export interface TaxYear {
   note: string;
 }
 
+export interface TaxScenario {
+  symbol: string;
+  qty: number;
+  basis: number;
+  value: number;
+  unrealized: number;
+  brk_taxable_after: number;
+  est_federal_after: number;
+  est_total_after: number;
+  saving: number;
+}
+
 export interface TaxEstimate {
   years: TaxYear[];
   total: number;
   fed_st: number;
   fed_lt: number;
   assumptions: string[];
+  as_of?: string;
+  scenarios?: TaxScenario[];
 }
 
 export interface TradeData {

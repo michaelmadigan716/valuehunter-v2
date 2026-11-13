@@ -3,6 +3,11 @@
 Usage: python3 apply_snapshot.py BASELINE_JSON UPDATE_JSON OUTPUT_JSON
 Finalized tax history is preserved. Unsettled sales use the order's stated lot
 method for provisional economic P&L; they never become finalized tax records.
+
+Updates may also carry posted fees, a list of income rows, margin-interest cash
+flows and a `tax` block of Vanguard realized-gain totals for one year (which then
+replaces that year's taxable figures). Partial sales without a stated method use
+the update's `default_methods` for that account, else FIFO.
 """
 import copy
 import json
@@ -19,7 +24,7 @@ def apply(base, update):
     for row in update['executions']:
         assert date(row['date']) > date(base['as_of']), 'Overlapping transaction'
         e = {k: row[k] for k in ('date', 'account', 'symbol', 'type', 'qty', 'price', 'amount')}
-        e.update(fees=0, category='trade')
+        e.update(fees=row.get('fees', 0), category='trade')
         if row.get('provisional'):
             e.update(provisional=True, note='Executed; settlement 09/09/2026. Sale fees and lot P&L provisional.')
         matches = [p for p in d['positions'] if p['account'] == e['account'] and p['symbol'] == e['symbol'] and p['status'] == 'open']
@@ -53,8 +58,9 @@ def apply(base, update):
                 cost = p['open_cost']
                 p['open_lots'] = []
             else:
-                assert row['method'] in ('FIFO', 'HIFO')
-                lots = sorted(p['open_lots'], key=lambda l: -l['price'] if row['method'] == 'HIFO' else date(l['date']))
+                method = row.get('method') or update.get('default_methods', {}).get(e['account'], 'FIFO')
+                assert method in ('FIFO', 'HIFO')
+                lots = sorted(p['open_lots'], key=lambda l: -l['price'] if method == 'HIFO' else date(l['date']))
                 remaining, cost = qty, 0
                 for lot in lots:
                     take = min(remaining, lot['qty'])
@@ -77,9 +83,14 @@ def apply(base, update):
                 p['return_pct'] = round(100*p['realized']/p['cost'], 2) if p['cost'] else None
         p['execs'].append({k: v for k, v in e.items() if k not in ('account', 'symbol', 'category', 'fees')})
         d['executions'].append(e)
-    income = update['income']
-    sm['income'] = round(sm['income'] + income['amount'], 2)
-    sm['ledger_cash_by_account'][income['account']] = round(sm['ledger_cash_by_account'][income['account']] + income['amount'], 2)
+    incomes = update['income'] if isinstance(update['income'], list) else [update['income']]
+    for income in incomes:
+        sm['income'] = round(sm['income'] + income['amount'], 2)
+        sm['ledger_cash_by_account'][income['account']] = round(sm['ledger_cash_by_account'][income['account']] + income['amount'], 2)
+    for flow in update.get('cash_flows', []):
+        sm['other'] = round(sm['other'] + flow['amount'], 2)
+        sm['ledger_cash_by_account'][flow['account']] = round(sm['ledger_cash_by_account'][flow['account']] + flow['amount'], 2)
+        d['cashflows'].append(flow)
     current = {(h['account'], h['symbol']): h for h in update['holdings']}
     openp = [p for p in d['positions'] if p['status'] == 'open']
     assert set(current) == {(p['account'], p['symbol']) for p in openp}, 'Holdings universe mismatch'
@@ -124,7 +135,9 @@ def apply(base, update):
         y.update(realized=round(sum(e['pnl'] for e in sales if e['date'].endswith(year)),2),
                  closed=len(yearclosed), wins=sum(p['realized']>0 for p in yearclosed),
                  total_gain=round(sum(r['market']+r['income'] for r in history if r['date'].startswith(year)),2))
-    d['by_year']['2026']['source'] = 'Finalized Vanguard lots + provisional 09/08 executed sales (economic only)'
+    tax = update.get('tax')
+    d['by_year']['2026']['source'] = ('Vanguard cost-basis report through ' + update['tax_as_of'] + ' (taxable); economic P&L from original lot costs'
+                                      if tax else 'Finalized Vanguard lots + provisional 09/08 executed sales (economic only)')
     for sym in {p['symbol'] for p in d['positions']} | set(d['by_symbol']):
         old = d['by_symbol'].get(sym, {})
         positions = [p for p in closed if p['symbol']==sym]
@@ -134,11 +147,48 @@ def apply(base, update):
             wins=sum(p['realized']>0 for p in positions),losses=sum(p['realized']<=0 for p in positions),
             open=any(p['symbol']==sym for p in openp),advisor=old.get('advisor',False))
     d.update(as_of=update['as_of'],generated=update['as_of'])
+    if tax:
+        apply_tax(d, base, tax)
+        d['refresh_note'] = update['refresh_note']
+        d['warnings'] = [update['refresh_note'], f"Broker cash differs from the execution ledger by ${sm['cash_reconciliation_difference']:.2f}."]
+        return d
     d['refresh_note'] = ('Includes nine executed orders settling September 9. Today’s sale P&L uses the stated FIFO/HIFO method and is provisional until final lot and fee records post. Tax figures remain finalized through '+update['tax_as_of']+'.')
     d['warnings'] = [d['refresh_note'], f"Intraday broker cash differs from the execution ledger by ${sm['cash_reconciliation_difference']:.2f}; unsettled sale fees are not finalized."]
     assert d['tax_estimate'] == base['tax_estimate'], 'Finalized tax estimates changed'
     assert all(e in d['executions'] for e in base['executions']), 'Historical execution lost'
     return d
+
+def apply_tax(d, base, tax):
+    """Replace one year's taxable figures with Vanguard's realized-gain report totals."""
+    year = tax['year']
+    y = d['by_year'][year]
+    old_taxable = y['taxable']
+    y['taxable'] = round(tax['brokerage_taxable'] + tax['sep_taxable'], 2)
+    y['disallowed'] = round(sum(r['disallowed'] for r in tax['rows']), 2)
+    d['summary']['taxable_realized'] = round(d['summary']['taxable_realized'] - old_taxable + y['taxable'], 2)
+    te = d['tax_estimate']
+    t = next(t for t in te['years'] if t['year'] == year)
+    brk = tax['brokerage_taxable']
+    # Same method as the original estimate: all 2026 lots are short-term; NY applies only to the Jan–Jun (pre-move)
+    # sales, which are unchanged; Florida has no income tax.
+    t.update(brk_taxable=brk, st=brk, lt=0.0, est_federal=round(brk * te['fed_st'], 2))
+    t['est_total'] = round(t['est_federal'] + t['est_ny'], 2)
+    te['total'] = round(sum(x['est_total'] for x in te['years']), 2)
+    te['as_of'] = tax.get('as_of', d['as_of'])
+    te['realized_rows'] = tax['rows']
+    for note in tax.get('extra_assumptions', []):
+        if note not in te['assumptions']:
+            te['assumptions'].append(note)
+    scen = []
+    for sym, b in tax.get('open_brokerage_tax_basis', {}).items():
+        new = round(brk + b['unrealized'], 2)
+        fed = round(new * te['fed_st'], 2)
+        scen.append(dict(symbol=sym, qty=b['qty'], basis=b['basis'], value=b['value'], unrealized=b['unrealized'],
+                         brk_taxable_after=new, est_federal_after=fed, est_total_after=round(fed + t['est_ny'], 2),
+                         saving=round(t['est_total'] - fed - t['est_ny'], 2)))
+    te['scenarios'] = scen
+    for e in base['executions']:
+        assert e in d['executions'], 'Historical execution lost'
 
 if __name__ == '__main__':
     base, update, output = sys.argv[1:]

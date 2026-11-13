@@ -1,0 +1,2195 @@
+{
+ "baseline_as_of": "08/28/2026",
+ "as_of": "11/12/2026",
+ "holdings_at": "11/12/2026 4:00 PM ET close",
+ "performance_as_of": "11/11/2026",
+ "tax_as_of": "11/12/2026",
+ "supersedes": "2026-09-08.json (provisional partial snapshot; every 08/29\u201311/12 transaction is re-imported here from the posted history)",
+ "sources": [
+  "Vanguard Holdings (11/12/2026 close)",
+  "Vanguard Transaction history, all accounts, 2026 year to date",
+  "Vanguard Cost basis, Realized gains/losses, 2026 year to date",
+  "Vanguard Cost basis, Unrealized gains/losses",
+  "Vanguard Performance details, all accounts"
+ ],
+ "accounts": {
+  "Brokerage": {
+   "value": 4437064.9,
+   "cash": -277393.98
+  },
+  "SEP-IRA": {
+   "value": 765623.18,
+   "cash": 5010.03
+  }
+ },
+ "holdings": [
+  {
+   "account": "Brokerage",
+   "symbol": "AAOI",
+   "qty": 4189,
+   "price": 52.85,
+   "value": 221388.65
+  },
+  {
+   "account": "Brokerage",
+   "symbol": "ABCL",
+   "qty": 78325,
+   "price": 11.62,
+   "value": 910136.5
+  },
+  {
+   "account": "Brokerage",
+   "symbol": "ASPI",
+   "qty": 645340,
+   "price": 1.87,
+   "value": 1206785.8
+  },
+  {
+   "account": "Brokerage",
+   "symbol": "BE",
+   "qty": 1179,
+   "price": 201.93,
+   "value": 238075.47
+  },
+  {
+   "account": "Brokerage",
+   "symbol": "IMMX",
+   "qty": 236578,
+   "price": 8.07,
+   "value": 1909184.46
+  },
+  {
+   "account": "Brokerage",
+   "symbol": "INTC",
+   "qty": 3740,
+   "price": 61.2,
+   "value": 228888.0
+  },
+  {
+   "account": "SEP-IRA",
+   "symbol": "ASPI",
+   "qty": 406745,
+   "price": 1.87,
+   "value": 760613.15
+  }
+ ],
+ "income": [
+  {
+   "date": "10/30/2026",
+   "account": "SEP-IRA",
+   "symbol": "VMFXX",
+   "amount": 12.27
+  },
+  {
+   "date": "10/16/2026",
+   "account": "Brokerage",
+   "symbol": "VMFXX",
+   "amount": 29.11
+  },
+  {
+   "date": "10/01/2026",
+   "account": "Brokerage",
+   "symbol": "NVDA",
+   "amount": 165.0
+  },
+  {
+   "date": "09/30/2026",
+   "account": "SEP-IRA",
+   "symbol": "VMFXX",
+   "amount": 336.88
+  },
+  {
+   "date": "09/15/2026",
+   "account": "Brokerage",
+   "symbol": "VMFXX",
+   "amount": 174.54
+  },
+  {
+   "date": "08/31/2026",
+   "account": "SEP-IRA",
+   "symbol": "VMFXX",
+   "amount": 6.01
+  }
+ ],
+ "cash_flows": [
+  {
+   "date": "10/29/2026",
+   "account": "Brokerage",
+   "type": "Margin interest",
+   "amount": -4376.96,
+   "name": "Margin interest charge"
+  },
+  {
+   "date": "09/29/2026",
+   "account": "Brokerage",
+   "type": "Margin interest",
+   "amount": -5876.11,
+   "name": "Margin interest charge"
+  }
+ ],
+ "executions": [
+  {
+   "date": "09/01/2026",
+   "account": "Brokerage",
+   "symbol": "ASPI",
+   "name": "ASP ISOTOPES INC",
+   "type": "Buy",
+   "qty": 62189.0,
+   "price": 3.88,
+   "fees": 0.0,
+   "amount": -241293.32
+  },
+  {
+   "date": "09/01/2026",
+   "account": "Brokerage",
+   "symbol": "ASPI",
+   "name": "ASP ISOTOPES INC",
+   "type": "Buy",
+   "qty": 39682.0,
+   "price": 3.8,
+   "fees": 0.0,
+   "amount": -150972.01
+  },
+  {
+   "date": "09/02/2026",
+   "account": "Brokerage",
+   "symbol": "ASPI",
+   "name": "ASP ISOTOPES INC",
+   "type": "Buy",
+   "qty": 180000.0,
+   "price": 3.96,
+   "fees": 0.0,
+   "amount": -712752.48
+  },
+  {
+   "date": "09/08/2026",
+   "account": "Brokerage",
+   "symbol": "MU",
+   "name": "MICRON TECHNOLOGY INC",
+   "type": "Buy",
+   "qty": 200.0,
+   "price": 1015.84,
+   "fees": 0.0,
+   "amount": -203168.0
+  },
+  {
+   "date": "09/08/2026",
+   "account": "SEP-IRA",
+   "symbol": "ASPI",
+   "name": "ASP ISOTOPES INC",
+   "type": "Buy",
+   "qty": 7618.0,
+   "price": 4.2,
+   "fees": 0.0,
+   "amount": -31959.36
+  },
+  {
+   "date": "09/08/2026",
+   "account": "SEP-IRA",
+   "symbol": "ASPI",
+   "name": "ASP ISOTOPES INC",
+   "type": "Buy",
+   "qty": 53000.0,
+   "price": 4.21,
+   "fees": 0.0,
+   "amount": -223335.82
+  },
+  {
+   "date": "09/08/2026",
+   "account": "Brokerage",
+   "symbol": "SNDK",
+   "name": "SANDISK CORP",
+   "type": "Buy",
+   "qty": 112.0,
+   "price": 1782.47,
+   "fees": 0.0,
+   "amount": -199636.42
+  },
+  {
+   "date": "09/08/2026",
+   "account": "Brokerage",
+   "symbol": "VST",
+   "name": "VISTRA CORP",
+   "type": "Buy",
+   "qty": 648.0,
+   "price": 153.77,
+   "fees": 0.0,
+   "amount": -99643.2
+  },
+  {
+   "date": "09/08/2026",
+   "account": "Brokerage",
+   "symbol": "IREN",
+   "name": "IREN LTD",
+   "type": "Buy",
+   "qty": 5232.0,
+   "price": 47.88,
+   "fees": 0.0,
+   "amount": -250507.64
+  },
+  {
+   "date": "09/08/2026",
+   "account": "Brokerage",
+   "symbol": "NVDA",
+   "name": "NVIDIA CORP",
+   "type": "Buy",
+   "qty": 660.0,
+   "price": 227.21,
+   "fees": 0.0,
+   "amount": -149958.6
+  },
+  {
+   "date": "09/08/2026",
+   "account": "Brokerage",
+   "symbol": "AVGO",
+   "name": "BROADCOM INC",
+   "type": "Buy",
+   "qty": 677.0,
+   "price": 368.82,
+   "fees": 0.0,
+   "amount": -249691.14
+  },
+  {
+   "date": "09/08/2026",
+   "account": "SEP-IRA",
+   "symbol": "VST",
+   "name": "VISTRA CORP",
+   "type": "Buy",
+   "qty": 1623.0,
+   "price": 153.96,
+   "fees": 0.0,
+   "amount": -249873.01
+  },
+  {
+   "date": "09/08/2026",
+   "account": "Brokerage",
+   "symbol": "MRVL",
+   "name": "MARVELL TECHNOLOGY INC",
+   "type": "Buy",
+   "qty": 438.0,
+   "price": 228.21,
+   "fees": 0.0,
+   "amount": -99956.3
+  },
+  {
+   "date": "09/08/2026",
+   "account": "Brokerage",
+   "symbol": "IMMX",
+   "name": "IMMIX BIOPHARMA INC",
+   "type": "Sell",
+   "qty": -37698.0,
+   "price": 13.28,
+   "fees": 10.31,
+   "amount": 500658.76
+  },
+  {
+   "date": "09/08/2026",
+   "account": "SEP-IRA",
+   "symbol": "IMMX",
+   "name": "IMMIX BIOPHARMA INC",
+   "type": "Sell",
+   "qty": -18968.0,
+   "price": 13.15,
+   "fees": 5.14,
+   "amount": 249433.42
+  },
+  {
+   "date": "09/08/2026",
+   "account": "Brokerage",
+   "symbol": "IMMX",
+   "name": "IMMIX BIOPHARMA INC",
+   "type": "Sell",
+   "qty": -50000.0,
+   "price": 13.2,
+   "fees": 13.6,
+   "amount": 660227.5
+  },
+  {
+   "date": "09/08/2026",
+   "account": "Brokerage",
+   "symbol": "SMXT",
+   "name": "SOLARMAX TECHNOLOGY INC",
+   "type": "Sell",
+   "qty": -5050.0,
+   "price": 2.55,
+   "fees": 0.27,
+   "amount": 12883.69
+  },
+  {
+   "date": "09/08/2026",
+   "account": "SEP-IRA",
+   "symbol": "IMMX",
+   "name": "IMMIX BIOPHARMA INC",
+   "type": "Sell",
+   "qty": -1882.0,
+   "price": 13.14,
+   "fees": 0.51,
+   "amount": 24729.17
+  },
+  {
+   "date": "09/08/2026",
+   "account": "SEP-IRA",
+   "symbol": "SMXT",
+   "name": "SOLARMAX TECHNOLOGY INC",
+   "type": "Sell",
+   "qty": -2500.0,
+   "price": 2.54,
+   "fees": 0.13,
+   "amount": 6357.87
+  },
+  {
+   "date": "09/08/2026",
+   "account": "Brokerage",
+   "symbol": "ASPI",
+   "name": "ASP ISOTOPES INC",
+   "type": "Sell",
+   "qty": -69284.0,
+   "price": 4.3,
+   "fees": 6.14,
+   "amount": 298253.29,
+   "method": "HIFO"
+  },
+  {
+   "date": "09/08/2026",
+   "account": "Brokerage",
+   "symbol": "IMMX",
+   "name": "IMMIX BIOPHARMA INC",
+   "type": "Sell",
+   "qty": -48262.0,
+   "price": 13.15,
+   "fees": 13.08,
+   "amount": 634810.74
+  },
+  {
+   "date": "09/08/2026",
+   "account": "SEP-IRA",
+   "symbol": "IMMX",
+   "name": "IMMIX BIOPHARMA INC",
+   "type": "Sell",
+   "qty": -17129.0,
+   "price": 13.08,
+   "fees": 4.62,
+   "amount": 224072.6
+  },
+  {
+   "date": "09/09/2026",
+   "account": "SEP-IRA",
+   "symbol": "TSM",
+   "name": "TAIWAN SEMICONDUCTOR MANUFACTURING CO LTD SPON ADR",
+   "type": "Buy",
+   "qty": 278.0,
+   "price": 434.23,
+   "fees": 0.0,
+   "amount": -120715.94
+  },
+  {
+   "date": "09/09/2026",
+   "account": "Brokerage",
+   "symbol": "GOOG",
+   "name": "ALPHABET INC CL C",
+   "type": "Buy",
+   "qty": 1525.0,
+   "price": 327.86,
+   "fees": 0.0,
+   "amount": -499986.5
+  },
+  {
+   "date": "09/09/2026",
+   "account": "Brokerage",
+   "symbol": "TSM",
+   "name": "TAIWAN SEMICONDUCTOR MANUFACTURING CO LTD SPON ADR",
+   "type": "Buy",
+   "qty": 345.0,
+   "price": 434.16,
+   "fees": 0.0,
+   "amount": -149783.48
+  },
+  {
+   "date": "09/09/2026",
+   "account": "SEP-IRA",
+   "symbol": "MU",
+   "name": "MICRON TECHNOLOGY INC",
+   "type": "Buy",
+   "qty": 97.0,
+   "price": 1023.28,
+   "fees": 0.0,
+   "amount": -99258.16
+  },
+  {
+   "date": "09/09/2026",
+   "account": "Brokerage",
+   "symbol": "MU",
+   "name": "MICRON TECHNOLOGY INC",
+   "type": "Buy",
+   "qty": 391.0,
+   "price": 1023.16,
+   "fees": 0.0,
+   "amount": -400055.52
+  },
+  {
+   "date": "09/09/2026",
+   "account": "Brokerage",
+   "symbol": "NAUT",
+   "name": "NAUTILUS BIOTECHNOLOGY INC",
+   "type": "Buy",
+   "qty": 98200.0,
+   "price": 1.02,
+   "fees": 0.0,
+   "amount": -100160.04
+  },
+  {
+   "date": "09/09/2026",
+   "account": "Brokerage",
+   "symbol": "NAUT",
+   "name": "NAUTILUS BIOTECHNOLOGY INC",
+   "type": "Buy",
+   "qty": 1800.0,
+   "price": 1.0,
+   "fees": 0.0,
+   "amount": -1799.5
+  },
+  {
+   "date": "09/09/2026",
+   "account": "Brokerage",
+   "symbol": "ASPI",
+   "name": "ASP ISOTOPES INC",
+   "type": "Buy",
+   "qty": 50890.0,
+   "price": 3.93,
+   "fees": 0.0,
+   "amount": -199990.41
+  },
+  {
+   "date": "09/09/2026",
+   "account": "SEP-IRA",
+   "symbol": "NAUT",
+   "name": "NAUTILUS BIOTECHNOLOGY INC",
+   "type": "Buy",
+   "qty": 98000.0,
+   "price": 1.02,
+   "fees": 0.0,
+   "amount": -99942.22
+  },
+  {
+   "date": "09/09/2026",
+   "account": "SEP-IRA",
+   "symbol": "ABCL",
+   "name": "ABCELLERA BIOLOGICS INC",
+   "type": "Sell",
+   "qty": -9025.0,
+   "price": 11.08,
+   "fees": 2.06,
+   "amount": 99950.72
+  },
+  {
+   "date": "09/09/2026",
+   "account": "Brokerage",
+   "symbol": "MRVL",
+   "name": "MARVELL TECHNOLOGY INC",
+   "type": "Sell",
+   "qty": -438.0,
+   "price": 237.7,
+   "fees": 2.14,
+   "amount": 104110.94
+  },
+  {
+   "date": "09/09/2026",
+   "account": "SEP-IRA",
+   "symbol": "ABCL",
+   "name": "ABCELLERA BIOLOGICS INC",
+   "type": "Sell",
+   "qty": -8000.0,
+   "price": 11.21,
+   "fees": 1.85,
+   "amount": 89638.15
+  },
+  {
+   "date": "09/09/2026",
+   "account": "SEP-IRA",
+   "symbol": "VST",
+   "name": "VISTRA CORP",
+   "type": "Sell",
+   "qty": -800.0,
+   "price": 150.06,
+   "fees": 2.47,
+   "amount": 120041.53
+  },
+  {
+   "date": "09/09/2026",
+   "account": "Brokerage",
+   "symbol": "IREN",
+   "name": "IREN LTD",
+   "type": "Sell",
+   "qty": -5232.0,
+   "price": 45.63,
+   "fees": 4.92,
+   "amount": 238748.14
+  },
+  {
+   "date": "09/09/2026",
+   "account": "SEP-IRA",
+   "symbol": "ASPI",
+   "name": "ASP ISOTOPES INC",
+   "type": "Sell",
+   "qty": -30000.0,
+   "price": 3.89,
+   "fees": 2.41,
+   "amount": 116754.55
+  },
+  {
+   "date": "09/10/2026",
+   "account": "SEP-IRA",
+   "symbol": "IMMX",
+   "name": "IMMIX BIOPHARMA INC",
+   "type": "Buy",
+   "qty": 39714.0,
+   "price": 12.6,
+   "fees": 0.0,
+   "amount": -500394.2
+  },
+  {
+   "date": "09/10/2026",
+   "account": "Brokerage",
+   "symbol": "SNDK",
+   "name": "SANDISK CORP",
+   "type": "Sell",
+   "qty": -112.0,
+   "price": 1707.86,
+   "fees": 3.94,
+   "amount": 191276.38
+  },
+  {
+   "date": "09/10/2026",
+   "account": "Brokerage",
+   "symbol": "ASPI",
+   "name": "ASP ISOTOPES INC",
+   "type": "Sell",
+   "qty": -57843.0,
+   "price": 3.62,
+   "fees": 4.31,
+   "amount": 209395.85
+  },
+  {
+   "date": "09/10/2026",
+   "account": "SEP-IRA",
+   "symbol": "VST",
+   "name": "VISTRA CORP",
+   "type": "Sell",
+   "qty": -823.0,
+   "price": 151.6,
+   "fees": 2.57,
+   "amount": 124764.23
+  },
+  {
+   "date": "09/10/2026",
+   "account": "Brokerage",
+   "symbol": "NAUT",
+   "name": "NAUTILUS BIOTECHNOLOGY INC",
+   "type": "Sell",
+   "qty": -100000.0,
+   "price": 1.01,
+   "fees": 2.08,
+   "amount": 101011.07
+  },
+  {
+   "date": "09/10/2026",
+   "account": "SEP-IRA",
+   "symbol": "ASPI",
+   "name": "ASP ISOTOPES INC",
+   "type": "Sell",
+   "qty": -2.0,
+   "price": 3.63,
+   "fees": 0.0,
+   "amount": 7.26
+  },
+  {
+   "date": "09/10/2026",
+   "account": "SEP-IRA",
+   "symbol": "TSM",
+   "name": "TAIWAN SEMICONDUCTOR MANUFACTURING CO LTD SPON ADR",
+   "type": "Sell",
+   "qty": -278.0,
+   "price": 429.66,
+   "fees": 2.46,
+   "amount": 119441.63
+  },
+  {
+   "date": "09/10/2026",
+   "account": "Brokerage",
+   "symbol": "ASPI",
+   "name": "ASP ISOTOPES INC",
+   "type": "Sell",
+   "qty": -110716.0,
+   "price": 3.67,
+   "fees": 8.37,
+   "amount": 406482.14
+  },
+  {
+   "date": "09/10/2026",
+   "account": "Brokerage",
+   "symbol": "GOOG",
+   "name": "ALPHABET INC CL C",
+   "type": "Sell",
+   "qty": -1525.0,
+   "price": 327.9,
+   "fees": 10.3,
+   "amount": 500037.2
+  },
+  {
+   "date": "09/10/2026",
+   "account": "SEP-IRA",
+   "symbol": "ASPI",
+   "name": "ASP ISOTOPES INC",
+   "type": "Sell",
+   "qty": -30616.0,
+   "price": 3.75,
+   "fees": 2.37,
+   "amount": 114815.48
+  },
+  {
+   "date": "09/10/2026",
+   "account": "Brokerage",
+   "symbol": "ASPI",
+   "name": "ASP ISOTOPES INC",
+   "type": "Sell",
+   "qty": -94918.0,
+   "price": 3.6,
+   "fees": 7.04,
+   "amount": 341925.53
+  },
+  {
+   "date": "09/10/2026",
+   "account": "SEP-IRA",
+   "symbol": "MU",
+   "name": "MICRON TECHNOLOGY INC",
+   "type": "Sell",
+   "qty": -97.0,
+   "price": 983.1,
+   "fees": 1.96,
+   "amount": 95358.74
+  },
+  {
+   "date": "09/10/2026",
+   "account": "Brokerage",
+   "symbol": "AVGO",
+   "name": "BROADCOM INC",
+   "type": "Sell",
+   "qty": -677.0,
+   "price": 364.38,
+   "fees": 5.08,
+   "amount": 246680.86
+  },
+  {
+   "date": "09/10/2026",
+   "account": "Brokerage",
+   "symbol": "VST",
+   "name": "VISTRA CORP",
+   "type": "Sell",
+   "qty": -648.0,
+   "price": 151.33,
+   "fees": 2.02,
+   "amount": 98056.58
+  },
+  {
+   "date": "09/10/2026",
+   "account": "SEP-IRA",
+   "symbol": "ABCL",
+   "name": "ABCELLERA BIOLOGICS INC",
+   "type": "Sell",
+   "qty": -8042.0,
+   "price": 10.87,
+   "fees": 1.8,
+   "amount": 87374.53
+  },
+  {
+   "date": "09/10/2026",
+   "account": "Brokerage",
+   "symbol": "NVDA",
+   "name": "NVIDIA CORP",
+   "type": "Sell",
+   "qty": -660.0,
+   "price": 217.92,
+   "fees": 2.96,
+   "amount": 143824.37
+  },
+  {
+   "date": "09/10/2026",
+   "account": "SEP-IRA",
+   "symbol": "NAUT",
+   "name": "NAUTILUS BIOTECHNOLOGY INC",
+   "type": "Sell",
+   "qty": -7675.0,
+   "price": 1.05,
+   "fees": 0.17,
+   "amount": 8064.28
+  },
+  {
+   "date": "09/10/2026",
+   "account": "Brokerage",
+   "symbol": "TSM",
+   "name": "TAIWAN SEMICONDUCTOR MANUFACTURING CO LTD SPON ADR",
+   "type": "Sell",
+   "qty": -345.0,
+   "price": 429.65,
+   "fees": 3.05,
+   "amount": 148224.48
+  },
+  {
+   "date": "09/10/2026",
+   "account": "Brokerage",
+   "symbol": "MU",
+   "name": "MICRON TECHNOLOGY INC",
+   "type": "Sell",
+   "qty": -591.0,
+   "price": 983.6,
+   "fees": 11.97,
+   "amount": 581293.17
+  },
+  {
+   "date": "09/10/2026",
+   "account": "SEP-IRA",
+   "symbol": "NAUT",
+   "name": "NAUTILUS BIOTECHNOLOGY INC",
+   "type": "Sell",
+   "qty": -90325.0,
+   "price": 1.01,
+   "fees": 1.88,
+   "amount": 91235.37
+  },
+  {
+   "date": "09/14/2026",
+   "account": "Brokerage",
+   "symbol": "ASPI",
+   "name": "ASP ISOTOPES INC",
+   "type": "Buy",
+   "qty": 47366.0,
+   "price": 3.29,
+   "fees": 0.0,
+   "amount": -155683.62
+  },
+  {
+   "date": "09/14/2026",
+   "account": "Brokerage",
+   "symbol": "ASPI",
+   "name": "ASP ISOTOPES INC",
+   "type": "Buy",
+   "qty": 13796.0,
+   "price": 3.27,
+   "fees": 0.0,
+   "amount": -45104.29
+  },
+  {
+   "date": "09/14/2026",
+   "account": "Brokerage",
+   "symbol": "IREN",
+   "name": "IREN LTD",
+   "type": "Buy",
+   "qty": 4646.0,
+   "price": 43.1,
+   "fees": 0.0,
+   "amount": -200241.67
+  },
+  {
+   "date": "09/14/2026",
+   "account": "Brokerage",
+   "symbol": "TE",
+   "name": "T1 ENERGY INC",
+   "type": "Buy",
+   "qty": 45662.0,
+   "price": 4.4,
+   "fees": 0.0,
+   "amount": -200729.03
+  },
+  {
+   "date": "09/15/2026",
+   "account": "Brokerage",
+   "symbol": "IREN",
+   "name": "IREN LTD",
+   "type": "Buy",
+   "qty": 7232.0,
+   "price": 41.51,
+   "fees": 0.0,
+   "amount": -300200.32
+  },
+  {
+   "date": "09/15/2026",
+   "account": "Brokerage",
+   "symbol": "TE",
+   "name": "T1 ENERGY INC",
+   "type": "Sell",
+   "qty": -45662.0,
+   "price": 4.21,
+   "fees": 3.96,
+   "amount": 192338.59
+  },
+  {
+   "date": "09/15/2026",
+   "account": "Brokerage",
+   "symbol": "ASPI",
+   "name": "ASP ISOTOPES INC",
+   "type": "Sell",
+   "qty": -61162.0,
+   "price": 3.06,
+   "fees": 3.86,
+   "amount": 187263.32
+  },
+  {
+   "date": "09/18/2026",
+   "account": "SEP-IRA",
+   "symbol": "SLNH",
+   "name": "SOLUNA HOLDINGS INC",
+   "type": "Buy",
+   "qty": 45000.0,
+   "price": 1.24,
+   "fees": 0.0,
+   "amount": -55800.0
+  },
+  {
+   "date": "09/18/2026",
+   "account": "Brokerage",
+   "symbol": "SLNH",
+   "name": "SOLUNA HOLDINGS INC",
+   "type": "Buy",
+   "qty": 100000.0,
+   "price": 1.24,
+   "fees": 0.0,
+   "amount": -123900.0
+  },
+  {
+   "date": "09/21/2026",
+   "account": "Brokerage",
+   "symbol": "IMMX",
+   "name": "IMMIX BIOPHARMA INC",
+   "type": "Buy",
+   "qty": 82372.0,
+   "price": 12.19,
+   "fees": 0.0,
+   "amount": -1004388.66
+  },
+  {
+   "date": "09/21/2026",
+   "account": "SEP-IRA",
+   "symbol": "IMMX",
+   "name": "IMMIX BIOPHARMA INC",
+   "type": "Buy",
+   "qty": 8500.0,
+   "price": 12.45,
+   "fees": 0.0,
+   "amount": -105819.9
+  },
+  {
+   "date": "09/25/2026",
+   "account": "Brokerage",
+   "symbol": "MOD",
+   "name": "MODINE MANUFACTURING CO",
+   "type": "Buy",
+   "qty": 497.0,
+   "price": 201.49,
+   "fees": 0.0,
+   "amount": -100140.43
+  },
+  {
+   "date": "09/25/2026",
+   "account": "SEP-IRA",
+   "symbol": "MOD",
+   "name": "MODINE MANUFACTURING CO",
+   "type": "Buy",
+   "qty": 426.0,
+   "price": 198.32,
+   "fees": 0.0,
+   "amount": -84484.32
+  },
+  {
+   "date": "09/25/2026",
+   "account": "Brokerage",
+   "symbol": "IMMX",
+   "name": "IMMIX BIOPHARMA INC",
+   "type": "Buy",
+   "qty": 42234.0,
+   "price": 10.9,
+   "fees": 0.0,
+   "amount": -460189.77
+  },
+  {
+   "date": "09/25/2026",
+   "account": "Brokerage",
+   "symbol": "IMMX",
+   "name": "IMMIX BIOPHARMA INC",
+   "type": "Buy",
+   "qty": 3891.0,
+   "price": 10.86,
+   "fees": 0.0,
+   "amount": -42238.33
+  },
+  {
+   "date": "09/25/2026",
+   "account": "Brokerage",
+   "symbol": "ARM",
+   "name": "ARM HOLDINGS PLC SPON ADR",
+   "type": "Buy",
+   "qty": 622.0,
+   "price": 322.36,
+   "fees": 0.0,
+   "amount": -200505.43
+  },
+  {
+   "date": "09/28/2026",
+   "account": "SEP-IRA",
+   "symbol": "ASPI",
+   "name": "ASP ISOTOPES INC",
+   "type": "Buy",
+   "qty": 20155.0,
+   "price": 2.58,
+   "fees": 0.0,
+   "amount": -51899.13
+  },
+  {
+   "date": "09/28/2026",
+   "account": "SEP-IRA",
+   "symbol": "ASPI",
+   "name": "ASP ISOTOPES INC",
+   "type": "Buy",
+   "qty": 30314.0,
+   "price": 2.54,
+   "fees": 0.0,
+   "amount": -77121.93
+  },
+  {
+   "date": "09/28/2026",
+   "account": "Brokerage",
+   "symbol": "HIMS",
+   "name": "HIMS & HERS HEALTH INC",
+   "type": "Buy",
+   "qty": 3487.0,
+   "price": 28.68,
+   "fees": 0.0,
+   "amount": -99991.82
+  },
+  {
+   "date": "09/28/2026",
+   "account": "SEP-IRA",
+   "symbol": "SLNH",
+   "name": "SOLUNA HOLDINGS INC",
+   "type": "Sell",
+   "qty": -45000.0,
+   "price": 1.17,
+   "fees": 1.08,
+   "amount": 52555.92
+  },
+  {
+   "date": "09/28/2026",
+   "account": "Brokerage",
+   "symbol": "MOD",
+   "name": "MODINE MANUFACTURING CO",
+   "type": "Sell",
+   "qty": -497.0,
+   "price": 180.27,
+   "fees": 1.85,
+   "amount": 89592.34
+  },
+  {
+   "date": "09/28/2026",
+   "account": "SEP-IRA",
+   "symbol": "MOD",
+   "name": "MODINE MANUFACTURING CO",
+   "type": "Sell",
+   "qty": -426.0,
+   "price": 176.64,
+   "fees": 1.55,
+   "amount": 75247.09
+  },
+  {
+   "date": "09/29/2026",
+   "account": "SEP-IRA",
+   "symbol": "ASPI",
+   "name": "ASP ISOTOPES INC",
+   "type": "Buy",
+   "qty": 475.0,
+   "price": 2.63,
+   "fees": 0.0,
+   "amount": -1249.25
+  },
+  {
+   "date": "09/29/2026",
+   "account": "SEP-IRA",
+   "symbol": "ASPI",
+   "name": "ASP ISOTOPES INC",
+   "type": "Buy",
+   "qty": 58650.0,
+   "price": 2.66,
+   "fees": 0.0,
+   "amount": -155832.73
+  },
+  {
+   "date": "09/29/2026",
+   "account": "SEP-IRA",
+   "symbol": "ASPI",
+   "name": "ASP ISOTOPES INC",
+   "type": "Buy",
+   "qty": 68965.0,
+   "price": 2.63,
+   "fees": 0.0,
+   "amount": -181332.87
+  },
+  {
+   "date": "09/29/2026",
+   "account": "SEP-IRA",
+   "symbol": "IMMX",
+   "name": "IMMIX BIOPHARMA INC",
+   "type": "Sell",
+   "qty": -30000.0,
+   "price": 11.3,
+   "fees": 6.98,
+   "amount": 338996.02
+  },
+  {
+   "date": "09/29/2026",
+   "account": "Brokerage",
+   "symbol": "SLNH",
+   "name": "SOLUNA HOLDINGS INC",
+   "type": "Sell",
+   "qty": -100000.0,
+   "price": 1.17,
+   "fees": 2.41,
+   "amount": 117156.19
+  },
+  {
+   "date": "09/29/2026",
+   "account": "Brokerage",
+   "symbol": "IMMX",
+   "name": "IMMIX BIOPHARMA INC",
+   "type": "Sell",
+   "qty": -46125.0,
+   "price": 10.15,
+   "fees": 9.65,
+   "amount": 468242.63
+  },
+  {
+   "date": "09/29/2026",
+   "account": "Brokerage",
+   "symbol": "ARM",
+   "name": "ARM HOLDINGS PLC SPON ADR",
+   "type": "Sell",
+   "qty": -622.0,
+   "price": 291.8,
+   "fees": 3.74,
+   "amount": 181492.75
+  },
+  {
+   "date": "10/02/2026",
+   "account": "SEP-IRA",
+   "symbol": "ASPI",
+   "name": "ASP ISOTOPES INC",
+   "type": "Buy",
+   "qty": 147000.0,
+   "price": 2.83,
+   "fees": 0.0,
+   "amount": -415967.65
+  },
+  {
+   "date": "10/02/2026",
+   "account": "SEP-IRA",
+   "symbol": "ASPI",
+   "name": "ASP ISOTOPES INC",
+   "type": "Buy",
+   "qty": 71428.0,
+   "price": 2.81,
+   "fees": 0.0,
+   "amount": -200712.68
+  },
+  {
+   "date": "10/02/2026",
+   "account": "SEP-IRA",
+   "symbol": "IMMX",
+   "name": "IMMIX BIOPHARMA INC",
+   "type": "Sell",
+   "qty": -19940.0,
+   "price": 10.0,
+   "fees": 4.11,
+   "amount": 199403.56
+  },
+  {
+   "date": "10/02/2026",
+   "account": "SEP-IRA",
+   "symbol": "IMMX",
+   "name": "IMMIX BIOPHARMA INC",
+   "type": "Sell",
+   "qty": -41783.0,
+   "price": 9.98,
+   "fees": 8.59,
+   "amount": 416985.95
+  },
+  {
+   "date": "10/02/2026",
+   "account": "Brokerage",
+   "symbol": "HIMS",
+   "name": "HIMS & HERS HEALTH INC",
+   "type": "Sell",
+   "qty": -3487.0,
+   "price": 28.56,
+   "fees": 2.05,
+   "amount": 99586.67
+  },
+  {
+   "date": "10/02/2026",
+   "account": "Brokerage",
+   "symbol": "IMMX",
+   "name": "IMMIX BIOPHARMA INC",
+   "type": "Sell",
+   "qty": -82372.0,
+   "price": 10.01,
+   "fees": 16.98,
+   "amount": 824220.6
+  },
+  {
+   "date": "10/05/2026",
+   "account": "Brokerage",
+   "symbol": "TWST",
+   "name": "TWIST BIOSCIENCE CORP",
+   "type": "Buy",
+   "qty": 488.0,
+   "price": 204.87,
+   "fees": 0.0,
+   "amount": -99976.56
+  },
+  {
+   "date": "10/05/2026",
+   "account": "Brokerage",
+   "symbol": "INTC",
+   "name": "INTEL CORP",
+   "type": "Buy",
+   "qty": 2567.0,
+   "price": 116.84,
+   "fees": 0.0,
+   "amount": -299928.28
+  },
+  {
+   "date": "10/05/2026",
+   "account": "Brokerage",
+   "symbol": "ASPI",
+   "name": "ASP ISOTOPES INC",
+   "type": "Buy",
+   "qty": 68965.0,
+   "price": 2.93,
+   "fees": 0.0,
+   "amount": -201999.87
+  },
+  {
+   "date": "10/06/2026",
+   "account": "Brokerage",
+   "symbol": "MOD",
+   "name": "MODINE MANUFACTURING CO",
+   "type": "Buy",
+   "qty": 2645.0,
+   "price": 189.05,
+   "fees": 0.0,
+   "amount": -500037.25
+  },
+  {
+   "date": "10/06/2026",
+   "account": "Brokerage",
+   "symbol": "TWST",
+   "name": "TWIST BIOSCIENCE CORP",
+   "type": "Sell",
+   "qty": -488.0,
+   "price": 187.32,
+   "fees": 1.88,
+   "amount": 91410.33
+  },
+  {
+   "date": "10/09/2026",
+   "account": "Brokerage",
+   "symbol": "MOD",
+   "name": "MODINE MANUFACTURING CO",
+   "type": "Buy",
+   "qty": 2720.0,
+   "price": 184.2,
+   "fees": 0.0,
+   "amount": -501024.0
+  },
+  {
+   "date": "10/09/2026",
+   "account": "SEP-IRA",
+   "symbol": "MOD",
+   "name": "MODINE MANUFACTURING CO",
+   "type": "Buy",
+   "qty": 2686.0,
+   "price": 184.3,
+   "fees": 0.0,
+   "amount": -495029.56
+  },
+  {
+   "date": "10/09/2026",
+   "account": "Brokerage",
+   "symbol": "ASPI",
+   "name": "ASP ISOTOPES INC",
+   "type": "Sell",
+   "qty": -68965.0,
+   "price": 2.74,
+   "fees": 3.89,
+   "amount": 188960.21
+  },
+  {
+   "date": "10/09/2026",
+   "account": "SEP-IRA",
+   "symbol": "ASPI",
+   "name": "ASP ISOTOPES INC",
+   "type": "Sell",
+   "qty": -185873.0,
+   "price": 2.67,
+   "fees": 10.23,
+   "amount": 496480.41
+  },
+  {
+   "date": "10/09/2026",
+   "account": "Brokerage",
+   "symbol": "IREN",
+   "name": "IREN LTD",
+   "type": "Sell",
+   "qty": -11878.0,
+   "price": 35.22,
+   "fees": 8.62,
+   "amount": 418361.99
+  },
+  {
+   "date": "10/09/2026",
+   "account": "Brokerage",
+   "symbol": "INTC",
+   "name": "INTEL CORP",
+   "type": "Sell",
+   "qty": -2567.0,
+   "price": 105.57,
+   "fees": 5.58,
+   "amount": 270992.62
+  },
+  {
+   "date": "10/09/2026",
+   "account": "Brokerage",
+   "symbol": "IMMX",
+   "name": "IMMIX BIOPHARMA INC",
+   "type": "Sell",
+   "qty": -49950.0,
+   "price": 9.36,
+   "fees": 9.63,
+   "amount": 467539.8
+  },
+  {
+   "date": "10/13/2026",
+   "account": "Brokerage",
+   "symbol": "ASPI",
+   "name": "ASP ISOTOPES INC",
+   "type": "Buy",
+   "qty": 169491.0,
+   "price": 2.37,
+   "fees": 0.0,
+   "amount": -401596.72
+  },
+  {
+   "date": "10/13/2026",
+   "account": "Brokerage",
+   "symbol": "ASPI",
+   "name": "ASP ISOTOPES INC",
+   "type": "Buy",
+   "qty": 85836.0,
+   "price": 2.34,
+   "fees": 0.0,
+   "amount": -200523.58
+  },
+  {
+   "date": "10/13/2026",
+   "account": "SEP-IRA",
+   "symbol": "ASPI",
+   "name": "ASP ISOTOPES INC",
+   "type": "Buy",
+   "qty": 86580.0,
+   "price": 2.32,
+   "fees": 0.0,
+   "amount": -200581.29
+  },
+  {
+   "date": "10/13/2026",
+   "account": "SEP-IRA",
+   "symbol": "ASPI",
+   "name": "ASP ISOTOPES INC",
+   "type": "Buy",
+   "qty": 109051.0,
+   "price": 2.33,
+   "fees": 0.0,
+   "amount": -253889.09
+  },
+  {
+   "date": "10/13/2026",
+   "account": "Brokerage",
+   "symbol": "IMMX",
+   "name": "IMMIX BIOPHARMA INC",
+   "type": "Sell",
+   "qty": -141672.0,
+   "price": 8.8,
+   "fees": 25.68,
+   "amount": 1246713.72
+  },
+  {
+   "date": "10/13/2026",
+   "account": "SEP-IRA",
+   "symbol": "MOD",
+   "name": "MODINE MANUFACTURING CO",
+   "type": "Sell",
+   "qty": -1486.0,
+   "price": 169.21,
+   "fees": 5.18,
+   "amount": 251440.88
+  },
+  {
+   "date": "10/13/2026",
+   "account": "SEP-IRA",
+   "symbol": "MOD",
+   "name": "MODINE MANUFACTURING CO",
+   "type": "Sell",
+   "qty": -1200.0,
+   "price": 170.62,
+   "fees": 4.22,
+   "amount": 204739.78
+  },
+  {
+   "date": "10/15/2026",
+   "account": "Brokerage",
+   "symbol": "ASPI",
+   "name": "ASP ISOTOPES INC",
+   "type": "Buy",
+   "qty": 195121.0,
+   "price": 2.07,
+   "fees": 0.0,
+   "amount": -404531.09
+  },
+  {
+   "date": "10/15/2026",
+   "account": "Brokerage",
+   "symbol": "ASPI",
+   "name": "ASP ISOTOPES INC",
+   "type": "Buy",
+   "qty": 388349.0,
+   "price": 2.09,
+   "fees": 0.0,
+   "amount": -813209.94
+  },
+  {
+   "date": "10/15/2026",
+   "account": "Brokerage",
+   "symbol": "MOD",
+   "name": "MODINE MANUFACTURING CO",
+   "type": "Sell",
+   "qty": -2865.0,
+   "price": 150.09,
+   "fees": 8.86,
+   "amount": 429997.81
+  },
+  {
+   "date": "10/15/2026",
+   "account": "Brokerage",
+   "symbol": "MOD",
+   "name": "MODINE MANUFACTURING CO",
+   "type": "Sell",
+   "qty": -2500.0,
+   "price": 149.41,
+   "fees": 7.69,
+   "amount": 373521.56
+  },
+  {
+   "date": "10/16/2026",
+   "account": "Brokerage",
+   "symbol": "ASPI",
+   "name": "ASP ISOTOPES INC",
+   "type": "Buy",
+   "qty": 184331.0,
+   "price": 2.18,
+   "fees": 0.0,
+   "amount": -401841.58
+  },
+  {
+   "date": "10/16/2026",
+   "account": "Brokerage",
+   "symbol": "ASPI",
+   "name": "ASP ISOTOPES INC",
+   "type": "Buy",
+   "qty": 234741.0,
+   "price": 2.14,
+   "fees": 0.0,
+   "amount": -503483.86
+  },
+  {
+   "date": "10/16/2026",
+   "account": "Brokerage",
+   "symbol": "IMMX",
+   "name": "IMMIX BIOPHARMA INC",
+   "type": "Sell",
+   "qty": -56242.0,
+   "price": 8.18,
+   "fees": 9.48,
+   "amount": 460083.98
+  },
+  {
+   "date": "11/05/2026",
+   "account": "Brokerage",
+   "symbol": "AAOI",
+   "name": "APPLIED OPTOELECTRONICS INC",
+   "type": "Buy",
+   "qty": 4189.0,
+   "price": 47.61,
+   "fees": 0.0,
+   "amount": -199438.29
+  },
+  {
+   "date": "11/05/2026",
+   "account": "Brokerage",
+   "symbol": "INTC",
+   "name": "INTEL CORP",
+   "type": "Buy",
+   "qty": 3740.0,
+   "price": 53.45,
+   "fees": 0.0,
+   "amount": -199884.3
+  },
+  {
+   "date": "11/05/2026",
+   "account": "Brokerage",
+   "symbol": "BE",
+   "name": "BLOOM ENERGY CORP CL A",
+   "type": "Buy",
+   "qty": 1179.0,
+   "price": 169.36,
+   "fees": 0.0,
+   "amount": -199675.44
+  },
+  {
+   "date": "11/05/2026",
+   "account": "Brokerage",
+   "symbol": "ASPI",
+   "name": "ASP ISOTOPES INC",
+   "type": "Sell",
+   "qty": -100000.0,
+   "price": 1.68,
+   "fees": 3.46,
+   "amount": 168048.17
+  },
+  {
+   "date": "11/05/2026",
+   "account": "Brokerage",
+   "symbol": "ASPI",
+   "name": "ASP ISOTOPES INC",
+   "type": "Sell",
+   "qty": -1465.0,
+   "price": 1.69,
+   "fees": 0.05,
+   "amount": 2475.8
+  },
+  {
+   "date": "11/05/2026",
+   "account": "Brokerage",
+   "symbol": "ASPI",
+   "name": "ASP ISOTOPES INC",
+   "type": "Sell",
+   "qty": -150000.0,
+   "price": 1.75,
+   "fees": 5.41,
+   "amount": 262517.39
+  },
+  {
+   "date": "11/05/2026",
+   "account": "Brokerage",
+   "symbol": "ASPI",
+   "name": "ASP ISOTOPES INC",
+   "type": "Sell",
+   "qty": -100000.0,
+   "price": 1.68,
+   "fees": 3.46,
+   "amount": 168026.54
+  },
+  {
+   "date": "11/05/2026",
+   "account": "Brokerage",
+   "symbol": "ASPI",
+   "name": "ASP ISOTOPES INC",
+   "type": "Sell",
+   "qty": -60000.0,
+   "price": 1.68,
+   "fees": 2.08,
+   "amount": 100801.6
+  },
+  {
+   "date": "11/05/2026",
+   "account": "Brokerage",
+   "symbol": "ASPI",
+   "name": "ASP ISOTOPES INC",
+   "type": "Sell",
+   "qty": -200000.0,
+   "price": 1.71,
+   "fees": 7.05,
+   "amount": 342416.36
+  },
+  {
+   "date": "11/05/2026",
+   "account": "Brokerage",
+   "symbol": "ASPI",
+   "name": "ASP ISOTOPES INC",
+   "type": "Sell",
+   "qty": -1064.0,
+   "price": 1.75,
+   "fees": 0.04,
+   "amount": 1861.96
+  }
+ ],
+ "performance_months": [
+  {
+   "date": "2026-08-31",
+   "month": "08/2026",
+   "market": 4350885.01,
+   "income": 70.94,
+   "gain": 9267811.08,
+   "value": 9789221.47,
+   "net_deposits": 521410.39
+  },
+  {
+   "date": "2026-09-30",
+   "month": "09/2026",
+   "market": -2300005.85,
+   "income": 511.42,
+   "gain": 6968316.65,
+   "value": 7483850.93,
+   "net_deposits": 515534.28
+  },
+  {
+   "date": "2026-10-31",
+   "month": "10/2026",
+   "market": -2058727.02,
+   "income": 206.38,
+   "gain": 4909796.01,
+   "value": 5420953.33,
+   "net_deposits": 511157.32
+  },
+  {
+   "date": "2026-11-11",
+   "month": "11/2026",
+   "market": 68211.22,
+   "income": 0,
+   "gain": 4978007.23,
+   "value": 5489164.55,
+   "net_deposits": 511157.32
+  }
+ ],
+ "tax": {
+  "year": "2026",
+  "brokerage_taxable": 2158794.1,
+  "sep_taxable": 533854.89,
+  "rows": [
+   {
+    "account": "Brokerage",
+    "symbol": "ABCL",
+    "qty": 222347.0,
+    "cost": 910556.47,
+    "proceeds": 845856.98,
+    "gain": -37597.33,
+    "disallowed": 27102.16
+   },
+   {
+    "account": "Brokerage",
+    "symbol": "AGL",
+    "qty": 1122451.0,
+    "cost": 433412.18,
+    "proceeds": 620177.34,
+    "gain": 186765.16,
+    "disallowed": 0.0
+   },
+   {
+    "account": "Brokerage",
+    "symbol": "AGL",
+    "qty": 116679.0,
+    "cost": 1852625.94,
+    "proceeds": 3207088.24,
+    "gain": 1354462.3,
+    "disallowed": 0.0
+   },
+   {
+    "account": "Brokerage",
+    "symbol": "ARM",
+    "qty": 622.0,
+    "cost": 200505.43,
+    "proceeds": 181492.75,
+    "gain": -19012.68,
+    "disallowed": 0.0
+   },
+   {
+    "account": "Brokerage",
+    "symbol": "ASPI",
+    "qty": 1522500.0,
+    "cost": 6873107.04,
+    "proceeds": 4868726.45,
+    "gain": -229125.79,
+    "disallowed": 1775254.8
+   },
+   {
+    "account": "Brokerage",
+    "symbol": "AVGO",
+    "qty": 677.0,
+    "cost": 249691.14,
+    "proceeds": 246680.86,
+    "gain": -3010.28,
+    "disallowed": 0.0
+   },
+   {
+    "account": "Brokerage",
+    "symbol": "BTDR",
+    "qty": 13559.0,
+    "cost": 195249.6,
+    "proceeds": 171693.02,
+    "gain": -23556.58,
+    "disallowed": 0.0
+   },
+   {
+    "account": "Brokerage",
+    "symbol": "DARE",
+    "qty": 165440.0,
+    "cost": 546278.29,
+    "proceeds": 448495.79,
+    "gain": -97456.21,
+    "disallowed": 326.29
+   },
+   {
+    "account": "Brokerage",
+    "symbol": "DUOL",
+    "qty": 18701.0,
+    "cost": 2083212.87,
+    "proceeds": 1905660.84,
+    "gain": -157376.14,
+    "disallowed": 20175.89
+   },
+   {
+    "account": "Brokerage",
+    "symbol": "GOOG",
+    "qty": 5150.0,
+    "cost": 1704447.5,
+    "proceeds": 1665439.21,
+    "gain": -33541.24,
+    "disallowed": 5467.05
+   },
+   {
+    "account": "Brokerage",
+    "symbol": "GRAB",
+    "qty": 35000.0,
+    "cost": 150147.75,
+    "proceeds": 144376.28,
+    "gain": -5771.47,
+    "disallowed": 0.0
+   },
+   {
+    "account": "Brokerage",
+    "symbol": "HIMS",
+    "qty": 21367.0,
+    "cost": 597619.2,
+    "proceeds": 554629.54,
+    "gain": -41971.06,
+    "disallowed": 1018.6
+   },
+   {
+    "account": "Brokerage",
+    "symbol": "HIVE",
+    "qty": 47281.0,
+    "cost": 199552.94,
+    "proceeds": 175283.62,
+    "gain": -24269.32,
+    "disallowed": 0.0
+   },
+   {
+    "account": "Brokerage",
+    "symbol": "IMMX",
+    "qty": 942499.0,
+    "cost": 6735156.03,
+    "proceeds": 8010615.31,
+    "gain": 1313273.42,
+    "disallowed": 37814.14
+   },
+   {
+    "account": "Brokerage",
+    "symbol": "INTC",
+    "qty": 2567.0,
+    "cost": 299928.28,
+    "proceeds": 270992.62,
+    "gain": 0.0,
+    "disallowed": 28935.66
+   },
+   {
+    "account": "Brokerage",
+    "symbol": "IREN",
+    "qty": 20510.0,
+    "cost": 968579.13,
+    "proceeds": 841434.33,
+    "gain": -115385.3,
+    "disallowed": 11759.5
+   },
+   {
+    "account": "Brokerage",
+    "symbol": "LLY",
+    "qty": 50.0,
+    "cost": 52565.25,
+    "proceeds": 50741.0,
+    "gain": -1824.25,
+    "disallowed": 0.0
+   },
+   {
+    "account": "Brokerage",
+    "symbol": "MAIA",
+    "qty": 50000.0,
+    "cost": 95962.0,
+    "proceeds": 84970.0,
+    "gain": -10992.0,
+    "disallowed": 0.0
+   },
+   {
+    "account": "Brokerage",
+    "symbol": "MOD",
+    "qty": 5862.0,
+    "cost": 1221401.3,
+    "proceeds": 893111.71,
+    "gain": -208089.97,
+    "disallowed": 120199.62
+   },
+   {
+    "account": "Brokerage",
+    "symbol": "MRAM",
+    "qty": 21200.0,
+    "cost": 373651.52,
+    "proceeds": 453681.17,
+    "gain": 80029.65,
+    "disallowed": 0.0
+   },
+   {
+    "account": "Brokerage",
+    "symbol": "MRVL",
+    "qty": 438.0,
+    "cost": 99956.3,
+    "proceeds": 104110.94,
+    "gain": 4154.64,
+    "disallowed": 0.0
+   },
+   {
+    "account": "Brokerage",
+    "symbol": "MU",
+    "qty": 5053.0,
+    "cost": 3532725.4,
+    "proceeds": 3842843.81,
+    "gain": 310118.41,
+    "disallowed": 0.0
+   },
+   {
+    "account": "Brokerage",
+    "symbol": "NAT",
+    "qty": 226697.235,
+    "cost": 1254746.91,
+    "proceeds": 1264547.54,
+    "gain": 18226.58,
+    "disallowed": 8425.95
+   },
+   {
+    "account": "Brokerage",
+    "symbol": "NAUT",
+    "qty": 100000.0,
+    "cost": 101959.54,
+    "proceeds": 101011.07,
+    "gain": -948.47,
+    "disallowed": 0.0
+   },
+   {
+    "account": "Brokerage",
+    "symbol": "NOK",
+    "qty": 24366.0,
+    "cost": 364014.29,
+    "proceeds": 328021.44,
+    "gain": -30846.14,
+    "disallowed": 5146.71
+   },
+   {
+    "account": "Brokerage",
+    "symbol": "NVDA",
+    "qty": 660.0,
+    "cost": 149958.6,
+    "proceeds": 143824.37,
+    "gain": -6134.23,
+    "disallowed": 0.0
+   },
+   {
+    "account": "Brokerage",
+    "symbol": "SLNH",
+    "qty": 100000.0,
+    "cost": 123900.0,
+    "proceeds": 117156.19,
+    "gain": -6743.81,
+    "disallowed": 0.0
+   },
+   {
+    "account": "Brokerage",
+    "symbol": "SLV",
+    "qty": 914.0,
+    "cost": 83023.19,
+    "proceeds": 66316.41,
+    "gain": -16706.78,
+    "disallowed": 0.0
+   },
+   {
+    "account": "Brokerage",
+    "symbol": "SMXT",
+    "qty": 473633.0,
+    "cost": 558706.5,
+    "proceeds": 363116.65,
+    "gain": -83123.7,
+    "disallowed": 112466.15
+   },
+   {
+    "account": "Brokerage",
+    "symbol": "SMXT",
+    "qty": 5050.5,
+    "cost": 20606.04,
+    "proceeds": 12885.88,
+    "gain": -7720.16,
+    "disallowed": 0.0
+   },
+   {
+    "account": "Brokerage",
+    "symbol": "SNAP",
+    "qty": 83942.0,
+    "cost": 490249.29,
+    "proceeds": 477627.89,
+    "gain": -9787.67,
+    "disallowed": 2833.73
+   },
+   {
+    "account": "Brokerage",
+    "symbol": "SNDK",
+    "qty": 293.0,
+    "cost": 399353.63,
+    "proceeds": 438761.07,
+    "gain": 39407.44,
+    "disallowed": 0.0
+   },
+   {
+    "account": "Brokerage",
+    "symbol": "STNG",
+    "qty": 2128.609,
+    "cost": 150785.4,
+    "proceeds": 154226.23,
+    "gain": 3458.45,
+    "disallowed": 17.62
+   },
+   {
+    "account": "Brokerage",
+    "symbol": "TE",
+    "qty": 126783.0,
+    "cost": 940294.86,
+    "proceeds": 971895.34,
+    "gain": 31600.48,
+    "disallowed": 0.0
+   },
+   {
+    "account": "Brokerage",
+    "symbol": "TSM",
+    "qty": 345.0,
+    "cost": 149783.48,
+    "proceeds": 148224.48,
+    "gain": -1559.0,
+    "disallowed": 0.0
+   },
+   {
+    "account": "Brokerage",
+    "symbol": "TWST",
+    "qty": 488.0,
+    "cost": 99976.56,
+    "proceeds": 91410.33,
+    "gain": -8566.23,
+    "disallowed": 0.0
+   },
+   {
+    "account": "Brokerage",
+    "symbol": "VST",
+    "qty": 648.0,
+    "cost": 99643.2,
+    "proceeds": 98056.58,
+    "gain": -1586.62,
+    "disallowed": 0.0
+   },
+   {
+    "account": "SEP-IRA",
+    "symbol": "ABCL",
+    "qty": 40067.0,
+    "cost": 118913.34,
+    "proceeds": 369811.49,
+    "gain": 250898.15,
+    "disallowed": 0.0
+   },
+   {
+    "account": "SEP-IRA",
+    "symbol": "AGL",
+    "qty": 547534.0,
+    "cost": 252789.88,
+    "proceeds": 295771.7,
+    "gain": 42981.82,
+    "disallowed": 0.0
+   },
+   {
+    "account": "SEP-IRA",
+    "symbol": "ASPI",
+    "qty": 363539.0,
+    "cost": 1376158.42,
+    "proceeds": 1260886.51,
+    "gain": -115271.91,
+    "disallowed": 0.0
+   },
+   {
+    "account": "SEP-IRA",
+    "symbol": "CLS",
+    "qty": 200.0,
+    "cost": 62055.07,
+    "proceeds": 61347.0,
+    "gain": -708.07,
+    "disallowed": 0.0
+   },
+   {
+    "account": "SEP-IRA",
+    "symbol": "COPX",
+    "qty": 246.0,
+    "cost": 21982.31,
+    "proceeds": 20117.88,
+    "gain": -1864.43,
+    "disallowed": 0.0
+   },
+   {
+    "account": "SEP-IRA",
+    "symbol": "DUOL",
+    "qty": 1293.0,
+    "cost": 144924.26,
+    "proceeds": 133984.37,
+    "gain": -10939.89,
+    "disallowed": 0.0
+   },
+   {
+    "account": "SEP-IRA",
+    "symbol": "FN",
+    "qty": 554.0,
+    "cost": 269657.65,
+    "proceeds": 271606.15,
+    "gain": 1948.5,
+    "disallowed": 0.0
+   },
+   {
+    "account": "SEP-IRA",
+    "symbol": "GLD",
+    "qty": 641.0,
+    "cost": 295203.23,
+    "proceeds": 258880.03,
+    "gain": -36323.2,
+    "disallowed": 0.0
+   },
+   {
+    "account": "SEP-IRA",
+    "symbol": "GOOG",
+    "qty": 1069.0,
+    "cost": 347913.97,
+    "proceeds": 342309.81,
+    "gain": -5604.16,
+    "disallowed": 0.0
+   },
+   {
+    "account": "SEP-IRA",
+    "symbol": "GRAB",
+    "qty": 30000.0,
+    "cost": 129404.04,
+    "proceeds": 123311.38,
+    "gain": -6092.66,
+    "disallowed": 0.0
+   },
+   {
+    "account": "SEP-IRA",
+    "symbol": "HIMS",
+    "qty": 1827.0,
+    "cost": 49968.45,
+    "proceeds": 47831.51,
+    "gain": -2136.94,
+    "disallowed": 0.0
+   },
+   {
+    "account": "SEP-IRA",
+    "symbol": "HIVE",
+    "qty": 38043.0,
+    "cost": 140394.78,
+    "proceeds": 144560.42,
+    "gain": 4165.64,
+    "disallowed": 0.0
+   },
+   {
+    "account": "SEP-IRA",
+    "symbol": "IMMX",
+    "qty": 322278.0,
+    "cost": 2038256.26,
+    "proceeds": 2484818.38,
+    "gain": 446562.12,
+    "disallowed": 0.0
+   },
+   {
+    "account": "SEP-IRA",
+    "symbol": "LITE",
+    "qty": 485.0,
+    "cost": 174769.75,
+    "proceeds": 164094.14,
+    "gain": -10675.61,
+    "disallowed": 0.0
+   },
+   {
+    "account": "SEP-IRA",
+    "symbol": "LLY",
+    "qty": 50.0,
+    "cost": 52606.5,
+    "proceeds": 50802.5,
+    "gain": -1804.0,
+    "disallowed": 0.0
+   },
+   {
+    "account": "SEP-IRA",
+    "symbol": "MAIA",
+    "qty": 28000.0,
+    "cost": 54027.3,
+    "proceeds": 47350.0,
+    "gain": -6677.3,
+    "disallowed": 0.0
+   },
+   {
+    "account": "SEP-IRA",
+    "symbol": "MOD",
+    "qty": 3112.0,
+    "cost": 579513.88,
+    "proceeds": 531427.75,
+    "gain": -48086.13,
+    "disallowed": 0.0
+   },
+   {
+    "account": "SEP-IRA",
+    "symbol": "MRAM",
+    "qty": 9176.0,
+    "cost": 182255.33,
+    "proceeds": 274353.89,
+    "gain": 92098.56,
+    "disallowed": 0.0
+   },
+   {
+    "account": "SEP-IRA",
+    "symbol": "MU",
+    "qty": 371.0,
+    "cost": 248758.67,
+    "proceeds": 291471.57,
+    "gain": 42712.9,
+    "disallowed": 0.0
+   },
+   {
+    "account": "SEP-IRA",
+    "symbol": "NAT",
+    "qty": 22007.254,
+    "cost": 123820.58,
+    "proceeds": 125661.03,
+    "gain": 1840.45,
+    "disallowed": 0.0
+   },
+   {
+    "account": "SEP-IRA",
+    "symbol": "NAUT",
+    "qty": 98000.0,
+    "cost": 99942.22,
+    "proceeds": 99299.65,
+    "gain": -642.57,
+    "disallowed": 0.0
+   },
+   {
+    "account": "SEP-IRA",
+    "symbol": "SLNH",
+    "qty": 45000.0,
+    "cost": 55800.0,
+    "proceeds": 52555.92,
+    "gain": -3244.08,
+    "disallowed": 0.0
+   },
+   {
+    "account": "SEP-IRA",
+    "symbol": "SLV",
+    "qty": 1149.0,
+    "cost": 99433.18,
+    "proceeds": 94182.67,
+    "gain": -5250.51,
+    "disallowed": 0.0
+   },
+   {
+    "account": "SEP-IRA",
+    "symbol": "SMXT",
+    "qty": 364348.0,
+    "cost": 358987.49,
+    "proceeds": 283347.55,
+    "gain": -75639.94,
+    "disallowed": 0.0
+   },
+   {
+    "account": "SEP-IRA",
+    "symbol": "SMXT",
+    "qty": 2500.0,
+    "cost": 10798.78,
+    "proceeds": 6357.87,
+    "gain": -4440.91,
+    "disallowed": 0.0
+   },
+   {
+    "account": "SEP-IRA",
+    "symbol": "SNAP",
+    "qty": 8183.0,
+    "cost": 49957.22,
+    "proceeds": 42347.84,
+    "gain": -7609.38,
+    "disallowed": 0.0
+   },
+   {
+    "account": "SEP-IRA",
+    "symbol": "TSM",
+    "qty": 278.0,
+    "cost": 120715.94,
+    "proceeds": 119441.63,
+    "gain": -1274.31,
+    "disallowed": 0.0
+   },
+   {
+    "account": "SEP-IRA",
+    "symbol": "VST",
+    "qty": 1623.0,
+    "cost": 249873.01,
+    "proceeds": 244805.76,
+    "gain": -5067.25,
+    "disallowed": 0.0
+   }
+  ],
+  "open_brokerage_tax_basis": {
+   "ASPI": {
+    "qty": 645340,
+    "basis": 1778461.55,
+    "value": 1206785.8,
+    "unrealized": -571675.75,
+    "term": "short"
+   }
+  },
+  "extra_assumptions": [
+   "2026 taxable figures are Vanguard's realized gain/loss report through 11/12/2026: Brokerage +$2,158,794 net, all short-term, after Vanguard disallowed $2,156,944 of wash-sale losses (ASPI alone $1,775,255)",
+   "Vanguard only applies wash-sale rules within one account. Buying ASPI in the SEP-IRA within 30 days of a Brokerage ASPI loss sale (Sept\u2013Nov 2026 overlaps) can permanently disallow part of that loss \u2014 not reflected in Vanguard's numbers; have a CPA check before filing",
+   "The ASPI what-if uses Vanguard's 11/12 close and tax basis; the actual result depends on the sale price, and any ASPI purchase in either account within 30 days after the sale would defer or (in the IRA) permanently disallow the loss"
+  ]
+ },
+ "margin": {
+  "debit": 277393.98,
+  "availableForPurchase": 1819941.45
+ },
+ "refresh_note": "Refreshed from Vanguard on 11/13/2026: holdings at the 11/12 close, every transaction through 11/05 (replacing the provisional 09/08 partial snapshot), and 2026 taxable gains from Vanguard\u2019s realized cost-basis report through 11/12. Performance is through 11/11.",
+ "default_methods": {
+  "Brokerage": "HIFO",
+  "SEP-IRA": "FIFO"
+ },
+ "default_methods_evidence": "Chosen to reproduce Vanguard's remaining-lot basis: Brokerage IMMX HIFO leaves $957,537 vs Vanguard $961,169 (difference = wash-sale basis adds; FIFO would leave $2.61M); SEP-IRA ASPI FIFO leaves $1,050,454 vs Vanguard $1,050,598. Brokerage ASPI basis cannot discriminate (Vanguard's $1,778,462 includes wash-sale adds); HIFO is used, as on the 09/08 ASPI order."
+}

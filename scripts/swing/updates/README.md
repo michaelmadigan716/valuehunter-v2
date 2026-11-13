@@ -17,3 +17,13 @@ September 8 fills settle September 9. Economic sale P&L is provisional: complete
 The next update should obtain posted transaction amounts and finalized sold lots, replace provisional entries (not append duplicates), and reconcile fees before marking those sales final. Performance is through September 4; holdings are a delayed September 8 intraday snapshot, so their totals are intentionally dated separately. The previous historical executions, closed positions, and tax estimates were checked unchanged.
 
 Cloud research remains paused. No research settings or Always Thinking files are changed by this update.
+
+## 2026-11-12 update (supersedes the 09/08 snapshot)
+
+`2026-11-12.json` re-imports every posted transaction from 08/29 through 11/05/2026 onto the audited 08/28 ledger (the 09/08 file was a partial intraday snapshot; it is kept only so the earlier build stays reproducible). Reproduce with the 08/28 baseline (`git show cbbce44^:app/swing/_data/trades.json`):
+
+```sh
+python3 scripts/swing/apply_snapshot.py BASELINE_0828_JSON scripts/swing/updates/2026-11-12.json app/swing/_data/trades.json
+```
+
+Holdings are the 11/12 close; all seven open positions match Vanguard share-for-share and the execution ledger cash matches broker cash exactly. Partial sales use HIFO in the Brokerage account and FIFO in the SEP-IRA (`default_methods`), the methods that reproduce Vanguard's remaining-lot basis (evidence in the file). The `tax` block holds Vanguard's 2026 realized gain/loss summary rows through 11/12 and replaces the 2026 taxable figures and estimate; it also carries Vanguard's tax basis for the open Brokerage ASPI lots for the sell-all what-if. Performance months are Vanguard's through 11/11. The margin snapshot (`app/swing/_data/margin.json`) holds the 11/12 debit and buying power; call status was not re-read.

@@ -1,45 +1,45 @@
 {
-"generated": "09/08/2026",
-"as_of": "09/08/2026",
+"generated": "11/12/2026",
+"as_of": "11/12/2026",
 "first_date": "05/15/2019",
 "accounts": [
 "Brokerage",
 "SEP-IRA"
 ],
 "summary": {
-"realized": 3915194.72,
-"realized_closed": 2667240.56,
-"realized_open": 1248537.74,
-"taxable_realized": 3879393.27,
-"unrealized": 4947956.61,
+"realized": 3415847.43,
+"realized_closed": 2470966.79,
+"realized_open": 945464.22,
+"taxable_realized": 3848899.64,
+"unrealized": 1212671.92,
 "vanguard_unrealized": null,
 "wash_deferred": null,
-"market_value": 12504485.55,
-"open_cost": 7556528.94,
-"income": 62292.03,
+"market_value": 5475072.03,
+"open_cost": 4262400.11,
+"income": 63009.83,
 "fees": 2202.43,
-"other": -3403.29,
+"other": -13656.36,
 "deposits": 4300364.2,
 "withdrawals": 3795243.82,
 "net_deposits": 505120.38,
-"account_value": 9446848.77,
-"cash": -3057636.78,
-"ledger_cash": -3057630.22,
+"account_value": 5202688.08,
+"cash": -272383.95,
+"ledger_cash": -272383.95,
 "ledger_cash_by_account": {
-"Brokerage": -3065959.07,
-"SEP-IRA": 8328.85
+"Brokerage": -277393.98,
+"SEP-IRA": 5010.03
 },
-"prices_as_of": "09/08/2026",
+"prices_as_of": "11/12/2026",
 "vanguard": {
-"investment_returns": 9255103.32,
-"market": 9192811.29,
-"income": 62292.03,
-"flows": 521410.39,
-"ending": 9776513.71,
+"investment_returns": 4978007.23,
+"market": 4914997.4,
+"income": 63009.83,
+"flows": 511157.32,
+"ending": 5489164.55,
 "since": "05/01/2019",
-"as_of": "09/04/2026"
+"as_of": "11/11/2026"
 },
-"components_total": 8925443.36,
+"components_total": 4691529.18,
 "advisor": {
 "positions": 17,
 "value_in": 100539.86,
@@ -48,9 +48,9 @@
 "transferred": "03/31/2020",
 "liquidated": "04/01/2020 \u2013 04/20/2020"
 },
-"realized_trades": 3915778.3,
-"prices_label": "09/08/2026 11:18 AM ET (delayed intraday)",
-"cash_reconciliation_difference": -6.56
+"realized_trades": 3416431.01,
+"prices_label": "11/12/2026 4:00 PM ET close",
+"cash_reconciliation_difference": 0.0
 },
 "tax_estimate": {
 "years": [
@@ -140,18 +140,18 @@
 },
 {
 "year": "2026",
-"brk_taxable": 2437558.05,
-"st": 2437558.05,
+"brk_taxable": 2158794.1,
+"st": 2158794.1,
 "lt": 0.0,
 "ny_base": 2173145.82,
-"est_federal": 994523.68,
+"est_federal": 880787.99,
 "est_ny": 209708.57,
-"est_total": 1204232.25,
+"est_total": 1090496.56,
 "ny_rate": 0.0965,
 "note": "NY on Jan\u2013Jun sales only (~2,173,146); Florida after the move"
 }
 ],
-"total": 1908667.99,
+"total": 1794932.3,
 "fed_st": 0.408,
 "fed_lt": 0.23800000000000002,
 "assumptions": [
@@ -160,7 +160,611 @@
 "NY State resident (outside NYC) through 06/30/2026, Florida (no state income tax) after; NY marginal 6.85% or 9.65% depending on the size of the year",
 "Each year stands alone \u2014 the 2022 loss is assumed absorbed by gains at other brokerages, no carryforwards applied",
 "ST/LT is split by each lot's actual holding period; wash-sale holding-period tacking can shift a small amount between buckets (net effect on the estimate is minimal)",
-"Ignores other income, deductions and estimated-payment timing \u2014 a rough planning number, not tax advice"
+"Ignores other income, deductions and estimated-payment timing \u2014 a rough planning number, not tax advice",
+"2026 taxable figures are Vanguard's realized gain/loss report through 11/12/2026: Brokerage +$2,158,794 net, all short-term, after Vanguard disallowed $2,156,944 of wash-sale losses (ASPI alone $1,775,255)",
+"Vanguard only applies wash-sale rules within one account. Buying ASPI in the SEP-IRA within 30 days of a Brokerage ASPI loss sale (Sept\u2013Nov 2026 overlaps) can permanently disallow part of that loss \u2014 not reflected in Vanguard's numbers; have a CPA check before filing",
+"The ASPI what-if uses Vanguard's 11/12 close and tax basis; the actual result depends on the sale price, and any ASPI purchase in either account within 30 days after the sale would defer or (in the IRA) permanently disallow the loss"
+],
+"as_of": "11/12/2026",
+"realized_rows": [
+{
+"account": "Brokerage",
+"symbol": "ABCL",
+"qty": 222347.0,
+"cost": 910556.47,
+"proceeds": 845856.98,
+"gain": -37597.33,
+"disallowed": 27102.16
+},
+{
+"account": "Brokerage",
+"symbol": "AGL",
+"qty": 1122451.0,
+"cost": 433412.18,
+"proceeds": 620177.34,
+"gain": 186765.16,
+"disallowed": 0.0
+},
+{
+"account": "Brokerage",
+"symbol": "AGL",
+"qty": 116679.0,
+"cost": 1852625.94,
+"proceeds": 3207088.24,
+"gain": 1354462.3,
+"disallowed": 0.0
+},
+{
+"account": "Brokerage",
+"symbol": "ARM",
+"qty": 622.0,
+"cost": 200505.43,
+"proceeds": 181492.75,
+"gain": -19012.68,
+"disallowed": 0.0
+},
+{
+"account": "Brokerage",
+"symbol": "ASPI",
+"qty": 1522500.0,
+"cost": 6873107.04,
+"proceeds": 4868726.45,
+"gain": -229125.79,
+"disallowed": 1775254.8
+},
+{
+"account": "Brokerage",
+"symbol": "AVGO",
+"qty": 677.0,
+"cost": 249691.14,
+"proceeds": 246680.86,
+"gain": -3010.28,
+"disallowed": 0.0
+},
+{
+"account": "Brokerage",
+"symbol": "BTDR",
+"qty": 13559.0,
+"cost": 195249.6,
+"proceeds": 171693.02,
+"gain": -23556.58,
+"disallowed": 0.0
+},
+{
+"account": "Brokerage",
+"symbol": "DARE",
+"qty": 165440.0,
+"cost": 546278.29,
+"proceeds": 448495.79,
+"gain": -97456.21,
+"disallowed": 326.29
+},
+{
+"account": "Brokerage",
+"symbol": "DUOL",
+"qty": 18701.0,
+"cost": 2083212.87,
+"proceeds": 1905660.84,
+"gain": -157376.14,
+"disallowed": 20175.89
+},
+{
+"account": "Brokerage",
+"symbol": "GOOG",
+"qty": 5150.0,
+"cost": 1704447.5,
+"proceeds": 1665439.21,
+"gain": -33541.24,
+"disallowed": 5467.05
+},
+{
+"account": "Brokerage",
+"symbol": "GRAB",
+"qty": 35000.0,
+"cost": 150147.75,
+"proceeds": 144376.28,
+"gain": -5771.47,
+"disallowed": 0.0
+},
+{
+"account": "Brokerage",
+"symbol": "HIMS",
+"qty": 21367.0,
+"cost": 597619.2,
+"proceeds": 554629.54,
+"gain": -41971.06,
+"disallowed": 1018.6
+},
+{
+"account": "Brokerage",
+"symbol": "HIVE",
+"qty": 47281.0,
+"cost": 199552.94,
+"proceeds": 175283.62,
+"gain": -24269.32,
+"disallowed": 0.0
+},
+{
+"account": "Brokerage",
+"symbol": "IMMX",
+"qty": 942499.0,
+"cost": 6735156.03,
+"proceeds": 8010615.31,
+"gain": 1313273.42,
+"disallowed": 37814.14
+},
+{
+"account": "Brokerage",
+"symbol": "INTC",
+"qty": 2567.0,
+"cost": 299928.28,
+"proceeds": 270992.62,
+"gain": 0.0,
+"disallowed": 28935.66
+},
+{
+"account": "Brokerage",
+"symbol": "IREN",
+"qty": 20510.0,
+"cost": 968579.13,
+"proceeds": 841434.33,
+"gain": -115385.3,
+"disallowed": 11759.5
+},
+{
+"account": "Brokerage",
+"symbol": "LLY",
+"qty": 50.0,
+"cost": 52565.25,
+"proceeds": 50741.0,
+"gain": -1824.25,
+"disallowed": 0.0
+},
+{
+"account": "Brokerage",
+"symbol": "MAIA",
+"qty": 50000.0,
+"cost": 95962.0,
+"proceeds": 84970.0,
+"gain": -10992.0,
+"disallowed": 0.0
+},
+{
+"account": "Brokerage",
+"symbol": "MOD",
+"qty": 5862.0,
+"cost": 1221401.3,
+"proceeds": 893111.71,
+"gain": -208089.97,
+"disallowed": 120199.62
+},
+{
+"account": "Brokerage",
+"symbol": "MRAM",
+"qty": 21200.0,
+"cost": 373651.52,
+"proceeds": 453681.17,
+"gain": 80029.65,
+"disallowed": 0.0
+},
+{
+"account": "Brokerage",
+"symbol": "MRVL",
+"qty": 438.0,
+"cost": 99956.3,
+"proceeds": 104110.94,
+"gain": 4154.64,
+"disallowed": 0.0
+},
+{
+"account": "Brokerage",
+"symbol": "MU",
+"qty": 5053.0,
+"cost": 3532725.4,
+"proceeds": 3842843.81,
+"gain": 310118.41,
+"disallowed": 0.0
+},
+{
+"account": "Brokerage",
+"symbol": "NAT",
+"qty": 226697.235,
+"cost": 1254746.91,
+"proceeds": 1264547.54,
+"gain": 18226.58,
+"disallowed": 8425.95
+},
+{
+"account": "Brokerage",
+"symbol": "NAUT",
+"qty": 100000.0,
+"cost": 101959.54,
+"proceeds": 101011.07,
+"gain": -948.47,
+"disallowed": 0.0
+},
+{
+"account": "Brokerage",
+"symbol": "NOK",
+"qty": 24366.0,
+"cost": 364014.29,
+"proceeds": 328021.44,
+"gain": -30846.14,
+"disallowed": 5146.71
+},
+{
+"account": "Brokerage",
+"symbol": "NVDA",
+"qty": 660.0,
+"cost": 149958.6,
+"proceeds": 143824.37,
+"gain": -6134.23,
+"disallowed": 0.0
+},
+{
+"account": "Brokerage",
+"symbol": "SLNH",
+"qty": 100000.0,
+"cost": 123900.0,
+"proceeds": 117156.19,
+"gain": -6743.81,
+"disallowed": 0.0
+},
+{
+"account": "Brokerage",
+"symbol": "SLV",
+"qty": 914.0,
+"cost": 83023.19,
+"proceeds": 66316.41,
+"gain": -16706.78,
+"disallowed": 0.0
+},
+{
+"account": "Brokerage",
+"symbol": "SMXT",
+"qty": 473633.0,
+"cost": 558706.5,
+"proceeds": 363116.65,
+"gain": -83123.7,
+"disallowed": 112466.15
+},
+{
+"account": "Brokerage",
+"symbol": "SMXT",
+"qty": 5050.5,
+"cost": 20606.04,
+"proceeds": 12885.88,
+"gain": -7720.16,
+"disallowed": 0.0
+},
+{
+"account": "Brokerage",
+"symbol": "SNAP",
+"qty": 83942.0,
+"cost": 490249.29,
+"proceeds": 477627.89,
+"gain": -9787.67,
+"disallowed": 2833.73
+},
+{
+"account": "Brokerage",
+"symbol": "SNDK",
+"qty": 293.0,
+"cost": 399353.63,
+"proceeds": 438761.07,
+"gain": 39407.44,
+"disallowed": 0.0
+},
+{
+"account": "Brokerage",
+"symbol": "STNG",
+"qty": 2128.609,
+"cost": 150785.4,
+"proceeds": 154226.23,
+"gain": 3458.45,
+"disallowed": 17.62
+},
+{
+"account": "Brokerage",
+"symbol": "TE",
+"qty": 126783.0,
+"cost": 940294.86,
+"proceeds": 971895.34,
+"gain": 31600.48,
+"disallowed": 0.0
+},
+{
+"account": "Brokerage",
+"symbol": "TSM",
+"qty": 345.0,
+"cost": 149783.48,
+"proceeds": 148224.48,
+"gain": -1559.0,
+"disallowed": 0.0
+},
+{
+"account": "Brokerage",
+"symbol": "TWST",
+"qty": 488.0,
+"cost": 99976.56,
+"proceeds": 91410.33,
+"gain": -8566.23,
+"disallowed": 0.0
+},
+{
+"account": "Brokerage",
+"symbol": "VST",
+"qty": 648.0,
+"cost": 99643.2,
+"proceeds": 98056.58,
+"gain": -1586.62,
+"disallowed": 0.0
+},
+{
+"account": "SEP-IRA",
+"symbol": "ABCL",
+"qty": 40067.0,
+"cost": 118913.34,
+"proceeds": 369811.49,
+"gain": 250898.15,
+"disallowed": 0.0
+},
+{
+"account": "SEP-IRA",
+"symbol": "AGL",
+"qty": 547534.0,
+"cost": 252789.88,
+"proceeds": 295771.7,
+"gain": 42981.82,
+"disallowed": 0.0
+},
+{
+"account": "SEP-IRA",
+"symbol": "ASPI",
+"qty": 363539.0,
+"cost": 1376158.42,
+"proceeds": 1260886.51,
+"gain": -115271.91,
+"disallowed": 0.0
+},
+{
+"account": "SEP-IRA",
+"symbol": "CLS",
+"qty": 200.0,
+"cost": 62055.07,
+"proceeds": 61347.0,
+"gain": -708.07,
+"disallowed": 0.0
+},
+{
+"account": "SEP-IRA",
+"symbol": "COPX",
+"qty": 246.0,
+"cost": 21982.31,
+"proceeds": 20117.88,
+"gain": -1864.43,
+"disallowed": 0.0
+},
+{
+"account": "SEP-IRA",
+"symbol": "DUOL",
+"qty": 1293.0,
+"cost": 144924.26,
+"proceeds": 133984.37,
+"gain": -10939.89,
+"disallowed": 0.0
+},
+{
+"account": "SEP-IRA",
+"symbol": "FN",
+"qty": 554.0,
+"cost": 269657.65,
+"proceeds": 271606.15,
+"gain": 1948.5,
+"disallowed": 0.0
+},
+{
+"account": "SEP-IRA",
+"symbol": "GLD",
+"qty": 641.0,
+"cost": 295203.23,
+"proceeds": 258880.03,
+"gain": -36323.2,
+"disallowed": 0.0
+},
+{
+"account": "SEP-IRA",
+"symbol": "GOOG",
+"qty": 1069.0,
+"cost": 347913.97,
+"proceeds": 342309.81,
+"gain": -5604.16,
+"disallowed": 0.0
+},
+{
+"account": "SEP-IRA",
+"symbol": "GRAB",
+"qty": 30000.0,
+"cost": 129404.04,
+"proceeds": 123311.38,
+"gain": -6092.66,
+"disallowed": 0.0
+},
+{
+"account": "SEP-IRA",
+"symbol": "HIMS",
+"qty": 1827.0,
+"cost": 49968.45,
+"proceeds": 47831.51,
+"gain": -2136.94,
+"disallowed": 0.0
+},
+{
+"account": "SEP-IRA",
+"symbol": "HIVE",
+"qty": 38043.0,
+"cost": 140394.78,
+"proceeds": 144560.42,
+"gain": 4165.64,
+"disallowed": 0.0
+},
+{
+"account": "SEP-IRA",
+"symbol": "IMMX",
+"qty": 322278.0,
+"cost": 2038256.26,
+"proceeds": 2484818.38,
+"gain": 446562.12,
+"disallowed": 0.0
+},
+{
+"account": "SEP-IRA",
+"symbol": "LITE",
+"qty": 485.0,
+"cost": 174769.75,
+"proceeds": 164094.14,
+"gain": -10675.61,
+"disallowed": 0.0
+},
+{
+"account": "SEP-IRA",
+"symbol": "LLY",
+"qty": 50.0,
+"cost": 52606.5,
+"proceeds": 50802.5,
+"gain": -1804.0,
+"disallowed": 0.0
+},
+{
+"account": "SEP-IRA",
+"symbol": "MAIA",
+"qty": 28000.0,
+"cost": 54027.3,
+"proceeds": 47350.0,
+"gain": -6677.3,
+"disallowed": 0.0
+},
+{
+"account": "SEP-IRA",
+"symbol": "MOD",
+"qty": 3112.0,
+"cost": 579513.88,
+"proceeds": 531427.75,
+"gain": -48086.13,
+"disallowed": 0.0
+},
+{
+"account": "SEP-IRA",
+"symbol": "MRAM",
+"qty": 9176.0,
+"cost": 182255.33,
+"proceeds": 274353.89,
+"gain": 92098.56,
+"disallowed": 0.0
+},
+{
+"account": "SEP-IRA",
+"symbol": "MU",
+"qty": 371.0,
+"cost": 248758.67,
+"proceeds": 291471.57,
+"gain": 42712.9,
+"disallowed": 0.0
+},
+{
+"account": "SEP-IRA",
+"symbol": "NAT",
+"qty": 22007.254,
+"cost": 123820.58,
+"proceeds": 125661.03,
+"gain": 1840.45,
+"disallowed": 0.0
+},
+{
+"account": "SEP-IRA",
+"symbol": "NAUT",
+"qty": 98000.0,
+"cost": 99942.22,
+"proceeds": 99299.65,
+"gain": -642.57,
+"disallowed": 0.0
+},
+{
+"account": "SEP-IRA",
+"symbol": "SLNH",
+"qty": 45000.0,
+"cost": 55800.0,
+"proceeds": 52555.92,
+"gain": -3244.08,
+"disallowed": 0.0
+},
+{
+"account": "SEP-IRA",
+"symbol": "SLV",
+"qty": 1149.0,
+"cost": 99433.18,
+"proceeds": 94182.67,
+"gain": -5250.51,
+"disallowed": 0.0
+},
+{
+"account": "SEP-IRA",
+"symbol": "SMXT",
+"qty": 364348.0,
+"cost": 358987.49,
+"proceeds": 283347.55,
+"gain": -75639.94,
+"disallowed": 0.0
+},
+{
+"account": "SEP-IRA",
+"symbol": "SMXT",
+"qty": 2500.0,
+"cost": 10798.78,
+"proceeds": 6357.87,
+"gain": -4440.91,
+"disallowed": 0.0
+},
+{
+"account": "SEP-IRA",
+"symbol": "SNAP",
+"qty": 8183.0,
+"cost": 49957.22,
+"proceeds": 42347.84,
+"gain": -7609.38,
+"disallowed": 0.0
+},
+{
+"account": "SEP-IRA",
+"symbol": "TSM",
+"qty": 278.0,
+"cost": 120715.94,
+"proceeds": 119441.63,
+"gain": -1274.31,
+"disallowed": 0.0
+},
+{
+"account": "SEP-IRA",
+"symbol": "VST",
+"qty": 1623.0,
+"cost": 249873.01,
+"proceeds": 244805.76,
+"gain": -5067.25,
+"disallowed": 0.0
+}
+],
+"scenarios": [
+{
+"symbol": "ASPI",
+"qty": 645340,
+"basis": 1778461.55,
+"value": 1206785.8,
+"unrealized": -571675.75,
+"brk_taxable_after": 1587118.35,
+"est_federal_after": 647544.29,
+"est_total_after": 857252.86,
+"saving": 233243.7
+}
 ]
 },
 "positions": [
@@ -13272,13 +13876,13 @@
 "name": "IMMIX BIOPHARMA INC",
 "opened": "08/28/2025",
 "closed": null,
-"buys": 36,
-"sells": 33,
-"qty_bought": 1138080.0,
-"cost": 6425322.19,
-"proceeds": 3034919.96,
+"buys": 39,
+"sells": 41,
+"qty_bought": 1266577.0,
+"cost": 7932138.95,
+"proceeds": 8297417.69,
 "fees": 2.75,
-"realized": 1233398.24,
+"realized": 1322816.12,
 "tax_realized": 1233398.25,
 "max_qty": 620402.0,
 "execs": [
@@ -13830,36 +14434,109 @@
 "qty": 7698.0,
 "price": 13.02,
 "amount": -100189.47
+},
+{
+"date": "09/08/2026",
+"type": "Sell",
+"qty": -37698.0,
+"price": 13.28,
+"amount": 500658.76,
+"pnl": 97502.29,
+"tax_pnl": null
+},
+{
+"date": "09/08/2026",
+"type": "Sell",
+"qty": -50000.0,
+"price": 13.2,
+"amount": 660227.5,
+"pnl": 157358.5,
+"tax_pnl": null
+},
+{
+"date": "09/08/2026",
+"type": "Sell",
+"qty": -48262.0,
+"price": 13.15,
+"amount": 634810.74,
+"pnl": 152377.99,
+"tax_pnl": null
+},
+{
+"date": "09/21/2026",
+"type": "Buy",
+"qty": 82372.0,
+"price": 12.19,
+"amount": -1004388.66
+},
+{
+"date": "09/25/2026",
+"type": "Buy",
+"qty": 42234.0,
+"price": 10.9,
+"amount": -460189.77
+},
+{
+"date": "09/25/2026",
+"type": "Buy",
+"qty": 3891.0,
+"price": 10.86,
+"amount": -42238.33
+},
+{
+"date": "09/29/2026",
+"type": "Sell",
+"qty": -46125.0,
+"price": 10.15,
+"amount": 468242.63,
+"pnl": -94174.54,
+"tax_pnl": null
+},
+{
+"date": "10/02/2026",
+"type": "Sell",
+"qty": -82372.0,
+"price": 10.01,
+"amount": 824220.6,
+"pnl": -120178.99,
+"tax_pnl": null
+},
+{
+"date": "10/09/2026",
+"type": "Sell",
+"qty": -49950.0,
+"price": 9.36,
+"amount": 467539.8,
+"pnl": -20404.12,
+"tax_pnl": null
+},
+{
+"date": "10/13/2026",
+"type": "Sell",
+"qty": -141672.0,
+"price": 8.8,
+"amount": 1246713.72,
+"pnl": -39941.01,
+"tax_pnl": null
+},
+{
+"date": "10/16/2026",
+"type": "Sell",
+"qty": -56242.0,
+"price": 8.18,
+"amount": 460083.98,
+"pnl": -43122.24,
+"tax_pnl": null
 }
 ],
 "basis_known": true,
-"open_qty": 620402.0,
-"open_cost": 4623800.47,
+"open_qty": 236578.0,
+"open_cost": 957537.38,
 "open_lots": [
 {
-"date": "10/16/2025",
-"qty": 7500.0,
-"price": 2.7278
-},
-{
-"date": "10/20/2025",
-"qty": 62500.0,
-"price": 2.8971
-},
-{
-"date": "10/21/2025",
-"qty": 42596.0,
-"price": 2.9995
-},
-{
-"date": "10/21/2025",
-"qty": 62588.0,
-"price": 2.9299
-},
-{
-"date": "10/22/2025",
-"qty": 8200.0,
-"price": 2.9911
+"date": "05/21/2026",
+"qty": 46728.0,
+"price": 8.5779
 },
 {
 "date": "10/22/2025",
@@ -13867,75 +14544,41 @@
 "price": 3.0179
 },
 {
-"date": "05/21/2026",
-"qty": 46728.0,
-"price": 8.5779
+"date": "10/21/2025",
+"qty": 42596.0,
+"price": 2.9995
 },
 {
-"date": "05/26/2026",
-"qty": 115032.0,
-"price": 9.1009
+"date": "10/22/2025",
+"qty": 8200.0,
+"price": 2.9911
 },
 {
-"date": "05/26/2026",
-"qty": 28089.0,
-"price": 8.9376
+"date": "10/21/2025",
+"qty": 62588.0,
+"price": 2.9299
 },
 {
-"date": "05/26/2026",
-"qty": 28153.0,
-"price": 8.9567
+"date": "10/20/2025",
+"qty": 62500.0,
+"price": 2.8971
 },
 {
-"date": "07/16/2026",
-"qty": 49950.0,
-"price": 10.0297
-},
-{
-"date": "07/20/2026",
-"qty": 26640.0,
-"price": 9.0
-},
-{
-"date": "08/06/2026",
-"qty": 6262.0,
-"price": 9.58
-},
-{
-"date": "08/06/2026",
-"qty": 20000.0,
-"price": 9.6963
-},
-{
-"date": "08/10/2026",
-"qty": 50000.0,
-"price": 10.0989
-},
-{
-"date": "08/10/2026",
-"qty": 30000.0,
-"price": 9.8796
-},
-{
-"date": "08/10/2026",
-"qty": 22000.0,
-"price": 9.9991
-},
-{
-"date": "08/20/2026",
-"qty": 7698.0,
-"price": 13.015
+"date": "10/16/2025",
+"qty": 7500.0,
+"price": 2.7278
 }
 ],
-"last_price": 13.37,
-"market_value": 8291672.73,
-"unrealized": 3667872.26,
+"last_price": 8.07,
+"market_value": 1909184.46,
+"unrealized": 951647.08,
 "category": "trade",
 "status": "open",
-"days": 376,
+"days": 441,
 "return_pct": null,
 "dividends": 0.0,
-"id": "Bro-IMMX-08282025"
+"id": "Bro-IMMX-08282025",
+"provisional": true
 },
 {
 "account": "Brokerage",
@@ -16241,12 +16884,12 @@
 "price": 4.3962
 }
 ],
-"last_price": 11.46,
-"market_value": 897604.5,
-"unrealized": 592636.8,
+"last_price": 11.62,
+"market_value": 910136.5,
+"unrealized": 605168.8,
 "category": "trade",
 "status": "open",
-"days": 214,
+"days": 279,
 "return_pct": null,
 "dividends": 0.0,
 "id": "Bro-ABCL-02062026"
@@ -16256,14 +16899,14 @@
 "symbol": "ABCL",
 "name": "ABCELLERA BIOLOGICS INC",
 "opened": "02/06/2026",
-"closed": null,
+"closed": "09/10/2026",
 "buys": 1,
-"sells": 1,
+"sells": 4,
 "qty_bought": 40067.0,
 "cost": 118913.34,
-"proceeds": 92848.09,
+"proceeds": 369811.49,
 "fees": 1.91,
-"realized": 48330.16,
+"realized": 250898.15,
 "tax_realized": 48330.16,
 "max_qty": 40067.0,
 "execs": [
@@ -16282,27 +16925,49 @@
 "amount": 92848.09,
 "pnl": 48330.16,
 "wash_adj": -0.0
+},
+{
+"date": "09/09/2026",
+"type": "Sell",
+"qty": -9025.0,
+"price": 11.08,
+"amount": 99950.72,
+"pnl": 73165.42,
+"tax_pnl": null
+},
+{
+"date": "09/09/2026",
+"type": "Sell",
+"qty": -8000.0,
+"price": 11.21,
+"amount": 89638.15,
+"pnl": 65894.95,
+"tax_pnl": null
+},
+{
+"date": "09/10/2026",
+"type": "Sell",
+"qty": -8042.0,
+"price": 10.87,
+"amount": 87374.53,
+"pnl": 63507.62,
+"tax_pnl": null
 }
 ],
 "basis_known": true,
-"open_qty": 25067.0,
-"open_cost": 74395.41,
-"open_lots": [
-{
-"date": "02/06/2026",
-"qty": 25067.0,
-"price": 2.9679
-}
-],
-"last_price": 11.46,
-"market_value": 287267.82,
-"unrealized": 212872.41,
+"open_qty": 0,
+"open_cost": 0,
+"open_lots": [],
+"last_price": 11.35,
+"market_value": 0,
+"unrealized": 0,
 "category": "trade",
-"status": "open",
-"days": 214,
-"return_pct": null,
+"status": "closed",
+"days": 216,
+"return_pct": 210.99,
 "dividends": 0.0,
-"id": "SEP-ABCL-02062026"
+"id": "SEP-ABCL-02062026",
+"provisional": true
 },
 {
 "account": "Brokerage",
@@ -17689,16 +18354,16 @@
 "symbol": "IMMX",
 "name": "IMMIX BIOPHARMA INC",
 "opened": "04/30/2026",
-"closed": null,
-"buys": 4,
-"sells": 0,
-"qty_bought": 81488.0,
-"cost": 719823.74,
-"proceeds": 0.0,
+"closed": "10/02/2026",
+"buys": 6,
+"sells": 6,
+"qty_bought": 129702.0,
+"cost": 1326037.84,
+"proceeds": 1453620.72,
 "fees": 0.0,
-"realized": 0.0,
+"realized": 127582.88,
 "tax_realized": 0.0,
-"max_qty": 81488.0,
+"max_qty": 91723.0,
 "execs": [
 {
 "date": "04/30/2026",
@@ -17727,42 +18392,90 @@
 "qty": 21910.0,
 "price": 8.95,
 "amount": -196077.11
+},
+{
+"date": "09/08/2026",
+"type": "Sell",
+"qty": -18968.0,
+"price": 13.15,
+"amount": 249433.42,
+"pnl": 84309.39,
+"tax_pnl": null
+},
+{
+"date": "09/08/2026",
+"type": "Sell",
+"qty": -1882.0,
+"price": 13.14,
+"amount": 24729.17,
+"pnl": 8345.61,
+"tax_pnl": null
+},
+{
+"date": "09/08/2026",
+"type": "Sell",
+"qty": -17129.0,
+"price": 13.08,
+"amount": 224072.6,
+"pnl": 72813.24,
+"tax_pnl": null
+},
+{
+"date": "09/10/2026",
+"type": "Buy",
+"qty": 39714.0,
+"price": 12.6,
+"amount": -500394.2
+},
+{
+"date": "09/21/2026",
+"type": "Buy",
+"qty": 8500.0,
+"price": 12.45,
+"amount": -105819.9
+},
+{
+"date": "09/29/2026",
+"type": "Sell",
+"qty": -30000.0,
+"price": 11.3,
+"amount": 338996.02,
+"pnl": 72834.24,
+"tax_pnl": null
+},
+{
+"date": "10/02/2026",
+"type": "Sell",
+"qty": -19940.0,
+"price": 10.0,
+"amount": 199403.56,
+"pnl": -2521.43,
+"tax_pnl": null
+},
+{
+"date": "10/02/2026",
+"type": "Sell",
+"qty": -41783.0,
+"price": 9.98,
+"amount": 416985.95,
+"pnl": -108198.17,
+"tax_pnl": null
 }
 ],
 "basis_known": true,
-"open_qty": 81488.0,
-"open_cost": 719823.74,
-"open_lots": [
-{
-"date": "04/30/2026",
-"qty": 23148.0,
-"price": 8.7054
-},
-{
-"date": "05/20/2026",
-"qty": 35000.0,
-"price": 8.85
-},
-{
-"date": "05/20/2026",
-"qty": 1430.0,
-"price": 8.73
-},
-{
-"date": "07/20/2026",
-"qty": 21910.0,
-"price": 8.9492
-}
-],
-"last_price": 13.37,
-"market_value": 1089087.12,
-"unrealized": 369263.38,
+"open_qty": 0,
+"open_cost": 0,
+"open_lots": [],
+"last_price": 13.94,
+"market_value": 0,
+"unrealized": 0,
 "category": "trade",
-"status": "open",
-"days": 131,
-"return_pct": null,
+"status": "closed",
+"days": 155,
+"return_pct": 9.62,
 "dividends": 0.0,
-"id": "SEP-IMMX-04302026"
+"id": "SEP-IMMX-04302026",
+"provisional": true
 },
 {
 "account": "SEP-IRA",
@@ -18870,9 +19583,9 @@
 "sells": 1,
 "qty_bought": 60606.0,
 "cost": 20606.04,
-"proceeds": 12883.96,
+"proceeds": 12883.69,
 "fees": 0.0,
-"realized": -7722.08,
+"realized": -7722.35,
 "tax_realized": 0.0,
 "max_qty": 60606.0,
 "execs": [
@@ -18894,12 +19607,10 @@
 {
 "date": "09/08/2026",
 "type": "Sell",
-"qty": -5050,
+"qty": -5050.0,
 "price": 2.55,
-"amount": 12883.96,
-"provisional": true,
-"note": "Executed; settlement 09/09/2026. Sale fees and lot P&L provisional.",
-"pnl": -7722.08,
+"amount": 12883.69,
+"pnl": -7722.35,
 "tax_pnl": null
 }
 ],
@@ -18913,7 +19624,7 @@
 "category": "trade",
 "status": "closed",
 "days": 70,
-"return_pct": -37.47,
+"return_pct": -37.48,
 "dividends": 0.0,
 "id": "Bro-SMXT-06302026",
 "provisional": true
@@ -18969,9 +19680,9 @@
 "sells": 1,
 "qty_bought": 30000.0,
 "cost": 10798.78,
-"proceeds": 6358.0,
+"proceeds": 6357.87,
 "fees": 0.0,
-"realized": -4440.78,
+"realized": -4440.91,
 "tax_realized": 0.0,
 "max_qty": 30000.0,
 "execs": [
@@ -18993,12 +19704,10 @@
 {
 "date": "09/08/2026",
 "type": "Sell",
-"qty": -2500,
+"qty": -2500.0,
 "price": 2.54,
-"amount": 6358.0,
-"provisional": true,
-"note": "Executed; settlement 09/09/2026. Sale fees and lot P&L provisional.",
-"pnl": -4440.78,
+"amount": 6357.87,
+"pnl": -4440.91,
 "tax_pnl": null
 }
 ],
@@ -19064,309 +19773,94 @@
 "symbol": "ASPI",
 "name": "ASP ISOTOPES INC",
 "opened": "09/01/2026",
-"closed": null,
-"status": "open",
-"buys": 3,
-"sells": 1,
-"qty_bought": 281871,
-"max_qty": 281871,
-"cost": 1105017.81,
-"proceeds": 298259.43,
+"closed": "09/10/2026",
+"status": "closed",
+"buys": 4,
+"sells": 4,
+"qty_bought": 332761.0,
+"max_qty": 281871.0,
+"cost": 1305008.22,
+"proceeds": 1256056.81,
 "fees": 0,
-"realized": 23913.08,
+"realized": -48951.41,
 "tax_realized": 0,
-"return_pct": null,
-"days": 7,
+"return_pct": -3.75,
+"days": 9,
 "basis_known": true,
 "category": "trade",
 "dividends": 0,
-"open_qty": 212587,
-"open_cost": 830671.46,
-"open_lots": [
-{
-"date": "09/02/2026",
-"qty": 110716,
-"price": 3.959736
-},
-{
-"date": "09/01/2026",
-"qty": 62189,
-"price": 3.88
-},
-{
-"date": "09/01/2026",
-"qty": 39682,
-"price": 3.8045463938309565
-}
-],
+"open_qty": 0,
+"open_cost": 0,
+"open_lots": [],
 "execs": [
 {
 "date": "09/01/2026",
 "type": "Buy",
-"qty": 62189,
+"qty": 62189.0,
 "price": 3.88,
 "amount": -241293.32
 },
 {
 "date": "09/01/2026",
 "type": "Buy",
-"qty": 39682,
+"qty": 39682.0,
 "price": 3.8,
 "amount": -150972.01
 },
 {
 "date": "09/02/2026",
 "type": "Buy",
-"qty": 180000,
+"qty": 180000.0,
 "price": 3.96,
 "amount": -712752.48
 },
 {
 "date": "09/08/2026",
 "type": "Sell",
-"qty": -69284,
+"qty": -69284.0,
 "price": 4.3,
-"amount": 298259.43,
-"provisional": true,
-"note": "Executed; settlement 09/09/2026. Sale fees and lot P&L provisional.",
-"pnl": 23913.08,
+"amount": 298253.29,
+"pnl": 23906.94,
+"tax_pnl": null
+},
+{
+"date": "09/09/2026",
+"type": "Buy",
+"qty": 50890.0,
+"price": 3.93,
+"amount": -199990.41
+},
+{
+"date": "09/10/2026",
+"type": "Sell",
+"qty": -57843.0,
+"price": 3.62,
+"amount": 209395.85,
+"pnl": -19647.16,
+"tax_pnl": null
+},
+{
+"date": "09/10/2026",
+"type": "Sell",
+"qty": -110716.0,
+"price": 3.67,
+"amount": 406482.14,
+"pnl": -29849.03,
+"tax_pnl": null
+},
+{
+"date": "09/10/2026",
+"type": "Sell",
+"qty": -94918.0,
+"price": 3.6,
+"amount": 341925.53,
+"pnl": -23362.16,
 "tax_pnl": null
 }
 ],
 "provisional": true,
-"last_price": 4.37,
-"market_value": 928388.69,
-"unrealized": 97717.23
-},
-{
-"id": "Bro-IREN-09082026",
-"account": "Brokerage",
-"symbol": "IREN",
-"name": "IREN LTD",
-"opened": "09/08/2026",
-"closed": null,
-"status": "open",
-"buys": 1,
-"sells": 0,
-"qty_bought": 5232,
-"max_qty": 5232,
-"cost": 250507.64,
-"proceeds": 0,
-"fees": 0,
-"realized": 0,
-"tax_realized": 0,
-"return_pct": null,
-"days": 0,
-"basis_known": true,
-"category": "trade",
-"dividends": 0,
-"open_qty": 5232,
-"open_cost": 250507.64,
-"open_lots": [
-{
-"date": "09/08/2026",
-"qty": 5232,
-"price": 47.8799006116208
-}
-],
-"execs": [
-{
-"date": "09/08/2026",
-"type": "Buy",
-"qty": 5232,
-"price": 47.88,
-"amount": -250507.64,
-"provisional": true,
-"note": "Executed; settlement 09/09/2026. Sale fees and lot P&L provisional."
-}
-],
-"last_price": 48.43,
-"market_value": 253359.6,
-"unrealized": 2851.96
-},
-{
-"id": "Bro-MRVL-09082026",
-"account": "Brokerage",
-"symbol": "MRVL",
-"name": "MARVELL TECHNOLOGY INC",
-"opened": "09/08/2026",
-"closed": null,
-"status": "open",
-"buys": 1,
-"sells": 0,
-"qty_bought": 438,
-"max_qty": 438,
-"cost": 99956.3,
-"proceeds": 0,
-"fees": 0,
-"realized": 0,
-"tax_realized": 0,
-"return_pct": null,
-"days": 0,
-"basis_known": true,
-"category": "trade",
-"dividends": 0,
-"open_qty": 438,
-"open_cost": 99956.3,
-"open_lots": [
-{
-"date": "09/08/2026",
-"qty": 438,
-"price": 228.2107305936073
-}
-],
-"execs": [
-{
-"date": "09/08/2026",
-"type": "Buy",
-"qty": 438,
-"price": 228.21,
-"amount": -99956.3,
-"provisional": true,
-"note": "Executed; settlement 09/09/2026. Sale fees and lot P&L provisional."
-}
-],
-"last_price": 231.34,
-"market_value": 101326.92,
-"unrealized": 1370.62
-},
-{
-"id": "Bro-VST-09082026",
-"account": "Brokerage",
-"symbol": "VST",
-"name": "VISTRA CORP",
-"opened": "09/08/2026",
-"closed": null,
-"status": "open",
-"buys": 1,
-"sells": 0,
-"qty_bought": 648,
-"max_qty": 648,
-"cost": 99643.2,
-"proceeds": 0,
-"fees": 0,
-"realized": 0,
-"tax_realized": 0,
-"return_pct": null,
-"days": 0,
-"basis_known": true,
-"category": "trade",
-"dividends": 0,
-"open_qty": 648,
-"open_cost": 99643.2,
-"open_lots": [
-{
-"date": "09/08/2026",
-"qty": 648,
-"price": 153.77037037037036
-}
-],
-"execs": [
-{
-"date": "09/08/2026",
-"type": "Buy",
-"qty": 648,
-"price": 153.77,
-"amount": -99643.2,
-"provisional": true,
-"note": "Executed; settlement 09/09/2026. Sale fees and lot P&L provisional."
-}
-],
-"last_price": 153.9,
-"market_value": 99727.2,
-"unrealized": 84.0
-},
-{
-"id": "Bro-NVDA-09082026",
-"account": "Brokerage",
-"symbol": "NVDA",
-"name": "NVIDIA CORP",
-"opened": "09/08/2026",
-"closed": null,
-"status": "open",
-"buys": 1,
-"sells": 0,
-"qty_bought": 660,
-"max_qty": 660,
-"cost": 149958.6,
-"proceeds": 0,
-"fees": 0,
-"realized": 0,
-"tax_realized": 0,
-"return_pct": null,
-"days": 0,
-"basis_known": true,
-"category": "trade",
-"dividends": 0,
-"open_qty": 660,
-"open_cost": 149958.6,
-"open_lots": [
-{
-"date": "09/08/2026",
-"qty": 660,
-"price": 227.21
-}
-],
-"execs": [
-{
-"date": "09/08/2026",
-"type": "Buy",
-"qty": 660,
-"price": 227.21,
-"amount": -149958.6,
-"provisional": true,
-"note": "Executed; settlement 09/09/2026. Sale fees and lot P&L provisional."
-}
-],
-"last_price": 227.54,
-"market_value": 150176.33,
-"unrealized": 217.73
-},
-{
-"id": "Bro-SNDK-09082026",
-"account": "Brokerage",
-"symbol": "SNDK",
-"name": "SANDISK CORP",
-"opened": "09/08/2026",
-"closed": null,
-"status": "open",
-"buys": 1,
-"sells": 0,
-"qty_bought": 112,
-"max_qty": 112,
-"cost": 199636.42,
-"proceeds": 0,
-"fees": 0,
-"realized": 0,
-"tax_realized": 0,
-"return_pct": null,
-"days": 0,
-"basis_known": true,
-"category": "trade",
-"dividends": 0,
-"open_qty": 112,
-"open_cost": 199636.42,
-"open_lots": [
-{
-"date": "09/08/2026",
-"qty": 112,
-"price": 1782.4680357142859
-}
-],
-"execs": [
-{
-"date": "09/08/2026",
-"type": "Buy",
-"qty": 112,
-"price": 1782.47,
-"amount": -199636.42,
-"provisional": true,
-"note": "Executed; settlement 09/09/2026. Sale fees and lot P&L provisional."
-}
-],
-"last_price": 1793.72,
-"market_value": 200896.64,
-"unrealized": 1260.22
+"market_value": 0,
+"unrealized": 0
 },
 {
 "id": "Bro-MU-09082026",
@@ -19374,45 +19868,1868 @@
 "symbol": "MU",
 "name": "MICRON TECHNOLOGY INC",
 "opened": "09/08/2026",
+"closed": "09/10/2026",
+"status": "closed",
+"buys": 2,
+"sells": 1,
+"qty_bought": 591.0,
+"max_qty": 591.0,
+"cost": 603223.52,
+"proceeds": 581293.17,
+"fees": 0,
+"realized": -21930.35,
+"tax_realized": 0,
+"return_pct": -3.64,
+"days": 2,
+"basis_known": true,
+"category": "trade",
+"dividends": 0,
+"open_qty": 0,
+"open_cost": 0,
+"open_lots": [],
+"execs": [
+{
+"date": "09/08/2026",
+"type": "Buy",
+"qty": 200.0,
+"price": 1015.84,
+"amount": -203168.0
+},
+{
+"date": "09/09/2026",
+"type": "Buy",
+"qty": 391.0,
+"price": 1023.16,
+"amount": -400055.52
+},
+{
+"date": "09/10/2026",
+"type": "Sell",
+"qty": -591.0,
+"price": 983.6,
+"amount": 581293.17,
+"pnl": -21930.35,
+"tax_pnl": null
+}
+],
+"provisional": true,
+"market_value": 0,
+"unrealized": 0
+},
+{
+"id": "SEP-ASPI-09082026",
+"account": "SEP-IRA",
+"symbol": "ASPI",
+"name": "ASP ISOTOPES INC",
+"opened": "09/08/2026",
+"closed": "09/10/2026",
+"status": "closed",
+"buys": 2,
+"sells": 3,
+"qty_bought": 60618.0,
+"max_qty": 60618.0,
+"cost": 255295.18,
+"proceeds": 231577.29,
+"fees": 0,
+"realized": -23717.89,
+"tax_realized": 0,
+"return_pct": -9.29,
+"days": 2,
+"basis_known": true,
+"category": "trade",
+"dividends": 0,
+"open_qty": 0,
+"open_cost": 0,
+"open_lots": [],
+"execs": [
+{
+"date": "09/08/2026",
+"type": "Buy",
+"qty": 7618.0,
+"price": 4.2,
+"amount": -31959.36
+},
+{
+"date": "09/08/2026",
+"type": "Buy",
+"qty": 53000.0,
+"price": 4.21,
+"amount": -223335.82
+},
+{
+"date": "09/09/2026",
+"type": "Sell",
+"qty": -30000.0,
+"price": 3.89,
+"amount": 116754.55,
+"pnl": -9519.95,
+"tax_pnl": null
+},
+{
+"date": "09/10/2026",
+"type": "Sell",
+"qty": -2.0,
+"price": 3.63,
+"amount": 7.26,
+"pnl": -1.17,
+"tax_pnl": null
+},
+{
+"date": "09/10/2026",
+"type": "Sell",
+"qty": -30616.0,
+"price": 3.75,
+"amount": 114815.48,
+"pnl": -14196.77,
+"tax_pnl": null
+}
+],
+"provisional": true,
+"market_value": 0,
+"unrealized": 0
+},
+{
+"id": "Bro-SNDK-09082026",
+"account": "Brokerage",
+"symbol": "SNDK",
+"name": "SANDISK CORP",
+"opened": "09/08/2026",
+"closed": "09/10/2026",
+"status": "closed",
+"buys": 1,
+"sells": 1,
+"qty_bought": 112.0,
+"max_qty": 112.0,
+"cost": 199636.42,
+"proceeds": 191276.38,
+"fees": 0,
+"realized": -8360.04,
+"tax_realized": 0,
+"return_pct": -4.19,
+"days": 2,
+"basis_known": true,
+"category": "trade",
+"dividends": 0,
+"open_qty": 0,
+"open_cost": 0,
+"open_lots": [],
+"execs": [
+{
+"date": "09/08/2026",
+"type": "Buy",
+"qty": 112.0,
+"price": 1782.47,
+"amount": -199636.42
+},
+{
+"date": "09/10/2026",
+"type": "Sell",
+"qty": -112.0,
+"price": 1707.86,
+"amount": 191276.38,
+"pnl": -8360.04,
+"tax_pnl": null
+}
+],
+"provisional": true,
+"market_value": 0,
+"unrealized": 0
+},
+{
+"id": "Bro-VST-09082026",
+"account": "Brokerage",
+"symbol": "VST",
+"name": "VISTRA CORP",
+"opened": "09/08/2026",
+"closed": "09/10/2026",
+"status": "closed",
+"buys": 1,
+"sells": 1,
+"qty_bought": 648.0,
+"max_qty": 648.0,
+"cost": 99643.2,
+"proceeds": 98056.58,
+"fees": 0,
+"realized": -1586.62,
+"tax_realized": 0,
+"return_pct": -1.59,
+"days": 2,
+"basis_known": true,
+"category": "trade",
+"dividends": 0,
+"open_qty": 0,
+"open_cost": 0,
+"open_lots": [],
+"execs": [
+{
+"date": "09/08/2026",
+"type": "Buy",
+"qty": 648.0,
+"price": 153.77,
+"amount": -99643.2
+},
+{
+"date": "09/10/2026",
+"type": "Sell",
+"qty": -648.0,
+"price": 151.33,
+"amount": 98056.58,
+"pnl": -1586.62,
+"tax_pnl": null
+}
+],
+"provisional": true,
+"market_value": 0,
+"unrealized": 0
+},
+{
+"id": "Bro-IREN-09082026",
+"account": "Brokerage",
+"symbol": "IREN",
+"name": "IREN LTD",
+"opened": "09/08/2026",
+"closed": "09/09/2026",
+"status": "closed",
+"buys": 1,
+"sells": 1,
+"qty_bought": 5232.0,
+"max_qty": 5232.0,
+"cost": 250507.64,
+"proceeds": 238748.14,
+"fees": 0,
+"realized": -11759.5,
+"tax_realized": 0,
+"return_pct": -4.69,
+"days": 1,
+"basis_known": true,
+"category": "trade",
+"dividends": 0,
+"open_qty": 0,
+"open_cost": 0,
+"open_lots": [],
+"execs": [
+{
+"date": "09/08/2026",
+"type": "Buy",
+"qty": 5232.0,
+"price": 47.88,
+"amount": -250507.64
+},
+{
+"date": "09/09/2026",
+"type": "Sell",
+"qty": -5232.0,
+"price": 45.63,
+"amount": 238748.14,
+"pnl": -11759.5,
+"tax_pnl": null
+}
+],
+"provisional": true,
+"market_value": 0,
+"unrealized": 0
+},
+{
+"id": "Bro-NVDA-09082026",
+"account": "Brokerage",
+"symbol": "NVDA",
+"name": "NVIDIA CORP",
+"opened": "09/08/2026",
+"closed": "09/10/2026",
+"status": "closed",
+"buys": 1,
+"sells": 1,
+"qty_bought": 660.0,
+"max_qty": 660.0,
+"cost": 149958.6,
+"proceeds": 143824.37,
+"fees": 0,
+"realized": -6134.23,
+"tax_realized": 0,
+"return_pct": -4.09,
+"days": 2,
+"basis_known": true,
+"category": "trade",
+"dividends": 0,
+"open_qty": 0,
+"open_cost": 0,
+"open_lots": [],
+"execs": [
+{
+"date": "09/08/2026",
+"type": "Buy",
+"qty": 660.0,
+"price": 227.21,
+"amount": -149958.6
+},
+{
+"date": "09/10/2026",
+"type": "Sell",
+"qty": -660.0,
+"price": 217.92,
+"amount": 143824.37,
+"pnl": -6134.23,
+"tax_pnl": null
+}
+],
+"provisional": true,
+"market_value": 0,
+"unrealized": 0
+},
+{
+"id": "Bro-AVGO-09082026",
+"account": "Brokerage",
+"symbol": "AVGO",
+"name": "BROADCOM INC",
+"opened": "09/08/2026",
+"closed": "09/10/2026",
+"status": "closed",
+"buys": 1,
+"sells": 1,
+"qty_bought": 677.0,
+"max_qty": 677.0,
+"cost": 249691.14,
+"proceeds": 246680.86,
+"fees": 0,
+"realized": -3010.28,
+"tax_realized": 0,
+"return_pct": -1.21,
+"days": 2,
+"basis_known": true,
+"category": "trade",
+"dividends": 0,
+"open_qty": 0,
+"open_cost": 0,
+"open_lots": [],
+"execs": [
+{
+"date": "09/08/2026",
+"type": "Buy",
+"qty": 677.0,
+"price": 368.82,
+"amount": -249691.14
+},
+{
+"date": "09/10/2026",
+"type": "Sell",
+"qty": -677.0,
+"price": 364.38,
+"amount": 246680.86,
+"pnl": -3010.28,
+"tax_pnl": null
+}
+],
+"provisional": true,
+"market_value": 0,
+"unrealized": 0
+},
+{
+"id": "SEP-VST-09082026",
+"account": "SEP-IRA",
+"symbol": "VST",
+"name": "VISTRA CORP",
+"opened": "09/08/2026",
+"closed": "09/10/2026",
+"status": "closed",
+"buys": 1,
+"sells": 2,
+"qty_bought": 1623.0,
+"max_qty": 1623.0,
+"cost": 249873.01,
+"proceeds": 244805.76,
+"fees": 0,
+"realized": -5067.25,
+"tax_realized": 0,
+"return_pct": -2.03,
+"days": 2,
+"basis_known": true,
+"category": "trade",
+"dividends": 0,
+"open_qty": 0,
+"open_cost": 0,
+"open_lots": [],
+"execs": [
+{
+"date": "09/08/2026",
+"type": "Buy",
+"qty": 1623.0,
+"price": 153.96,
+"amount": -249873.01
+},
+{
+"date": "09/09/2026",
+"type": "Sell",
+"qty": -800.0,
+"price": 150.06,
+"amount": 120041.53,
+"pnl": -3124.46,
+"tax_pnl": null
+},
+{
+"date": "09/10/2026",
+"type": "Sell",
+"qty": -823.0,
+"price": 151.6,
+"amount": 124764.23,
+"pnl": -1942.79,
+"tax_pnl": null
+}
+],
+"provisional": true,
+"market_value": 0,
+"unrealized": 0
+},
+{
+"id": "Bro-MRVL-09082026",
+"account": "Brokerage",
+"symbol": "MRVL",
+"name": "MARVELL TECHNOLOGY INC",
+"opened": "09/08/2026",
+"closed": "09/09/2026",
+"status": "closed",
+"buys": 1,
+"sells": 1,
+"qty_bought": 438.0,
+"max_qty": 438.0,
+"cost": 99956.3,
+"proceeds": 104110.94,
+"fees": 0,
+"realized": 4154.64,
+"tax_realized": 0,
+"return_pct": 4.16,
+"days": 1,
+"basis_known": true,
+"category": "trade",
+"dividends": 0,
+"open_qty": 0,
+"open_cost": 0,
+"open_lots": [],
+"execs": [
+{
+"date": "09/08/2026",
+"type": "Buy",
+"qty": 438.0,
+"price": 228.21,
+"amount": -99956.3
+},
+{
+"date": "09/09/2026",
+"type": "Sell",
+"qty": -438.0,
+"price": 237.7,
+"amount": 104110.94,
+"pnl": 4154.64,
+"tax_pnl": null
+}
+],
+"provisional": true,
+"market_value": 0,
+"unrealized": 0
+},
+{
+"id": "SEP-TSM-09092026",
+"account": "SEP-IRA",
+"symbol": "TSM",
+"name": "TAIWAN SEMICONDUCTOR MANUFACTURING CO LTD SPON ADR",
+"opened": "09/09/2026",
+"closed": "09/10/2026",
+"status": "closed",
+"buys": 1,
+"sells": 1,
+"qty_bought": 278.0,
+"max_qty": 278.0,
+"cost": 120715.94,
+"proceeds": 119441.63,
+"fees": 0,
+"realized": -1274.31,
+"tax_realized": 0,
+"return_pct": -1.06,
+"days": 1,
+"basis_known": true,
+"category": "trade",
+"dividends": 0,
+"open_qty": 0,
+"open_cost": 0,
+"open_lots": [],
+"execs": [
+{
+"date": "09/09/2026",
+"type": "Buy",
+"qty": 278.0,
+"price": 434.23,
+"amount": -120715.94
+},
+{
+"date": "09/10/2026",
+"type": "Sell",
+"qty": -278.0,
+"price": 429.66,
+"amount": 119441.63,
+"pnl": -1274.31,
+"tax_pnl": null
+}
+],
+"provisional": true,
+"market_value": 0,
+"unrealized": 0
+},
+{
+"id": "Bro-GOOG-09092026",
+"account": "Brokerage",
+"symbol": "GOOG",
+"name": "ALPHABET INC CL C",
+"opened": "09/09/2026",
+"closed": "09/10/2026",
+"status": "closed",
+"buys": 1,
+"sells": 1,
+"qty_bought": 1525.0,
+"max_qty": 1525.0,
+"cost": 499986.5,
+"proceeds": 500037.2,
+"fees": 0,
+"realized": 50.7,
+"tax_realized": 0,
+"return_pct": 0.01,
+"days": 1,
+"basis_known": true,
+"category": "trade",
+"dividends": 0,
+"open_qty": 0,
+"open_cost": 0,
+"open_lots": [],
+"execs": [
+{
+"date": "09/09/2026",
+"type": "Buy",
+"qty": 1525.0,
+"price": 327.86,
+"amount": -499986.5
+},
+{
+"date": "09/10/2026",
+"type": "Sell",
+"qty": -1525.0,
+"price": 327.9,
+"amount": 500037.2,
+"pnl": 50.7,
+"tax_pnl": null
+}
+],
+"provisional": true,
+"market_value": 0,
+"unrealized": 0
+},
+{
+"id": "Bro-TSM-09092026",
+"account": "Brokerage",
+"symbol": "TSM",
+"name": "TAIWAN SEMICONDUCTOR MANUFACTURING CO LTD SPON ADR",
+"opened": "09/09/2026",
+"closed": "09/10/2026",
+"status": "closed",
+"buys": 1,
+"sells": 1,
+"qty_bought": 345.0,
+"max_qty": 345.0,
+"cost": 149783.48,
+"proceeds": 148224.48,
+"fees": 0,
+"realized": -1559.0,
+"tax_realized": 0,
+"return_pct": -1.04,
+"days": 1,
+"basis_known": true,
+"category": "trade",
+"dividends": 0,
+"open_qty": 0,
+"open_cost": 0,
+"open_lots": [],
+"execs": [
+{
+"date": "09/09/2026",
+"type": "Buy",
+"qty": 345.0,
+"price": 434.16,
+"amount": -149783.48
+},
+{
+"date": "09/10/2026",
+"type": "Sell",
+"qty": -345.0,
+"price": 429.65,
+"amount": 148224.48,
+"pnl": -1559.0,
+"tax_pnl": null
+}
+],
+"provisional": true,
+"market_value": 0,
+"unrealized": 0
+},
+{
+"id": "SEP-MU-09092026",
+"account": "SEP-IRA",
+"symbol": "MU",
+"name": "MICRON TECHNOLOGY INC",
+"opened": "09/09/2026",
+"closed": "09/10/2026",
+"status": "closed",
+"buys": 1,
+"sells": 1,
+"qty_bought": 97.0,
+"max_qty": 97.0,
+"cost": 99258.16,
+"proceeds": 95358.74,
+"fees": 0,
+"realized": -3899.42,
+"tax_realized": 0,
+"return_pct": -3.93,
+"days": 1,
+"basis_known": true,
+"category": "trade",
+"dividends": 0,
+"open_qty": 0,
+"open_cost": 0,
+"open_lots": [],
+"execs": [
+{
+"date": "09/09/2026",
+"type": "Buy",
+"qty": 97.0,
+"price": 1023.28,
+"amount": -99258.16
+},
+{
+"date": "09/10/2026",
+"type": "Sell",
+"qty": -97.0,
+"price": 983.1,
+"amount": 95358.74,
+"pnl": -3899.42,
+"tax_pnl": null
+}
+],
+"provisional": true,
+"market_value": 0,
+"unrealized": 0
+},
+{
+"id": "Bro-NAUT-09092026",
+"account": "Brokerage",
+"symbol": "NAUT",
+"name": "NAUTILUS BIOTECHNOLOGY INC",
+"opened": "09/09/2026",
+"closed": "09/10/2026",
+"status": "closed",
+"buys": 2,
+"sells": 1,
+"qty_bought": 100000.0,
+"max_qty": 100000.0,
+"cost": 101959.54,
+"proceeds": 101011.07,
+"fees": 0,
+"realized": -948.47,
+"tax_realized": 0,
+"return_pct": -0.93,
+"days": 1,
+"basis_known": true,
+"category": "trade",
+"dividends": 0,
+"open_qty": 0,
+"open_cost": 0,
+"open_lots": [],
+"execs": [
+{
+"date": "09/09/2026",
+"type": "Buy",
+"qty": 98200.0,
+"price": 1.02,
+"amount": -100160.04
+},
+{
+"date": "09/09/2026",
+"type": "Buy",
+"qty": 1800.0,
+"price": 1.0,
+"amount": -1799.5
+},
+{
+"date": "09/10/2026",
+"type": "Sell",
+"qty": -100000.0,
+"price": 1.01,
+"amount": 101011.07,
+"pnl": -948.47,
+"tax_pnl": null
+}
+],
+"provisional": true,
+"market_value": 0,
+"unrealized": 0
+},
+{
+"id": "SEP-NAUT-09092026",
+"account": "SEP-IRA",
+"symbol": "NAUT",
+"name": "NAUTILUS BIOTECHNOLOGY INC",
+"opened": "09/09/2026",
+"closed": "09/10/2026",
+"status": "closed",
+"buys": 1,
+"sells": 2,
+"qty_bought": 98000.0,
+"max_qty": 98000.0,
+"cost": 99942.22,
+"proceeds": 99299.65,
+"fees": 0,
+"realized": -642.57,
+"tax_realized": 0,
+"return_pct": -0.64,
+"days": 1,
+"basis_known": true,
+"category": "trade",
+"dividends": 0,
+"open_qty": 0,
+"open_cost": 0,
+"open_lots": [],
+"execs": [
+{
+"date": "09/09/2026",
+"type": "Buy",
+"qty": 98000.0,
+"price": 1.02,
+"amount": -99942.22
+},
+{
+"date": "09/10/2026",
+"type": "Sell",
+"qty": -7675.0,
+"price": 1.05,
+"amount": 8064.28,
+"pnl": 237.17,
+"tax_pnl": null
+},
+{
+"date": "09/10/2026",
+"type": "Sell",
+"qty": -90325.0,
+"price": 1.01,
+"amount": 91235.37,
+"pnl": -879.74,
+"tax_pnl": null
+}
+],
+"provisional": true,
+"market_value": 0,
+"unrealized": 0
+},
+{
+"id": "Bro-ASPI-09142026",
+"account": "Brokerage",
+"symbol": "ASPI",
+"name": "ASP ISOTOPES INC",
+"opened": "09/14/2026",
+"closed": "09/15/2026",
+"status": "closed",
+"buys": 2,
+"sells": 1,
+"qty_bought": 61162.0,
+"max_qty": 61162.0,
+"cost": 200787.91,
+"proceeds": 187263.32,
+"fees": 0,
+"realized": -13524.59,
+"tax_realized": 0,
+"return_pct": -6.74,
+"days": 1,
+"basis_known": true,
+"category": "trade",
+"dividends": 0,
+"open_qty": 0,
+"open_cost": 0,
+"open_lots": [],
+"execs": [
+{
+"date": "09/14/2026",
+"type": "Buy",
+"qty": 47366.0,
+"price": 3.29,
+"amount": -155683.62
+},
+{
+"date": "09/14/2026",
+"type": "Buy",
+"qty": 13796.0,
+"price": 3.27,
+"amount": -45104.29
+},
+{
+"date": "09/15/2026",
+"type": "Sell",
+"qty": -61162.0,
+"price": 3.06,
+"amount": 187263.32,
+"pnl": -13524.59,
+"tax_pnl": null
+}
+],
+"provisional": true,
+"market_value": 0,
+"unrealized": 0
+},
+{
+"id": "Bro-IREN-09142026",
+"account": "Brokerage",
+"symbol": "IREN",
+"name": "IREN LTD",
+"opened": "09/14/2026",
+"closed": "10/09/2026",
+"status": "closed",
+"buys": 2,
+"sells": 1,
+"qty_bought": 11878.0,
+"max_qty": 11878.0,
+"cost": 500441.99,
+"proceeds": 418361.99,
+"fees": 0,
+"realized": -82080.0,
+"tax_realized": 0,
+"return_pct": -16.4,
+"days": 25,
+"basis_known": true,
+"category": "trade",
+"dividends": 0,
+"open_qty": 0,
+"open_cost": 0,
+"open_lots": [],
+"execs": [
+{
+"date": "09/14/2026",
+"type": "Buy",
+"qty": 4646.0,
+"price": 43.1,
+"amount": -200241.67
+},
+{
+"date": "09/15/2026",
+"type": "Buy",
+"qty": 7232.0,
+"price": 41.51,
+"amount": -300200.32
+},
+{
+"date": "10/09/2026",
+"type": "Sell",
+"qty": -11878.0,
+"price": 35.22,
+"amount": 418361.99,
+"pnl": -82080.0,
+"tax_pnl": null
+}
+],
+"provisional": true,
+"market_value": 0,
+"unrealized": 0
+},
+{
+"id": "Bro-TE-09142026",
+"account": "Brokerage",
+"symbol": "TE",
+"name": "T1 ENERGY INC",
+"opened": "09/14/2026",
+"closed": "09/15/2026",
+"status": "closed",
+"buys": 1,
+"sells": 1,
+"qty_bought": 45662.0,
+"max_qty": 45662.0,
+"cost": 200729.03,
+"proceeds": 192338.59,
+"fees": 0,
+"realized": -8390.44,
+"tax_realized": 0,
+"return_pct": -4.18,
+"days": 1,
+"basis_known": true,
+"category": "trade",
+"dividends": 0,
+"open_qty": 0,
+"open_cost": 0,
+"open_lots": [],
+"execs": [
+{
+"date": "09/14/2026",
+"type": "Buy",
+"qty": 45662.0,
+"price": 4.4,
+"amount": -200729.03
+},
+{
+"date": "09/15/2026",
+"type": "Sell",
+"qty": -45662.0,
+"price": 4.21,
+"amount": 192338.59,
+"pnl": -8390.44,
+"tax_pnl": null
+}
+],
+"provisional": true,
+"market_value": 0,
+"unrealized": 0
+},
+{
+"id": "SEP-SLNH-09182026",
+"account": "SEP-IRA",
+"symbol": "SLNH",
+"name": "SOLUNA HOLDINGS INC",
+"opened": "09/18/2026",
+"closed": "09/28/2026",
+"status": "closed",
+"buys": 1,
+"sells": 1,
+"qty_bought": 45000.0,
+"max_qty": 45000.0,
+"cost": 55800.0,
+"proceeds": 52555.92,
+"fees": 0,
+"realized": -3244.08,
+"tax_realized": 0,
+"return_pct": -5.81,
+"days": 10,
+"basis_known": true,
+"category": "trade",
+"dividends": 0,
+"open_qty": 0,
+"open_cost": 0,
+"open_lots": [],
+"execs": [
+{
+"date": "09/18/2026",
+"type": "Buy",
+"qty": 45000.0,
+"price": 1.24,
+"amount": -55800.0
+},
+{
+"date": "09/28/2026",
+"type": "Sell",
+"qty": -45000.0,
+"price": 1.17,
+"amount": 52555.92,
+"pnl": -3244.08,
+"tax_pnl": null
+}
+],
+"provisional": true,
+"market_value": 0,
+"unrealized": 0
+},
+{
+"id": "Bro-SLNH-09182026",
+"account": "Brokerage",
+"symbol": "SLNH",
+"name": "SOLUNA HOLDINGS INC",
+"opened": "09/18/2026",
+"closed": "09/29/2026",
+"status": "closed",
+"buys": 1,
+"sells": 1,
+"qty_bought": 100000.0,
+"max_qty": 100000.0,
+"cost": 123900.0,
+"proceeds": 117156.19,
+"fees": 0,
+"realized": -6743.81,
+"tax_realized": 0,
+"return_pct": -5.44,
+"days": 11,
+"basis_known": true,
+"category": "trade",
+"dividends": 0,
+"open_qty": 0,
+"open_cost": 0,
+"open_lots": [],
+"execs": [
+{
+"date": "09/18/2026",
+"type": "Buy",
+"qty": 100000.0,
+"price": 1.24,
+"amount": -123900.0
+},
+{
+"date": "09/29/2026",
+"type": "Sell",
+"qty": -100000.0,
+"price": 1.17,
+"amount": 117156.19,
+"pnl": -6743.81,
+"tax_pnl": null
+}
+],
+"provisional": true,
+"market_value": 0,
+"unrealized": 0
+},
+{
+"id": "Bro-MOD-09252026",
+"account": "Brokerage",
+"symbol": "MOD",
+"name": "MODINE MANUFACTURING CO",
+"opened": "09/25/2026",
+"closed": "09/28/2026",
+"status": "closed",
+"buys": 1,
+"sells": 1,
+"qty_bought": 497.0,
+"max_qty": 497.0,
+"cost": 100140.43,
+"proceeds": 89592.34,
+"fees": 0,
+"realized": -10548.09,
+"tax_realized": 0,
+"return_pct": -10.53,
+"days": 3,
+"basis_known": true,
+"category": "trade",
+"dividends": 0,
+"open_qty": 0,
+"open_cost": 0,
+"open_lots": [],
+"execs": [
+{
+"date": "09/25/2026",
+"type": "Buy",
+"qty": 497.0,
+"price": 201.49,
+"amount": -100140.43
+},
+{
+"date": "09/28/2026",
+"type": "Sell",
+"qty": -497.0,
+"price": 180.27,
+"amount": 89592.34,
+"pnl": -10548.09,
+"tax_pnl": null
+}
+],
+"provisional": true,
+"market_value": 0,
+"unrealized": 0
+},
+{
+"id": "SEP-MOD-09252026",
+"account": "SEP-IRA",
+"symbol": "MOD",
+"name": "MODINE MANUFACTURING CO",
+"opened": "09/25/2026",
+"closed": "09/28/2026",
+"status": "closed",
+"buys": 1,
+"sells": 1,
+"qty_bought": 426.0,
+"max_qty": 426.0,
+"cost": 84484.32,
+"proceeds": 75247.09,
+"fees": 0,
+"realized": -9237.23,
+"tax_realized": 0,
+"return_pct": -10.93,
+"days": 3,
+"basis_known": true,
+"category": "trade",
+"dividends": 0,
+"open_qty": 0,
+"open_cost": 0,
+"open_lots": [],
+"execs": [
+{
+"date": "09/25/2026",
+"type": "Buy",
+"qty": 426.0,
+"price": 198.32,
+"amount": -84484.32
+},
+{
+"date": "09/28/2026",
+"type": "Sell",
+"qty": -426.0,
+"price": 176.64,
+"amount": 75247.09,
+"pnl": -9237.23,
+"tax_pnl": null
+}
+],
+"provisional": true,
+"market_value": 0,
+"unrealized": 0
+},
+{
+"id": "Bro-ARM-09252026",
+"account": "Brokerage",
+"symbol": "ARM",
+"name": "ARM HOLDINGS PLC SPON ADR",
+"opened": "09/25/2026",
+"closed": "09/29/2026",
+"status": "closed",
+"buys": 1,
+"sells": 1,
+"qty_bought": 622.0,
+"max_qty": 622.0,
+"cost": 200505.43,
+"proceeds": 181492.75,
+"fees": 0,
+"realized": -19012.68,
+"tax_realized": 0,
+"return_pct": -9.48,
+"days": 4,
+"basis_known": true,
+"category": "trade",
+"dividends": 0,
+"open_qty": 0,
+"open_cost": 0,
+"open_lots": [],
+"execs": [
+{
+"date": "09/25/2026",
+"type": "Buy",
+"qty": 622.0,
+"price": 322.36,
+"amount": -200505.43
+},
+{
+"date": "09/29/2026",
+"type": "Sell",
+"qty": -622.0,
+"price": 291.8,
+"amount": 181492.75,
+"pnl": -19012.68,
+"tax_pnl": null
+}
+],
+"provisional": true,
+"market_value": 0,
+"unrealized": 0
+},
+{
+"id": "SEP-ASPI-09282026",
+"account": "SEP-IRA",
+"symbol": "ASPI",
+"name": "ASP ISOTOPES INC",
+"opened": "09/28/2026",
+"closed": null,
+"status": "open",
+"buys": 9,
+"sells": 1,
+"qty_bought": 592618.0,
+"max_qty": 406745.0,
+"cost": 1538586.62,
+"proceeds": 496480.41,
+"fees": 0,
+"realized": 8347.99,
+"tax_realized": 0,
+"return_pct": null,
+"days": 45,
+"basis_known": true,
+"category": "trade",
+"dividends": 0,
+"open_qty": 406745.0,
+"open_cost": 1050454.2,
+"open_lots": [
+{
+"date": "10/02/2026",
+"qty": 139686.0,
+"price": 2.829711904761905
+},
+{
+"date": "10/02/2026",
+"qty": 71428.0,
+"price": 2.81
+},
+{
+"date": "10/13/2026",
+"qty": 86580.0,
+"price": 2.3167162162162165
+},
+{
+"date": "10/13/2026",
+"qty": 109051.0,
+"price": 2.3281683799323254
+}
+],
+"execs": [
+{
+"date": "09/28/2026",
+"type": "Buy",
+"qty": 20155.0,
+"price": 2.58,
+"amount": -51899.13
+},
+{
+"date": "09/28/2026",
+"type": "Buy",
+"qty": 30314.0,
+"price": 2.54,
+"amount": -77121.93
+},
+{
+"date": "09/29/2026",
+"type": "Buy",
+"qty": 475.0,
+"price": 2.63,
+"amount": -1249.25
+},
+{
+"date": "09/29/2026",
+"type": "Buy",
+"qty": 58650.0,
+"price": 2.66,
+"amount": -155832.73
+},
+{
+"date": "09/29/2026",
+"type": "Buy",
+"qty": 68965.0,
+"price": 2.63,
+"amount": -181332.87
+},
+{
+"date": "10/02/2026",
+"type": "Buy",
+"qty": 147000.0,
+"price": 2.83,
+"amount": -415967.65
+},
+{
+"date": "10/02/2026",
+"type": "Buy",
+"qty": 71428.0,
+"price": 2.81,
+"amount": -200712.68
+},
+{
+"date": "10/09/2026",
+"type": "Sell",
+"qty": -185873.0,
+"price": 2.67,
+"amount": 496480.41,
+"pnl": 8347.99,
+"tax_pnl": null
+},
+{
+"date": "10/13/2026",
+"type": "Buy",
+"qty": 86580.0,
+"price": 2.32,
+"amount": -200581.29
+},
+{
+"date": "10/13/2026",
+"type": "Buy",
+"qty": 109051.0,
+"price": 2.33,
+"amount": -253889.09
+}
+],
+"provisional": true,
+"last_price": 1.87,
+"market_value": 760613.15,
+"unrealized": -289841.05
+},
+{
+"id": "Bro-HIMS-09282026",
+"account": "Brokerage",
+"symbol": "HIMS",
+"name": "HIMS & HERS HEALTH INC",
+"opened": "09/28/2026",
+"closed": "10/02/2026",
+"status": "closed",
+"buys": 1,
+"sells": 1,
+"qty_bought": 3487.0,
+"max_qty": 3487.0,
+"cost": 99991.82,
+"proceeds": 99586.67,
+"fees": 0,
+"realized": -405.15,
+"tax_realized": 0,
+"return_pct": -0.41,
+"days": 4,
+"basis_known": true,
+"category": "trade",
+"dividends": 0,
+"open_qty": 0,
+"open_cost": 0,
+"open_lots": [],
+"execs": [
+{
+"date": "09/28/2026",
+"type": "Buy",
+"qty": 3487.0,
+"price": 28.68,
+"amount": -99991.82
+},
+{
+"date": "10/02/2026",
+"type": "Sell",
+"qty": -3487.0,
+"price": 28.56,
+"amount": 99586.67,
+"pnl": -405.15,
+"tax_pnl": null
+}
+],
+"provisional": true,
+"market_value": 0,
+"unrealized": 0
+},
+{
+"id": "Bro-TWST-10052026",
+"account": "Brokerage",
+"symbol": "TWST",
+"name": "TWIST BIOSCIENCE CORP",
+"opened": "10/05/2026",
+"closed": "10/06/2026",
+"status": "closed",
+"buys": 1,
+"sells": 1,
+"qty_bought": 488.0,
+"max_qty": 488.0,
+"cost": 99976.56,
+"proceeds": 91410.33,
+"fees": 0,
+"realized": -8566.23,
+"tax_realized": 0,
+"return_pct": -8.57,
+"days": 1,
+"basis_known": true,
+"category": "trade",
+"dividends": 0,
+"open_qty": 0,
+"open_cost": 0,
+"open_lots": [],
+"execs": [
+{
+"date": "10/05/2026",
+"type": "Buy",
+"qty": 488.0,
+"price": 204.87,
+"amount": -99976.56
+},
+{
+"date": "10/06/2026",
+"type": "Sell",
+"qty": -488.0,
+"price": 187.32,
+"amount": 91410.33,
+"pnl": -8566.23,
+"tax_pnl": null
+}
+],
+"provisional": true,
+"market_value": 0,
+"unrealized": 0
+},
+{
+"id": "Bro-INTC-10052026",
+"account": "Brokerage",
+"symbol": "INTC",
+"name": "INTEL CORP",
+"opened": "10/05/2026",
+"closed": "10/09/2026",
+"status": "closed",
+"buys": 1,
+"sells": 1,
+"qty_bought": 2567.0,
+"max_qty": 2567.0,
+"cost": 299928.28,
+"proceeds": 270992.62,
+"fees": 0,
+"realized": -28935.66,
+"tax_realized": 0,
+"return_pct": -9.65,
+"days": 4,
+"basis_known": true,
+"category": "trade",
+"dividends": 0,
+"open_qty": 0,
+"open_cost": 0,
+"open_lots": [],
+"execs": [
+{
+"date": "10/05/2026",
+"type": "Buy",
+"qty": 2567.0,
+"price": 116.84,
+"amount": -299928.28
+},
+{
+"date": "10/09/2026",
+"type": "Sell",
+"qty": -2567.0,
+"price": 105.57,
+"amount": 270992.62,
+"pnl": -28935.66,
+"tax_pnl": null
+}
+],
+"provisional": true,
+"market_value": 0,
+"unrealized": 0
+},
+{
+"id": "Bro-ASPI-10052026",
+"account": "Brokerage",
+"symbol": "ASPI",
+"name": "ASP ISOTOPES INC",
+"opened": "10/05/2026",
+"closed": "10/09/2026",
+"status": "closed",
+"buys": 1,
+"sells": 1,
+"qty_bought": 68965.0,
+"max_qty": 68965.0,
+"cost": 201999.87,
+"proceeds": 188960.21,
+"fees": 0,
+"realized": -13039.66,
+"tax_realized": 0,
+"return_pct": -6.46,
+"days": 4,
+"basis_known": true,
+"category": "trade",
+"dividends": 0,
+"open_qty": 0,
+"open_cost": 0,
+"open_lots": [],
+"execs": [
+{
+"date": "10/05/2026",
+"type": "Buy",
+"qty": 68965.0,
+"price": 2.93,
+"amount": -201999.87
+},
+{
+"date": "10/09/2026",
+"type": "Sell",
+"qty": -68965.0,
+"price": 2.74,
+"amount": 188960.21,
+"pnl": -13039.66,
+"tax_pnl": null
+}
+],
+"provisional": true,
+"market_value": 0,
+"unrealized": 0
+},
+{
+"id": "Bro-MOD-10062026",
+"account": "Brokerage",
+"symbol": "MOD",
+"name": "MODINE MANUFACTURING CO",
+"opened": "10/06/2026",
+"closed": "10/15/2026",
+"status": "closed",
+"buys": 2,
+"sells": 2,
+"qty_bought": 5365.0,
+"max_qty": 5365.0,
+"cost": 1001061.25,
+"proceeds": 803519.37,
+"fees": 0,
+"realized": -197541.88,
+"tax_realized": 0,
+"return_pct": -19.73,
+"days": 9,
+"basis_known": true,
+"category": "trade",
+"dividends": 0,
+"open_qty": 0,
+"open_cost": 0,
+"open_lots": [],
+"execs": [
+{
+"date": "10/06/2026",
+"type": "Buy",
+"qty": 2645.0,
+"price": 189.05,
+"amount": -500037.25
+},
+{
+"date": "10/09/2026",
+"type": "Buy",
+"qty": 2720.0,
+"price": 184.2,
+"amount": -501024.0
+},
+{
+"date": "10/15/2026",
+"type": "Sell",
+"qty": -2865.0,
+"price": 150.09,
+"amount": 429997.81,
+"pnl": -110563.44,
+"tax_pnl": null
+},
+{
+"date": "10/15/2026",
+"type": "Sell",
+"qty": -2500.0,
+"price": 149.41,
+"amount": 373521.56,
+"pnl": -86978.44,
+"tax_pnl": null
+}
+],
+"provisional": true,
+"market_value": 0,
+"unrealized": 0
+},
+{
+"id": "SEP-MOD-10092026",
+"account": "SEP-IRA",
+"symbol": "MOD",
+"name": "MODINE MANUFACTURING CO",
+"opened": "10/09/2026",
+"closed": "10/13/2026",
+"status": "closed",
+"buys": 1,
+"sells": 2,
+"qty_bought": 2686.0,
+"max_qty": 2686.0,
+"cost": 495029.56,
+"proceeds": 456180.66,
+"fees": 0,
+"realized": -38848.9,
+"tax_realized": 0,
+"return_pct": -7.85,
+"days": 4,
+"basis_known": true,
+"category": "trade",
+"dividends": 0,
+"open_qty": 0,
+"open_cost": 0,
+"open_lots": [],
+"execs": [
+{
+"date": "10/09/2026",
+"type": "Buy",
+"qty": 2686.0,
+"price": 184.3,
+"amount": -495029.56
+},
+{
+"date": "10/13/2026",
+"type": "Sell",
+"qty": -1486.0,
+"price": 169.21,
+"amount": 251440.88,
+"pnl": -22428.79,
+"tax_pnl": null
+},
+{
+"date": "10/13/2026",
+"type": "Sell",
+"qty": -1200.0,
+"price": 170.62,
+"amount": 204739.78,
+"pnl": -16420.11,
+"tax_pnl": null
+}
+],
+"provisional": true,
+"market_value": 0,
+"unrealized": 0
+},
+{
+"id": "Bro-ASPI-10132026",
+"account": "Brokerage",
+"symbol": "ASPI",
+"name": "ASP ISOTOPES INC",
+"opened": "10/13/2026",
+"closed": null,
+"status": "open",
+"buys": 6,
+"sells": 7,
+"qty_bought": 1257869.0,
+"max_qty": 1257869.0,
+"cost": 2725186.77,
+"proceeds": 1046147.82,
+"fees": 0,
+"realized": -328596.15,
+"tax_realized": 0,
+"return_pct": null,
+"days": 30,
+"basis_known": true,
+"category": "trade",
+"dividends": 0,
+"open_qty": 645340.0,
+"open_cost": 1350442.8,
+"open_lots": [
+{
+"date": "10/16/2026",
+"qty": 61870.0,
+"price": 2.1448484073936807
+},
+{
+"date": "10/15/2026",
+"qty": 388349.0,
+"price": 2.09401837007434
+},
+{
+"date": "10/15/2026",
+"qty": 195121.0,
+"price": 2.0732319432557236
+}
+],
+"execs": [
+{
+"date": "10/13/2026",
+"type": "Buy",
+"qty": 169491.0,
+"price": 2.37,
+"amount": -401596.72
+},
+{
+"date": "10/13/2026",
+"type": "Buy",
+"qty": 85836.0,
+"price": 2.34,
+"amount": -200523.58
+},
+{
+"date": "10/15/2026",
+"type": "Buy",
+"qty": 195121.0,
+"price": 2.07,
+"amount": -404531.09
+},
+{
+"date": "10/15/2026",
+"type": "Buy",
+"qty": 388349.0,
+"price": 2.09,
+"amount": -813209.94
+},
+{
+"date": "10/16/2026",
+"type": "Buy",
+"qty": 184331.0,
+"price": 2.18,
+"amount": -401841.58
+},
+{
+"date": "10/16/2026",
+"type": "Buy",
+"qty": 234741.0,
+"price": 2.14,
+"amount": -503483.86
+},
+{
+"date": "11/05/2026",
+"type": "Sell",
+"qty": -100000.0,
+"price": 1.68,
+"amount": 168048.17,
+"pnl": -68894.63,
+"tax_pnl": null
+},
+{
+"date": "11/05/2026",
+"type": "Sell",
+"qty": -1465.0,
+"price": 1.69,
+"amount": 2475.8,
+"pnl": -995.41,
+"tax_pnl": null
+},
+{
+"date": "11/05/2026",
+"type": "Sell",
+"qty": -150000.0,
+"price": 1.75,
+"amount": 262517.39,
+"pnl": -90166.79,
+"tax_pnl": null
+},
+{
+"date": "11/05/2026",
+"type": "Sell",
+"qty": -100000.0,
+"price": 1.68,
+"amount": 168026.54,
+"pnl": -50576.41,
+"tax_pnl": null
+},
+{
+"date": "11/05/2026",
+"type": "Sell",
+"qty": -60000.0,
+"price": 1.68,
+"amount": 100801.6,
+"pnl": -29998.4,
+"tax_pnl": null
+},
+{
+"date": "11/05/2026",
+"type": "Sell",
+"qty": -200000.0,
+"price": 1.71,
+"amount": 342416.36,
+"pnl": -87544.35,
+"tax_pnl": null
+},
+{
+"date": "11/05/2026",
+"type": "Sell",
+"qty": -1064.0,
+"price": 1.75,
+"amount": 1861.96,
+"pnl": -420.16,
+"tax_pnl": null
+}
+],
+"provisional": true,
+"last_price": 1.87,
+"market_value": 1206785.8,
+"unrealized": -143657.0
+},
+{
+"id": "Bro-AAOI-11052026",
+"account": "Brokerage",
+"symbol": "AAOI",
+"name": "APPLIED OPTOELECTRONICS INC",
+"opened": "11/05/2026",
 "closed": null,
 "status": "open",
 "buys": 1,
 "sells": 0,
-"qty_bought": 200,
-"max_qty": 200,
-"cost": 203168.0,
+"qty_bought": 4189.0,
+"max_qty": 4189.0,
+"cost": 199438.29,
 "proceeds": 0,
 "fees": 0,
 "realized": 0,
 "tax_realized": 0,
 "return_pct": null,
-"days": 0,
+"days": 7,
 "basis_known": true,
 "category": "trade",
 "dividends": 0,
-"open_qty": 200,
-"open_cost": 203168.0,
+"open_qty": 4189.0,
+"open_cost": 199438.29,
 "open_lots": [
 {
-"date": "09/08/2026",
-"qty": 200,
-"price": 1015.84
+"date": "11/05/2026",
+"qty": 4189.0,
+"price": 47.61
 }
 ],
 "execs": [
 {
-"date": "09/08/2026",
+"date": "11/05/2026",
 "type": "Buy",
-"qty": 200,
-"price": 1015.84,
-"amount": -203168.0,
-"provisional": true,
-"note": "Executed; settlement 09/09/2026. Sale fees and lot P&L provisional."
+"qty": 4189.0,
+"price": 47.61,
+"amount": -199438.29
 }
 ],
-"last_price": 1024.89,
-"market_value": 204978.0,
-"unrealized": 1810.0
+"last_price": 52.85,
+"market_value": 221388.65,
+"unrealized": 21950.36
+},
+{
+"id": "Bro-INTC-11052026",
+"account": "Brokerage",
+"symbol": "INTC",
+"name": "INTEL CORP",
+"opened": "11/05/2026",
+"closed": null,
+"status": "open",
+"buys": 1,
+"sells": 0,
+"qty_bought": 3740.0,
+"max_qty": 3740.0,
+"cost": 199884.3,
+"proceeds": 0,
+"fees": 0,
+"realized": 0,
+"tax_realized": 0,
+"return_pct": null,
+"days": 7,
+"basis_known": true,
+"category": "trade",
+"dividends": 0,
+"open_qty": 3740.0,
+"open_cost": 199884.3,
+"open_lots": [
+{
+"date": "11/05/2026",
+"qty": 3740.0,
+"price": 53.445
+}
+],
+"execs": [
+{
+"date": "11/05/2026",
+"type": "Buy",
+"qty": 3740.0,
+"price": 53.45,
+"amount": -199884.3
+}
+],
+"last_price": 61.2,
+"market_value": 228888.0,
+"unrealized": 29003.7
+},
+{
+"id": "Bro-BE-11052026",
+"account": "Brokerage",
+"symbol": "BE",
+"name": "BLOOM ENERGY CORP CL A",
+"opened": "11/05/2026",
+"closed": null,
+"status": "open",
+"buys": 1,
+"sells": 0,
+"qty_bought": 1179.0,
+"max_qty": 1179.0,
+"cost": 199675.44,
+"proceeds": 0,
+"fees": 0,
+"realized": 0,
+"tax_realized": 0,
+"return_pct": null,
+"days": 7,
+"basis_known": true,
+"category": "trade",
+"dividends": 0,
+"open_qty": 1179.0,
+"open_cost": 199675.44,
+"open_lots": [
+{
+"date": "11/05/2026",
+"qty": 1179.0,
+"price": 169.36
+}
+],
+"execs": [
+{
+"date": "11/05/2026",
+"type": "Buy",
+"qty": 1179.0,
+"price": 169.36,
+"amount": -199675.44
+}
+],
+"last_price": 201.93,
+"market_value": 238075.47,
+"unrealized": 38400.03
 }
 ],
 "executions": [
@@ -38316,10 +40633,10 @@
 "account": "Brokerage",
 "symbol": "ASPI",
 "type": "Buy",
-"qty": 62189,
+"qty": 62189.0,
 "price": 3.88,
 "amount": -241293.32,
-"fees": 0,
+"fees": 0.0,
 "category": "trade"
 },
 {
@@ -38327,10 +40644,10 @@
 "account": "Brokerage",
 "symbol": "ASPI",
 "type": "Buy",
-"qty": 39682,
+"qty": 39682.0,
 "price": 3.8,
 "amount": -150972.01,
-"fees": 0,
+"fees": 0.0,
 "category": "trade"
 },
 {
@@ -38338,10 +40655,65 @@
 "account": "Brokerage",
 "symbol": "ASPI",
 "type": "Buy",
-"qty": 180000,
+"qty": 180000.0,
 "price": 3.96,
 "amount": -712752.48,
-"fees": 0,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "09/08/2026",
+"account": "Brokerage",
+"symbol": "MU",
+"type": "Buy",
+"qty": 200.0,
+"price": 1015.84,
+"amount": -203168.0,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "09/08/2026",
+"account": "SEP-IRA",
+"symbol": "ASPI",
+"type": "Buy",
+"qty": 7618.0,
+"price": 4.2,
+"amount": -31959.36,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "09/08/2026",
+"account": "SEP-IRA",
+"symbol": "ASPI",
+"type": "Buy",
+"qty": 53000.0,
+"price": 4.21,
+"amount": -223335.82,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "09/08/2026",
+"account": "Brokerage",
+"symbol": "SNDK",
+"type": "Buy",
+"qty": 112.0,
+"price": 1782.47,
+"amount": -199636.42,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "09/08/2026",
+"account": "Brokerage",
+"symbol": "VST",
+"type": "Buy",
+"qty": 648.0,
+"price": 153.77,
+"amount": -99643.2,
+"fees": 0.0,
 "category": "trade"
 },
 {
@@ -38349,92 +40721,119 @@
 "account": "Brokerage",
 "symbol": "IREN",
 "type": "Buy",
-"qty": 5232,
+"qty": 5232.0,
 "price": 47.88,
 "amount": -250507.64,
-"fees": 0,
-"category": "trade",
-"provisional": true,
-"note": "Executed; settlement 09/09/2026. Sale fees and lot P&L provisional."
-},
-{
-"date": "09/08/2026",
-"account": "Brokerage",
-"symbol": "MRVL",
-"type": "Buy",
-"qty": 438,
-"price": 228.21,
-"amount": -99956.3,
-"fees": 0,
-"category": "trade",
-"provisional": true,
-"note": "Executed; settlement 09/09/2026. Sale fees and lot P&L provisional."
-},
-{
-"date": "09/08/2026",
-"account": "Brokerage",
-"symbol": "VST",
-"type": "Buy",
-"qty": 648,
-"price": 153.77,
-"amount": -99643.2,
-"fees": 0,
-"category": "trade",
-"provisional": true,
-"note": "Executed; settlement 09/09/2026. Sale fees and lot P&L provisional."
+"fees": 0.0,
+"category": "trade"
 },
 {
 "date": "09/08/2026",
 "account": "Brokerage",
 "symbol": "NVDA",
 "type": "Buy",
-"qty": 660,
+"qty": 660.0,
 "price": 227.21,
 "amount": -149958.6,
-"fees": 0,
-"category": "trade",
-"provisional": true,
-"note": "Executed; settlement 09/09/2026. Sale fees and lot P&L provisional."
+"fees": 0.0,
+"category": "trade"
 },
 {
 "date": "09/08/2026",
 "account": "Brokerage",
-"symbol": "SNDK",
+"symbol": "AVGO",
 "type": "Buy",
-"qty": 112,
-"price": 1782.47,
-"amount": -199636.42,
-"fees": 0,
-"category": "trade",
-"provisional": true,
-"note": "Executed; settlement 09/09/2026. Sale fees and lot P&L provisional."
+"qty": 677.0,
+"price": 368.82,
+"amount": -249691.14,
+"fees": 0.0,
+"category": "trade"
 },
 {
 "date": "09/08/2026",
-"account": "Brokerage",
-"symbol": "MU",
+"account": "SEP-IRA",
+"symbol": "VST",
 "type": "Buy",
-"qty": 200,
-"price": 1015.84,
-"amount": -203168.0,
-"fees": 0,
-"category": "trade",
-"provisional": true,
-"note": "Executed; settlement 09/09/2026. Sale fees and lot P&L provisional."
+"qty": 1623.0,
+"price": 153.96,
+"amount": -249873.01,
+"fees": 0.0,
+"category": "trade"
 },
 {
 "date": "09/08/2026",
 "account": "Brokerage",
-"symbol": "ASPI",
+"symbol": "MRVL",
+"type": "Buy",
+"qty": 438.0,
+"price": 228.21,
+"amount": -99956.3,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "09/08/2026",
+"account": "Brokerage",
+"symbol": "IMMX",
 "type": "Sell",
-"qty": -69284,
-"price": 4.3,
-"amount": 298259.43,
-"fees": 0,
+"qty": -37698.0,
+"price": 13.28,
+"amount": 500658.76,
+"fees": 10.31,
 "category": "trade",
-"provisional": true,
-"note": "Executed; settlement 09/09/2026. Sale fees and lot P&L provisional.",
-"pnl": 23913.08,
+"pnl": 97502.29,
+"tax_pnl": null
+},
+{
+"date": "09/08/2026",
+"account": "SEP-IRA",
+"symbol": "IMMX",
+"type": "Sell",
+"qty": -18968.0,
+"price": 13.15,
+"amount": 249433.42,
+"fees": 5.14,
+"category": "trade",
+"pnl": 84309.39,
+"tax_pnl": null
+},
+{
+"date": "09/08/2026",
+"account": "Brokerage",
+"symbol": "IMMX",
+"type": "Sell",
+"qty": -50000.0,
+"price": 13.2,
+"amount": 660227.5,
+"fees": 13.6,
+"category": "trade",
+"pnl": 157358.5,
+"tax_pnl": null
+},
+{
+"date": "09/08/2026",
+"account": "Brokerage",
+"symbol": "SMXT",
+"type": "Sell",
+"qty": -5050.0,
+"price": 2.55,
+"amount": 12883.69,
+"fees": 0.27,
+"category": "trade",
+"pnl": -7722.35,
+"tax_pnl": null
+},
+{
+"date": "09/08/2026",
+"account": "SEP-IRA",
+"symbol": "IMMX",
+"type": "Sell",
+"qty": -1882.0,
+"price": 13.14,
+"amount": 24729.17,
+"fees": 0.51,
+"category": "trade",
+"pnl": 8345.61,
 "tax_pnl": null
 },
 {
@@ -38442,29 +40841,1331 @@
 "account": "SEP-IRA",
 "symbol": "SMXT",
 "type": "Sell",
-"qty": -2500,
+"qty": -2500.0,
 "price": 2.54,
-"amount": 6358.0,
-"fees": 0,
+"amount": 6357.87,
+"fees": 0.13,
 "category": "trade",
-"provisional": true,
-"note": "Executed; settlement 09/09/2026. Sale fees and lot P&L provisional.",
-"pnl": -4440.78,
+"pnl": -4440.91,
 "tax_pnl": null
 },
 {
 "date": "09/08/2026",
 "account": "Brokerage",
-"symbol": "SMXT",
+"symbol": "ASPI",
 "type": "Sell",
-"qty": -5050,
-"price": 2.55,
-"amount": 12883.96,
-"fees": 0,
+"qty": -69284.0,
+"price": 4.3,
+"amount": 298253.29,
+"fees": 6.14,
 "category": "trade",
-"provisional": true,
-"note": "Executed; settlement 09/09/2026. Sale fees and lot P&L provisional.",
-"pnl": -7722.08,
+"pnl": 23906.94,
+"tax_pnl": null
+},
+{
+"date": "09/08/2026",
+"account": "Brokerage",
+"symbol": "IMMX",
+"type": "Sell",
+"qty": -48262.0,
+"price": 13.15,
+"amount": 634810.74,
+"fees": 13.08,
+"category": "trade",
+"pnl": 152377.99,
+"tax_pnl": null
+},
+{
+"date": "09/08/2026",
+"account": "SEP-IRA",
+"symbol": "IMMX",
+"type": "Sell",
+"qty": -17129.0,
+"price": 13.08,
+"amount": 224072.6,
+"fees": 4.62,
+"category": "trade",
+"pnl": 72813.24,
+"tax_pnl": null
+},
+{
+"date": "09/09/2026",
+"account": "SEP-IRA",
+"symbol": "TSM",
+"type": "Buy",
+"qty": 278.0,
+"price": 434.23,
+"amount": -120715.94,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "09/09/2026",
+"account": "Brokerage",
+"symbol": "GOOG",
+"type": "Buy",
+"qty": 1525.0,
+"price": 327.86,
+"amount": -499986.5,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "09/09/2026",
+"account": "Brokerage",
+"symbol": "TSM",
+"type": "Buy",
+"qty": 345.0,
+"price": 434.16,
+"amount": -149783.48,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "09/09/2026",
+"account": "SEP-IRA",
+"symbol": "MU",
+"type": "Buy",
+"qty": 97.0,
+"price": 1023.28,
+"amount": -99258.16,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "09/09/2026",
+"account": "Brokerage",
+"symbol": "MU",
+"type": "Buy",
+"qty": 391.0,
+"price": 1023.16,
+"amount": -400055.52,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "09/09/2026",
+"account": "Brokerage",
+"symbol": "NAUT",
+"type": "Buy",
+"qty": 98200.0,
+"price": 1.02,
+"amount": -100160.04,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "09/09/2026",
+"account": "Brokerage",
+"symbol": "NAUT",
+"type": "Buy",
+"qty": 1800.0,
+"price": 1.0,
+"amount": -1799.5,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "09/09/2026",
+"account": "Brokerage",
+"symbol": "ASPI",
+"type": "Buy",
+"qty": 50890.0,
+"price": 3.93,
+"amount": -199990.41,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "09/09/2026",
+"account": "SEP-IRA",
+"symbol": "NAUT",
+"type": "Buy",
+"qty": 98000.0,
+"price": 1.02,
+"amount": -99942.22,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "09/09/2026",
+"account": "SEP-IRA",
+"symbol": "ABCL",
+"type": "Sell",
+"qty": -9025.0,
+"price": 11.08,
+"amount": 99950.72,
+"fees": 2.06,
+"category": "trade",
+"pnl": 73165.42,
+"tax_pnl": null
+},
+{
+"date": "09/09/2026",
+"account": "Brokerage",
+"symbol": "MRVL",
+"type": "Sell",
+"qty": -438.0,
+"price": 237.7,
+"amount": 104110.94,
+"fees": 2.14,
+"category": "trade",
+"pnl": 4154.64,
+"tax_pnl": null
+},
+{
+"date": "09/09/2026",
+"account": "SEP-IRA",
+"symbol": "ABCL",
+"type": "Sell",
+"qty": -8000.0,
+"price": 11.21,
+"amount": 89638.15,
+"fees": 1.85,
+"category": "trade",
+"pnl": 65894.95,
+"tax_pnl": null
+},
+{
+"date": "09/09/2026",
+"account": "SEP-IRA",
+"symbol": "VST",
+"type": "Sell",
+"qty": -800.0,
+"price": 150.06,
+"amount": 120041.53,
+"fees": 2.47,
+"category": "trade",
+"pnl": -3124.46,
+"tax_pnl": null
+},
+{
+"date": "09/09/2026",
+"account": "Brokerage",
+"symbol": "IREN",
+"type": "Sell",
+"qty": -5232.0,
+"price": 45.63,
+"amount": 238748.14,
+"fees": 4.92,
+"category": "trade",
+"pnl": -11759.5,
+"tax_pnl": null
+},
+{
+"date": "09/09/2026",
+"account": "SEP-IRA",
+"symbol": "ASPI",
+"type": "Sell",
+"qty": -30000.0,
+"price": 3.89,
+"amount": 116754.55,
+"fees": 2.41,
+"category": "trade",
+"pnl": -9519.95,
+"tax_pnl": null
+},
+{
+"date": "09/10/2026",
+"account": "SEP-IRA",
+"symbol": "IMMX",
+"type": "Buy",
+"qty": 39714.0,
+"price": 12.6,
+"amount": -500394.2,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "09/10/2026",
+"account": "Brokerage",
+"symbol": "SNDK",
+"type": "Sell",
+"qty": -112.0,
+"price": 1707.86,
+"amount": 191276.38,
+"fees": 3.94,
+"category": "trade",
+"pnl": -8360.04,
+"tax_pnl": null
+},
+{
+"date": "09/10/2026",
+"account": "Brokerage",
+"symbol": "ASPI",
+"type": "Sell",
+"qty": -57843.0,
+"price": 3.62,
+"amount": 209395.85,
+"fees": 4.31,
+"category": "trade",
+"pnl": -19647.16,
+"tax_pnl": null
+},
+{
+"date": "09/10/2026",
+"account": "SEP-IRA",
+"symbol": "VST",
+"type": "Sell",
+"qty": -823.0,
+"price": 151.6,
+"amount": 124764.23,
+"fees": 2.57,
+"category": "trade",
+"pnl": -1942.79,
+"tax_pnl": null
+},
+{
+"date": "09/10/2026",
+"account": "Brokerage",
+"symbol": "NAUT",
+"type": "Sell",
+"qty": -100000.0,
+"price": 1.01,
+"amount": 101011.07,
+"fees": 2.08,
+"category": "trade",
+"pnl": -948.47,
+"tax_pnl": null
+},
+{
+"date": "09/10/2026",
+"account": "SEP-IRA",
+"symbol": "ASPI",
+"type": "Sell",
+"qty": -2.0,
+"price": 3.63,
+"amount": 7.26,
+"fees": 0.0,
+"category": "trade",
+"pnl": -1.17,
+"tax_pnl": null
+},
+{
+"date": "09/10/2026",
+"account": "SEP-IRA",
+"symbol": "TSM",
+"type": "Sell",
+"qty": -278.0,
+"price": 429.66,
+"amount": 119441.63,
+"fees": 2.46,
+"category": "trade",
+"pnl": -1274.31,
+"tax_pnl": null
+},
+{
+"date": "09/10/2026",
+"account": "Brokerage",
+"symbol": "ASPI",
+"type": "Sell",
+"qty": -110716.0,
+"price": 3.67,
+"amount": 406482.14,
+"fees": 8.37,
+"category": "trade",
+"pnl": -29849.03,
+"tax_pnl": null
+},
+{
+"date": "09/10/2026",
+"account": "Brokerage",
+"symbol": "GOOG",
+"type": "Sell",
+"qty": -1525.0,
+"price": 327.9,
+"amount": 500037.2,
+"fees": 10.3,
+"category": "trade",
+"pnl": 50.7,
+"tax_pnl": null
+},
+{
+"date": "09/10/2026",
+"account": "SEP-IRA",
+"symbol": "ASPI",
+"type": "Sell",
+"qty": -30616.0,
+"price": 3.75,
+"amount": 114815.48,
+"fees": 2.37,
+"category": "trade",
+"pnl": -14196.77,
+"tax_pnl": null
+},
+{
+"date": "09/10/2026",
+"account": "Brokerage",
+"symbol": "ASPI",
+"type": "Sell",
+"qty": -94918.0,
+"price": 3.6,
+"amount": 341925.53,
+"fees": 7.04,
+"category": "trade",
+"pnl": -23362.16,
+"tax_pnl": null
+},
+{
+"date": "09/10/2026",
+"account": "SEP-IRA",
+"symbol": "MU",
+"type": "Sell",
+"qty": -97.0,
+"price": 983.1,
+"amount": 95358.74,
+"fees": 1.96,
+"category": "trade",
+"pnl": -3899.42,
+"tax_pnl": null
+},
+{
+"date": "09/10/2026",
+"account": "Brokerage",
+"symbol": "AVGO",
+"type": "Sell",
+"qty": -677.0,
+"price": 364.38,
+"amount": 246680.86,
+"fees": 5.08,
+"category": "trade",
+"pnl": -3010.28,
+"tax_pnl": null
+},
+{
+"date": "09/10/2026",
+"account": "Brokerage",
+"symbol": "VST",
+"type": "Sell",
+"qty": -648.0,
+"price": 151.33,
+"amount": 98056.58,
+"fees": 2.02,
+"category": "trade",
+"pnl": -1586.62,
+"tax_pnl": null
+},
+{
+"date": "09/10/2026",
+"account": "SEP-IRA",
+"symbol": "ABCL",
+"type": "Sell",
+"qty": -8042.0,
+"price": 10.87,
+"amount": 87374.53,
+"fees": 1.8,
+"category": "trade",
+"pnl": 63507.62,
+"tax_pnl": null
+},
+{
+"date": "09/10/2026",
+"account": "Brokerage",
+"symbol": "NVDA",
+"type": "Sell",
+"qty": -660.0,
+"price": 217.92,
+"amount": 143824.37,
+"fees": 2.96,
+"category": "trade",
+"pnl": -6134.23,
+"tax_pnl": null
+},
+{
+"date": "09/10/2026",
+"account": "SEP-IRA",
+"symbol": "NAUT",
+"type": "Sell",
+"qty": -7675.0,
+"price": 1.05,
+"amount": 8064.28,
+"fees": 0.17,
+"category": "trade",
+"pnl": 237.17,
+"tax_pnl": null
+},
+{
+"date": "09/10/2026",
+"account": "Brokerage",
+"symbol": "TSM",
+"type": "Sell",
+"qty": -345.0,
+"price": 429.65,
+"amount": 148224.48,
+"fees": 3.05,
+"category": "trade",
+"pnl": -1559.0,
+"tax_pnl": null
+},
+{
+"date": "09/10/2026",
+"account": "Brokerage",
+"symbol": "MU",
+"type": "Sell",
+"qty": -591.0,
+"price": 983.6,
+"amount": 581293.17,
+"fees": 11.97,
+"category": "trade",
+"pnl": -21930.35,
+"tax_pnl": null
+},
+{
+"date": "09/10/2026",
+"account": "SEP-IRA",
+"symbol": "NAUT",
+"type": "Sell",
+"qty": -90325.0,
+"price": 1.01,
+"amount": 91235.37,
+"fees": 1.88,
+"category": "trade",
+"pnl": -879.74,
+"tax_pnl": null
+},
+{
+"date": "09/14/2026",
+"account": "Brokerage",
+"symbol": "ASPI",
+"type": "Buy",
+"qty": 47366.0,
+"price": 3.29,
+"amount": -155683.62,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "09/14/2026",
+"account": "Brokerage",
+"symbol": "ASPI",
+"type": "Buy",
+"qty": 13796.0,
+"price": 3.27,
+"amount": -45104.29,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "09/14/2026",
+"account": "Brokerage",
+"symbol": "IREN",
+"type": "Buy",
+"qty": 4646.0,
+"price": 43.1,
+"amount": -200241.67,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "09/14/2026",
+"account": "Brokerage",
+"symbol": "TE",
+"type": "Buy",
+"qty": 45662.0,
+"price": 4.4,
+"amount": -200729.03,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "09/15/2026",
+"account": "Brokerage",
+"symbol": "IREN",
+"type": "Buy",
+"qty": 7232.0,
+"price": 41.51,
+"amount": -300200.32,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "09/15/2026",
+"account": "Brokerage",
+"symbol": "TE",
+"type": "Sell",
+"qty": -45662.0,
+"price": 4.21,
+"amount": 192338.59,
+"fees": 3.96,
+"category": "trade",
+"pnl": -8390.44,
+"tax_pnl": null
+},
+{
+"date": "09/15/2026",
+"account": "Brokerage",
+"symbol": "ASPI",
+"type": "Sell",
+"qty": -61162.0,
+"price": 3.06,
+"amount": 187263.32,
+"fees": 3.86,
+"category": "trade",
+"pnl": -13524.59,
+"tax_pnl": null
+},
+{
+"date": "09/18/2026",
+"account": "SEP-IRA",
+"symbol": "SLNH",
+"type": "Buy",
+"qty": 45000.0,
+"price": 1.24,
+"amount": -55800.0,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "09/18/2026",
+"account": "Brokerage",
+"symbol": "SLNH",
+"type": "Buy",
+"qty": 100000.0,
+"price": 1.24,
+"amount": -123900.0,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "09/21/2026",
+"account": "Brokerage",
+"symbol": "IMMX",
+"type": "Buy",
+"qty": 82372.0,
+"price": 12.19,
+"amount": -1004388.66,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "09/21/2026",
+"account": "SEP-IRA",
+"symbol": "IMMX",
+"type": "Buy",
+"qty": 8500.0,
+"price": 12.45,
+"amount": -105819.9,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "09/25/2026",
+"account": "Brokerage",
+"symbol": "MOD",
+"type": "Buy",
+"qty": 497.0,
+"price": 201.49,
+"amount": -100140.43,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "09/25/2026",
+"account": "SEP-IRA",
+"symbol": "MOD",
+"type": "Buy",
+"qty": 426.0,
+"price": 198.32,
+"amount": -84484.32,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "09/25/2026",
+"account": "Brokerage",
+"symbol": "IMMX",
+"type": "Buy",
+"qty": 42234.0,
+"price": 10.9,
+"amount": -460189.77,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "09/25/2026",
+"account": "Brokerage",
+"symbol": "IMMX",
+"type": "Buy",
+"qty": 3891.0,
+"price": 10.86,
+"amount": -42238.33,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "09/25/2026",
+"account": "Brokerage",
+"symbol": "ARM",
+"type": "Buy",
+"qty": 622.0,
+"price": 322.36,
+"amount": -200505.43,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "09/28/2026",
+"account": "SEP-IRA",
+"symbol": "ASPI",
+"type": "Buy",
+"qty": 20155.0,
+"price": 2.58,
+"amount": -51899.13,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "09/28/2026",
+"account": "SEP-IRA",
+"symbol": "ASPI",
+"type": "Buy",
+"qty": 30314.0,
+"price": 2.54,
+"amount": -77121.93,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "09/28/2026",
+"account": "Brokerage",
+"symbol": "HIMS",
+"type": "Buy",
+"qty": 3487.0,
+"price": 28.68,
+"amount": -99991.82,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "09/28/2026",
+"account": "SEP-IRA",
+"symbol": "SLNH",
+"type": "Sell",
+"qty": -45000.0,
+"price": 1.17,
+"amount": 52555.92,
+"fees": 1.08,
+"category": "trade",
+"pnl": -3244.08,
+"tax_pnl": null
+},
+{
+"date": "09/28/2026",
+"account": "Brokerage",
+"symbol": "MOD",
+"type": "Sell",
+"qty": -497.0,
+"price": 180.27,
+"amount": 89592.34,
+"fees": 1.85,
+"category": "trade",
+"pnl": -10548.09,
+"tax_pnl": null
+},
+{
+"date": "09/28/2026",
+"account": "SEP-IRA",
+"symbol": "MOD",
+"type": "Sell",
+"qty": -426.0,
+"price": 176.64,
+"amount": 75247.09,
+"fees": 1.55,
+"category": "trade",
+"pnl": -9237.23,
+"tax_pnl": null
+},
+{
+"date": "09/29/2026",
+"account": "SEP-IRA",
+"symbol": "ASPI",
+"type": "Buy",
+"qty": 475.0,
+"price": 2.63,
+"amount": -1249.25,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "09/29/2026",
+"account": "SEP-IRA",
+"symbol": "ASPI",
+"type": "Buy",
+"qty": 58650.0,
+"price": 2.66,
+"amount": -155832.73,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "09/29/2026",
+"account": "SEP-IRA",
+"symbol": "ASPI",
+"type": "Buy",
+"qty": 68965.0,
+"price": 2.63,
+"amount": -181332.87,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "09/29/2026",
+"account": "SEP-IRA",
+"symbol": "IMMX",
+"type": "Sell",
+"qty": -30000.0,
+"price": 11.3,
+"amount": 338996.02,
+"fees": 6.98,
+"category": "trade",
+"pnl": 72834.24,
+"tax_pnl": null
+},
+{
+"date": "09/29/2026",
+"account": "Brokerage",
+"symbol": "SLNH",
+"type": "Sell",
+"qty": -100000.0,
+"price": 1.17,
+"amount": 117156.19,
+"fees": 2.41,
+"category": "trade",
+"pnl": -6743.81,
+"tax_pnl": null
+},
+{
+"date": "09/29/2026",
+"account": "Brokerage",
+"symbol": "IMMX",
+"type": "Sell",
+"qty": -46125.0,
+"price": 10.15,
+"amount": 468242.63,
+"fees": 9.65,
+"category": "trade",
+"pnl": -94174.54,
+"tax_pnl": null
+},
+{
+"date": "09/29/2026",
+"account": "Brokerage",
+"symbol": "ARM",
+"type": "Sell",
+"qty": -622.0,
+"price": 291.8,
+"amount": 181492.75,
+"fees": 3.74,
+"category": "trade",
+"pnl": -19012.68,
+"tax_pnl": null
+},
+{
+"date": "10/02/2026",
+"account": "SEP-IRA",
+"symbol": "ASPI",
+"type": "Buy",
+"qty": 147000.0,
+"price": 2.83,
+"amount": -415967.65,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "10/02/2026",
+"account": "SEP-IRA",
+"symbol": "ASPI",
+"type": "Buy",
+"qty": 71428.0,
+"price": 2.81,
+"amount": -200712.68,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "10/02/2026",
+"account": "SEP-IRA",
+"symbol": "IMMX",
+"type": "Sell",
+"qty": -19940.0,
+"price": 10.0,
+"amount": 199403.56,
+"fees": 4.11,
+"category": "trade",
+"pnl": -2521.43,
+"tax_pnl": null
+},
+{
+"date": "10/02/2026",
+"account": "SEP-IRA",
+"symbol": "IMMX",
+"type": "Sell",
+"qty": -41783.0,
+"price": 9.98,
+"amount": 416985.95,
+"fees": 8.59,
+"category": "trade",
+"pnl": -108198.17,
+"tax_pnl": null
+},
+{
+"date": "10/02/2026",
+"account": "Brokerage",
+"symbol": "HIMS",
+"type": "Sell",
+"qty": -3487.0,
+"price": 28.56,
+"amount": 99586.67,
+"fees": 2.05,
+"category": "trade",
+"pnl": -405.15,
+"tax_pnl": null
+},
+{
+"date": "10/02/2026",
+"account": "Brokerage",
+"symbol": "IMMX",
+"type": "Sell",
+"qty": -82372.0,
+"price": 10.01,
+"amount": 824220.6,
+"fees": 16.98,
+"category": "trade",
+"pnl": -120178.99,
+"tax_pnl": null
+},
+{
+"date": "10/05/2026",
+"account": "Brokerage",
+"symbol": "TWST",
+"type": "Buy",
+"qty": 488.0,
+"price": 204.87,
+"amount": -99976.56,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "10/05/2026",
+"account": "Brokerage",
+"symbol": "INTC",
+"type": "Buy",
+"qty": 2567.0,
+"price": 116.84,
+"amount": -299928.28,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "10/05/2026",
+"account": "Brokerage",
+"symbol": "ASPI",
+"type": "Buy",
+"qty": 68965.0,
+"price": 2.93,
+"amount": -201999.87,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "10/06/2026",
+"account": "Brokerage",
+"symbol": "MOD",
+"type": "Buy",
+"qty": 2645.0,
+"price": 189.05,
+"amount": -500037.25,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "10/06/2026",
+"account": "Brokerage",
+"symbol": "TWST",
+"type": "Sell",
+"qty": -488.0,
+"price": 187.32,
+"amount": 91410.33,
+"fees": 1.88,
+"category": "trade",
+"pnl": -8566.23,
+"tax_pnl": null
+},
+{
+"date": "10/09/2026",
+"account": "Brokerage",
+"symbol": "MOD",
+"type": "Buy",
+"qty": 2720.0,
+"price": 184.2,
+"amount": -501024.0,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "10/09/2026",
+"account": "SEP-IRA",
+"symbol": "MOD",
+"type": "Buy",
+"qty": 2686.0,
+"price": 184.3,
+"amount": -495029.56,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "10/09/2026",
+"account": "Brokerage",
+"symbol": "ASPI",
+"type": "Sell",
+"qty": -68965.0,
+"price": 2.74,
+"amount": 188960.21,
+"fees": 3.89,
+"category": "trade",
+"pnl": -13039.66,
+"tax_pnl": null
+},
+{
+"date": "10/09/2026",
+"account": "SEP-IRA",
+"symbol": "ASPI",
+"type": "Sell",
+"qty": -185873.0,
+"price": 2.67,
+"amount": 496480.41,
+"fees": 10.23,
+"category": "trade",
+"pnl": 8347.99,
+"tax_pnl": null
+},
+{
+"date": "10/09/2026",
+"account": "Brokerage",
+"symbol": "IREN",
+"type": "Sell",
+"qty": -11878.0,
+"price": 35.22,
+"amount": 418361.99,
+"fees": 8.62,
+"category": "trade",
+"pnl": -82080.0,
+"tax_pnl": null
+},
+{
+"date": "10/09/2026",
+"account": "Brokerage",
+"symbol": "INTC",
+"type": "Sell",
+"qty": -2567.0,
+"price": 105.57,
+"amount": 270992.62,
+"fees": 5.58,
+"category": "trade",
+"pnl": -28935.66,
+"tax_pnl": null
+},
+{
+"date": "10/09/2026",
+"account": "Brokerage",
+"symbol": "IMMX",
+"type": "Sell",
+"qty": -49950.0,
+"price": 9.36,
+"amount": 467539.8,
+"fees": 9.63,
+"category": "trade",
+"pnl": -20404.12,
+"tax_pnl": null
+},
+{
+"date": "10/13/2026",
+"account": "Brokerage",
+"symbol": "ASPI",
+"type": "Buy",
+"qty": 169491.0,
+"price": 2.37,
+"amount": -401596.72,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "10/13/2026",
+"account": "Brokerage",
+"symbol": "ASPI",
+"type": "Buy",
+"qty": 85836.0,
+"price": 2.34,
+"amount": -200523.58,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "10/13/2026",
+"account": "SEP-IRA",
+"symbol": "ASPI",
+"type": "Buy",
+"qty": 86580.0,
+"price": 2.32,
+"amount": -200581.29,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "10/13/2026",
+"account": "SEP-IRA",
+"symbol": "ASPI",
+"type": "Buy",
+"qty": 109051.0,
+"price": 2.33,
+"amount": -253889.09,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "10/13/2026",
+"account": "Brokerage",
+"symbol": "IMMX",
+"type": "Sell",
+"qty": -141672.0,
+"price": 8.8,
+"amount": 1246713.72,
+"fees": 25.68,
+"category": "trade",
+"pnl": -39941.01,
+"tax_pnl": null
+},
+{
+"date": "10/13/2026",
+"account": "SEP-IRA",
+"symbol": "MOD",
+"type": "Sell",
+"qty": -1486.0,
+"price": 169.21,
+"amount": 251440.88,
+"fees": 5.18,
+"category": "trade",
+"pnl": -22428.79,
+"tax_pnl": null
+},
+{
+"date": "10/13/2026",
+"account": "SEP-IRA",
+"symbol": "MOD",
+"type": "Sell",
+"qty": -1200.0,
+"price": 170.62,
+"amount": 204739.78,
+"fees": 4.22,
+"category": "trade",
+"pnl": -16420.11,
+"tax_pnl": null
+},
+{
+"date": "10/15/2026",
+"account": "Brokerage",
+"symbol": "ASPI",
+"type": "Buy",
+"qty": 195121.0,
+"price": 2.07,
+"amount": -404531.09,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "10/15/2026",
+"account": "Brokerage",
+"symbol": "ASPI",
+"type": "Buy",
+"qty": 388349.0,
+"price": 2.09,
+"amount": -813209.94,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "10/15/2026",
+"account": "Brokerage",
+"symbol": "MOD",
+"type": "Sell",
+"qty": -2865.0,
+"price": 150.09,
+"amount": 429997.81,
+"fees": 8.86,
+"category": "trade",
+"pnl": -110563.44,
+"tax_pnl": null
+},
+{
+"date": "10/15/2026",
+"account": "Brokerage",
+"symbol": "MOD",
+"type": "Sell",
+"qty": -2500.0,
+"price": 149.41,
+"amount": 373521.56,
+"fees": 7.69,
+"category": "trade",
+"pnl": -86978.44,
+"tax_pnl": null
+},
+{
+"date": "10/16/2026",
+"account": "Brokerage",
+"symbol": "ASPI",
+"type": "Buy",
+"qty": 184331.0,
+"price": 2.18,
+"amount": -401841.58,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "10/16/2026",
+"account": "Brokerage",
+"symbol": "ASPI",
+"type": "Buy",
+"qty": 234741.0,
+"price": 2.14,
+"amount": -503483.86,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "10/16/2026",
+"account": "Brokerage",
+"symbol": "IMMX",
+"type": "Sell",
+"qty": -56242.0,
+"price": 8.18,
+"amount": 460083.98,
+"fees": 9.48,
+"category": "trade",
+"pnl": -43122.24,
+"tax_pnl": null
+},
+{
+"date": "11/05/2026",
+"account": "Brokerage",
+"symbol": "AAOI",
+"type": "Buy",
+"qty": 4189.0,
+"price": 47.61,
+"amount": -199438.29,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "11/05/2026",
+"account": "Brokerage",
+"symbol": "INTC",
+"type": "Buy",
+"qty": 3740.0,
+"price": 53.45,
+"amount": -199884.3,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "11/05/2026",
+"account": "Brokerage",
+"symbol": "BE",
+"type": "Buy",
+"qty": 1179.0,
+"price": 169.36,
+"amount": -199675.44,
+"fees": 0.0,
+"category": "trade"
+},
+{
+"date": "11/05/2026",
+"account": "Brokerage",
+"symbol": "ASPI",
+"type": "Sell",
+"qty": -100000.0,
+"price": 1.68,
+"amount": 168048.17,
+"fees": 3.46,
+"category": "trade",
+"pnl": -68894.63,
+"tax_pnl": null
+},
+{
+"date": "11/05/2026",
+"account": "Brokerage",
+"symbol": "ASPI",
+"type": "Sell",
+"qty": -1465.0,
+"price": 1.69,
+"amount": 2475.8,
+"fees": 0.05,
+"category": "trade",
+"pnl": -995.41,
+"tax_pnl": null
+},
+{
+"date": "11/05/2026",
+"account": "Brokerage",
+"symbol": "ASPI",
+"type": "Sell",
+"qty": -150000.0,
+"price": 1.75,
+"amount": 262517.39,
+"fees": 5.41,
+"category": "trade",
+"pnl": -90166.79,
+"tax_pnl": null
+},
+{
+"date": "11/05/2026",
+"account": "Brokerage",
+"symbol": "ASPI",
+"type": "Sell",
+"qty": -100000.0,
+"price": 1.68,
+"amount": 168026.54,
+"fees": 3.46,
+"category": "trade",
+"pnl": -50576.41,
+"tax_pnl": null
+},
+{
+"date": "11/05/2026",
+"account": "Brokerage",
+"symbol": "ASPI",
+"type": "Sell",
+"qty": -60000.0,
+"price": 1.68,
+"amount": 100801.6,
+"fees": 2.08,
+"category": "trade",
+"pnl": -29998.4,
+"tax_pnl": null
+},
+{
+"date": "11/05/2026",
+"account": "Brokerage",
+"symbol": "ASPI",
+"type": "Sell",
+"qty": -200000.0,
+"price": 1.71,
+"amount": 342416.36,
+"fees": 7.05,
+"category": "trade",
+"pnl": -87544.35,
+"tax_pnl": null
+},
+{
+"date": "11/05/2026",
+"account": "Brokerage",
+"symbol": "ASPI",
+"type": "Sell",
+"qty": -1064.0,
+"price": 1.75,
+"amount": 1861.96,
+"fees": 0.04,
+"category": "trade",
+"pnl": -420.16,
 "tax_pnl": null
 }
 ],
@@ -39266,6 +42967,20 @@
 "type": "Cash transfer",
 "amount": 64.93,
 "name": "CASH"
+},
+{
+"date": "10/29/2026",
+"account": "Brokerage",
+"type": "Margin interest",
+"amount": -4376.96,
+"name": "Margin interest charge"
+},
+{
+"date": "09/29/2026",
+"account": "Brokerage",
+"type": "Margin interest",
+"amount": -5876.11,
+"name": "Margin interest charge"
 }
 ],
 "by_year": {
@@ -39333,13 +43048,13 @@
 "total_gain": 2143861.07
 },
 "2026": {
-"realized": 2731264.01,
-"taxable": 2723142.62,
-"disallowed": 588578.4,
-"closed": 63,
-"wins": 21,
-"source": "Finalized Vanguard lots + provisional 09/08 executed sales (economic only)",
-"total_gain": 6595527.16
+"realized": 2231916.72,
+"taxable": 2692648.99,
+"disallowed": 2156943.87,
+"closed": 95,
+"wins": 25,
+"source": "Vanguard cost-basis report through 11/12/2026 (taxable); economic P&L from original lot costs",
+"total_gain": 2318431.07
 }
 },
 "by_symbol": {
@@ -39954,12 +43669,12 @@
 "advisor": false
 },
 "HIMS": {
-"realized": -361119.41,
+"realized": -361524.56,
 "unrealized": 0,
-"total": -361119.41,
-"trades": 5,
+"total": -361524.56,
+"trades": 6,
 "wins": 1,
-"losses": 4,
+"losses": 5,
 "open": false,
 "advisor": false
 },
@@ -40024,13 +43739,13 @@
 "advisor": false
 },
 "NVDA": {
-"realized": -27723.88,
-"unrealized": 217.73,
-"total": -27506.15,
-"trades": 4,
+"realized": -33858.11,
+"unrealized": 0,
+"total": -33858.11,
+"trades": 5,
 "wins": 1,
-"losses": 3,
-"open": true,
+"losses": 4,
+"open": false,
 "advisor": false
 },
 "TBLA": {
@@ -40114,21 +43829,21 @@
 "advisor": false
 },
 "GOOG": {
-"realized": -31390.05,
+"realized": -31339.35,
 "unrealized": 0,
-"total": -31390.05,
-"trades": 6,
-"wins": 2,
+"total": -31339.35,
+"trades": 7,
+"wins": 3,
 "losses": 4,
 "open": false,
 "advisor": false
 },
 "ABCL": {
-"realized": 6120.95,
-"unrealized": 805509.21,
-"total": 811630.16,
-"trades": 3,
-"wins": 2,
+"realized": 208688.94,
+"unrealized": 605168.8,
+"total": 813857.74,
+"trades": 4,
+"wins": 3,
 "losses": 1,
 "open": true,
 "advisor": false
@@ -40284,11 +43999,11 @@
 "advisor": false
 },
 "IMMX": {
-"realized": 1632318.4,
-"unrealized": 4037135.64,
-"total": 5669454.04,
-"trades": 1,
-"wins": 1,
+"realized": 1849319.16,
+"unrealized": 951647.08,
+"total": 2800966.24,
+"trades": 2,
+"wins": 2,
 "losses": 0,
 "open": true,
 "advisor": false
@@ -40304,12 +44019,12 @@
 "advisor": false
 },
 "ASPI": {
-"realized": -444094.51,
-"unrealized": 97717.23,
-"total": -346377.28,
-"trades": 11,
+"realized": -887489.3,
+"unrealized": -433498.05,
+"total": -1320987.35,
+"trades": 15,
 "wins": 3,
-"losses": 8,
+"losses": 12,
 "open": true,
 "advisor": false
 },
@@ -40364,9 +44079,9 @@
 "advisor": false
 },
 "SMXT": {
-"realized": -170926.5,
+"realized": -170926.9,
 "unrealized": 0,
-"total": -170926.5,
+"total": -170926.9,
 "trades": 4,
 "wins": 0,
 "losses": 4,
@@ -40454,13 +44169,13 @@
 "advisor": false
 },
 "MU": {
-"realized": 378661.07,
-"unrealized": 1810.0,
-"total": 380471.07,
-"trades": 4,
+"realized": 352831.3,
+"unrealized": 0,
+"total": 352831.3,
+"trades": 6,
 "wins": 3,
-"losses": 1,
-"open": true,
+"losses": 3,
+"open": false,
 "advisor": false
 },
 "BTDR": {
@@ -40484,13 +44199,13 @@
 "advisor": false
 },
 "SNDK": {
-"realized": 47767.48,
-"unrealized": 1260.22,
-"total": 49027.7,
-"trades": 1,
+"realized": 39407.44,
+"unrealized": 0,
+"total": 39407.44,
+"trades": 2,
 "wins": 1,
-"losses": 0,
-"open": true,
+"losses": 1,
+"open": false,
 "advisor": false
 },
 "HIVE": {
@@ -40504,42 +44219,142 @@
 "advisor": false
 },
 "IREN": {
-"realized": -21545.8,
-"unrealized": 2851.96,
-"total": -18693.84,
-"trades": 1,
+"realized": -115385.3,
+"unrealized": 0,
+"total": -115385.3,
+"trades": 3,
 "wins": 0,
-"losses": 1,
-"open": true,
+"losses": 3,
+"open": false,
 "advisor": false
 },
 "TE": {
-"realized": 39990.92,
+"realized": 31600.48,
 "unrealized": 0,
-"total": 39990.92,
+"total": 31600.48,
+"trades": 2,
+"wins": 1,
+"losses": 1,
+"open": false,
+"advisor": false
+},
+"MRVL": {
+"realized": 4154.64,
+"unrealized": 0,
+"total": 4154.64,
 "trades": 1,
 "wins": 1,
 "losses": 0,
 "open": false,
 "advisor": false
 },
-"MRVL": {
+"BE": {
 "realized": 0,
-"unrealized": 1370.62,
-"total": 1370.62,
+"unrealized": 38400.03,
+"total": 38400.03,
 "trades": 0,
 "wins": 0,
 "losses": 0,
 "open": true,
 "advisor": false
 },
-"VST": {
+"MOD": {
+"realized": -256176.1,
+"unrealized": 0,
+"total": -256176.1,
+"trades": 4,
+"wins": 0,
+"losses": 4,
+"open": false,
+"advisor": false
+},
+"AAOI": {
 "realized": 0,
-"unrealized": 84.0,
-"total": 84.0,
+"unrealized": 21950.36,
+"total": 21950.36,
 "trades": 0,
 "wins": 0,
 "losses": 0,
+"open": true,
+"advisor": false
+},
+"AVGO": {
+"realized": -3010.28,
+"unrealized": 0,
+"total": -3010.28,
+"trades": 1,
+"wins": 0,
+"losses": 1,
+"open": false,
+"advisor": false
+},
+"TSM": {
+"realized": -2833.31,
+"unrealized": 0,
+"total": -2833.31,
+"trades": 2,
+"wins": 0,
+"losses": 2,
+"open": false,
+"advisor": false
+},
+"ARM": {
+"realized": -19012.68,
+"unrealized": 0,
+"total": -19012.68,
+"trades": 1,
+"wins": 0,
+"losses": 1,
+"open": false,
+"advisor": false
+},
+"TWST": {
+"realized": -8566.23,
+"unrealized": 0,
+"total": -8566.23,
+"trades": 1,
+"wins": 0,
+"losses": 1,
+"open": false,
+"advisor": false
+},
+"SLNH": {
+"realized": -9987.89,
+"unrealized": 0,
+"total": -9987.89,
+"trades": 2,
+"wins": 0,
+"losses": 2,
+"open": false,
+"advisor": false
+},
+"VST": {
+"realized": -6653.87,
+"unrealized": 0,
+"total": -6653.87,
+"trades": 2,
+"wins": 0,
+"losses": 2,
+"open": false,
+"advisor": false
+},
+"NAUT": {
+"realized": -1591.04,
+"unrealized": 0,
+"total": -1591.04,
+"trades": 2,
+"wins": 0,
+"losses": 2,
+"open": false,
+"advisor": false
+},
+"INTC": {
+"realized": -28935.66,
+"unrealized": 29003.7,
+"total": 68.04,
+"trades": 1,
+"wins": 0,
+"losses": 1,
 "open": true,
 "advisor": false
 }
@@ -40665,8 +44480,18 @@
 "TE": "T1 ENERGY INC",
 "HIVE": "HIVE DIGITAL TECHOLOGIES LTD",
 "IREN": "IREN LTD",
+"VST": "VISTRA CORP",
+"AVGO": "BROADCOM INC",
 "MRVL": "MARVELL TECHNOLOGY INC",
-"VST": "VISTRA CORP"
+"TSM": "TAIWAN SEMICONDUCTOR MANUFACTURING CO LTD SPON ADR",
+"NAUT": "NAUTILUS BIOTECHNOLOGY INC",
+"SLNH": "SOLUNA HOLDINGS INC",
+"MOD": "MODINE MANUFACTURING CO",
+"ARM": "ARM HOLDINGS PLC SPON ADR",
+"TWST": "TWIST BIOSCIENCE CORP",
+"INTC": "INTEL CORP",
+"AAOI": "APPLIED OPTOELECTRONICS INC",
+"BE": "BLOOM ENERGY CORP CL A"
 },
 "balance_history": [
 {
@@ -41462,18 +45287,36 @@
 "net_deposits": 521410.39
 },
 {
-"date": "2026-09-04",
+"date": "2026-09-30",
 "month": "09/2026",
-"market": -12707.76,
+"market": -2300005.85,
+"income": 511.42,
+"gain": 6968316.65,
+"value": 7483850.93,
+"net_deposits": 515534.28
+},
+{
+"date": "2026-10-31",
+"month": "10/2026",
+"market": -2058727.02,
+"income": 206.38,
+"gain": 4909796.01,
+"value": 5420953.33,
+"net_deposits": 511157.32
+},
+{
+"date": "2026-11-11",
+"month": "11/2026",
+"market": 68211.22,
 "income": 0,
-"gain": 9255103.32,
-"value": 9776513.71,
-"net_deposits": 521410.39
+"gain": 4978007.23,
+"value": 5489164.55,
+"net_deposits": 511157.32
 }
 ],
 "warnings": [
-"Includes nine executed orders settling September 9. Today\u2019s sale P&L uses the stated FIFO/HIFO method and is provisional until final lot and fee records post. Tax figures remain finalized through 08/28/2026.",
-"Intraday broker cash differs from the execution ledger by $-6.56; unsettled sale fees are not finalized."
+"Refreshed from Vanguard on 11/13/2026: holdings at the 11/12 close, every transaction through 11/05 (replacing the provisional 09/08 partial snapshot), and 2026 taxable gains from Vanguard\u2019s realized cost-basis report through 11/12. Performance is through 11/11.",
+"Broker cash differs from the execution ledger by $0.00."
 ],
-"refresh_note": "Includes nine executed orders settling September 9. Today\u2019s sale P&L uses the stated FIFO/HIFO method and is provisional until final lot and fee records post. Tax figures remain finalized through 08/28/2026."
+"refresh_note": "Refreshed from Vanguard on 11/13/2026: holdings at the 11/12 close, every transaction through 11/05 (replacing the provisional 09/08 partial snapshot), and 2026 taxable gains from Vanguard\u2019s realized cost-basis report through 11/12. Performance is through 11/11."
 }

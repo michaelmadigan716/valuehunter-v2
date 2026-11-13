@@ -188,7 +188,8 @@ export default function Overview() {
         <p className="text-xs text-muted">
           Finalized sales from 2020 on use the lots Vanguard assigned; 2019 sales predate Vanguard&apos;s cost-basis
           report and are matched first-in-first-out. Lot costs are original purchase prices, so wash-sale basis adjustments — a tax-timing
-          effect — are left out here and shown in the tax view. Today&apos;s executed sales are provisional until final lot and fee records post.
+          effect — are left out here and shown in the tax view. Partial sales after 08/28/2026 are matched highest-cost-first in the
+          Brokerage account and first-in-first-out in the SEP-IRA, the methods that reproduce Vanguard&apos;s remaining-lot basis.
           Performance and intraday holdings have different cutoff dates, so their totals will differ. Holding values use Vanguard&apos;s
           displayed balances; its quoted prices are rounded. Broker unrealized totals for unsettled positions are not used as finalized cost-basis evidence.
         </p>
@@ -270,6 +271,20 @@ export default function Overview() {
               </tbody>
             </table>
           </div>
+          {data.tax_estimate.scenarios?.map((s) => (
+            <div key={s.symbol} className="rounded-lg bg-surface-2 p-3 mt-3 max-w-3xl text-sm">
+              <div className="font-medium mb-1">
+                What if you sold all {s.qty.toLocaleString()} {s.symbol} in the Brokerage account at {money(s.value / s.qty, true)}?
+              </div>
+              <div className="text-ink-2">
+                Vanguard tax basis {money(s.basis)} (includes wash-sale adjustments) vs value {money(s.value)}: a{" "}
+                <span className={pnlClass(s.unrealized)}>{pnl(s.unrealized)}</span> short-term loss. 2026 Brokerage taxable gain falls to{" "}
+                {money(s.brk_taxable_after)}; estimated tax {money(s.est_total_after)} instead of{" "}
+                {money(s.est_total_after + s.saving)} — about <strong>{money(s.saving)} less</strong>.
+                Only counts if no {s.symbol} is bought in either account (including the SEP-IRA) for 30 days after the sale.
+              </div>
+            </div>
+          ))}
           <ul className="text-xs text-muted mt-2 space-y-0.5 list-disc pl-4">
             {data.tax_estimate.assumptions.map((a, i) => (
               <li key={i}>{a}</li>
