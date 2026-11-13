@@ -1,0 +1,57 @@
+{
+  "ticker": "IREN",
+  "name": "IREN Limited",
+  "asOf": "2026-10-21",
+  "category": "AI infrastructure",
+  "verdict": {
+    "label": "Speculative",
+    "oneLine": "A former bitcoin miner betting $25–30B a year on renting out AI chips, anchored by a $9.7B Microsoft deal; it all turns on funding."
+  },
+  "summary": "IREN went from mining bitcoin to renting out AI chips, signed a $9.7B deal with Microsoft, and plans to spend $25–30B this year. The film answers the eight questions that decide whether it works: whether it can pay for the build, whether the chips pay for themselves, delivery, customers, power, valuation, founders' skin in the game against their net worth, and what happened in past build-out booms. It ends with three modeled routes to 2030 with the math shown.",
+  "disclosure": "Matt does not own shares of IREN and was not paid by anyone to make this video.",
+  "change": "First page, built from the October 2026 film. Q1 FY2027 results (Nov 5, 2026) are not yet reflected.",
+  "level": "film",
+  "video": {
+    "youtubeId": "F6kk6GKfJuE",
+    "title": "IREN Stock Deep Dive: Can It Fund Its $25B AI Data Center Bet? Microsoft Deal & 2030 Scenarios",
+    "minutes": 8,
+    "publishedAt": "2026-10-23"
+  },
+  "sections": [
+    {
+      "title": "What the video covers",
+      "body": "0:00 From bitcoin to a $9.7B Microsoft deal\n0:30 What IREN actually does\n1:17 Q1 · Can it pay for all this?\n2:05 Q2 · Do the chips ever pay for themselves?\n2:50 Q3 · Can it deliver on time?\n3:13 Q4 · Who are the customers?\n3:42 Q5 · Is power a real moat?\n4:14 Q6 · Cheap or expensive?\n4:46 Q7 · Do the founders have skin in the game? (vs net worth)\n5:30 Q8 · What happened in past build-out booms?\n6:03 Three routes to 2030 (how each works)\n7:23 What to watch\n7:37 The bet"
+    }
+  ],
+  "sources": [
+    {
+      "label": "IREN FY2026 10-K (Jun 30, 2026)",
+      "url": "https://www.sec.gov/Archives/edgar/data/0001878848/000187884826000052/iren-20260630.htm"
+    },
+    {
+      "label": "FY2026 results release",
+      "url": "https://www.sec.gov/Archives/edgar/data/0001878848/000187884826000051/irenreportsfy26results.htm"
+    },
+    {
+      "label": "Q3 FY2026 10-Q and results",
+      "url": "https://www.sec.gov/Archives/edgar/data/0001878848/000187884826000026/iren-20260331.htm"
+    },
+    {
+      "label": "Proxy statement (DEF 14A, executive pay and the July 2026 grants)",
+      "url": "https://www.sec.gov/Archives/edgar/data/0001878848/000114036126039451/ny20078226x1_def14a.htm"
+    },
+    {
+      "label": "Microsoft agreement 8-K (Nov 3, 2025) and contract releases (2026), IREN investor relations / SEC EDGAR CIK 1878848"
+    },
+    {
+      "label": "Insider filings (Forms 3/4)",
+      "url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=0001878848&type=4"
+    },
+    {
+      "label": "Forbes Australia 50 Richest (2026); AFR Rich List (2026)"
+    },
+    {
+      "label": "ERCOT large-load interconnection reports (2026); SemiAnalysis data-center supply notes (2026)"
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "ticker": "ASPI",
+  "name": "ASP Isotopes",
+  "asOf": "2026-10-20",
+  "category": "Materials",
+  "verdict": {
+    "label": "Speculative",
+    "oneLine": "A small South African isotope and helium company with real plants, heavy dilution and several business lines that are still promises."
+  },
+  "summary": "ASP Isotopes separates isotopes in Pretoria, owns a helium field in South Africa's Free State through Renergen, and wants to make HALEU fuel for next-generation reactors. The film covers what it actually owns, who runs it and whether insiders are buying, the cash, burn, runway, dilution and book value, every business line ranked from most real to most speculative, the risks, and three scenarios. Short-seller claims mentioned in the film are allegations that the company disputes.",
+  "disclosure": "Matt does not own shares of ASP Isotopes and was not paid by anyone to make this video.",
+  "change": "First page, built from the October 2026 deep-dive film. Figures have not been refreshed since Oct 20, 2026.",
+  "level": "film",
+  "video": {
+    "youtubeId": "FwlDl3iY0Yo",
+    "title": "ASP Isotopes (ASPI) Stock Deep Dive: Helium, Isotopes, Uranium, Insiders & the Real Risks",
+    "minutes": 18,
+    "publishedAt": "2026-10-23"
+  },
+  "sections": [
+    {
+      "title": "What the video covers",
+      "body": "0:00 What is this company, really?\n0:56 What an isotope is, and who ASP is\n2:26 Inside the plants: spinning gas, lasers, and helium\n4:24 Management, pay, and insider buying and selling\n6:56 The money: cash, burn, runway, dilution, book value\n9:42 Every business, ranked from real to speculative\n13:38 The risks in one place\n14:58 Three scenarios (not predictions) and what to watch\n16:46 The honest take"
+    }
+  ],
+  "sources": [
+    {
+      "label": "10-Q Q2 2026 (filed Aug 14, 2026)",
+      "url": "https://www.sec.gov/Archives/edgar/data/1921865/000119312526352603/aspi-20260630.htm"
+    },
+    {
+      "label": "10-K FY2025",
+      "url": "https://www.sec.gov/Archives/edgar/data/1921865/000119312526151294/aspi-20251231.htm"
+    },
+    {
+      "label": "Shareholder letter, Aug 4, 2026",
+      "url": "https://www.sec.gov/Archives/edgar/data/1921865/000119312526331596/aspi-ex99_1.htm"
+    },
+    {
+      "label": "Capital Markets Day, Sep 2026",
+      "url": "https://www.sec.gov/Archives/edgar/data/1921865/000147793226005473/aspi_425.htm"
+    },
+    {
+      "label": "Helium plant commissioning 8-K, Aug 20, 2026",
+      "url": "https://www.sec.gov/Archives/edgar/data/1921865/000119312526358072/aspi-20260820.htm"
+    },
+    {
+      "label": "QLE note exchange 8-K, Jul 16, 2026",
+      "url": "https://www.sec.gov/Archives/edgar/data/1921865/000147793226004337/aspi_8k.htm"
+    },
+    {
+      "label": "Renergen acquisition 8-K, Jan 7, 2026",
+      "url": "https://www.sec.gov/Archives/edgar/data/1921865/000147793226000055/aspi_8k.htm"
+    },
+    {
+      "label": "QLE–Necsa Heads of Agreement 8-K, Oct 15, 2026",
+      "url": "https://www.sec.gov/Archives/edgar/data/1921865/000119312526422325/aspi-20261015.htm"
+    },
+    {
+      "label": "Insider transactions (Forms 3/4/144)",
+      "url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1921865&type=4"
+    },
+    {
+      "label": "XBRL financial data",
+      "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001921865.json"
+    },
+    {
+      "label": "Silicon-28 thermal conductivity (independent measurements): Kremer et al. 2004; Inyushkin et al. 2018"
+    },
+    {
+      "label": "IEA, Energy and AI (data-centre electricity outlook)"
+    }
+  ]
+}

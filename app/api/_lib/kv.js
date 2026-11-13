@@ -42,6 +42,10 @@ export async function kvHGetAllJSON(key) {
   return out;
 }
 
+export async function kvHDel(key, field) {
+  return cmd('HDEL', key, field);
+}
+
 export async function kvDel(key) {
   return cmd('DEL', key);
 }

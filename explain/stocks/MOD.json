@@ -1,0 +1,62 @@
+{
+  "ticker": "MOD",
+  "name": "Modine Manufacturing",
+  "asOf": "2026-10-21",
+  "category": "AI infrastructure",
+  "verdict": {
+    "label": "Speculative",
+    "oneLine": "Modine rode data-centre chillers from about $3 to over $300, then halved; the question is whether warm-water cooling removes the chiller."
+  },
+  "summary": "Modine went from about $3 a share in 2020 to over $300 in 2026 by selling the chillers and air handlers that carry heat out of AI data centres. Then it fell by half, and Nvidia's CEO said its next chips may not need chillers at all. The film answers seven questions with filings and data, including a weather model for warm-water cooling and three modeled routes to 2030. Spin-adjusted valuation figures are estimates, and the report naming the $4B customer is unconfirmed by the company.",
+  "disclosure": "Matt does not own shares of Modine and was not paid by anyone to make this video.",
+  "change": "First page, built from the October 2026 film. Q2 FY2027 results (late October 2026) are not yet reflected.",
+  "level": "film",
+  "video": {
+    "youtubeId": "1dqraTSeKZg",
+    "title": "Modine (MOD) Stock Deep Dive: Will Liquid Cooling Kill the Chiller? Insiders & 2030 Scenarios",
+    "minutes": 9,
+    "publishedAt": "2026-10-23"
+  },
+  "sections": [
+    {
+      "title": "What the video covers",
+      "body": "0:00 From $3 to $300 to half\n0:32 What Modine is now (after the Oct 1 spin-off)\n1:22 Q1 · Will warm-water cooling kill the chiller? (weather model)\n2:42 Q2 · Can the AI spending keep going?\n3:15 Q3 · Can it make money while it grows this fast?\n3:48 Q4 · Customers and competition\n4:24 Q5 · Is it expensive? (spin-adjusted)\n5:04 Q6 · Insiders vs their net worth\n5:59 Q7 · What happens when a boom cools?\n6:43 Three routes to 2030 (how each one works)\n8:11 What to watch\n8:25 The bet"
+    }
+  ],
+  "sources": [
+    {
+      "label": "Modine FY2026 annual report / 10-K",
+      "url": "https://www.sec.gov/Archives/edgar/data/0000067347/000110465926075698/mod-20260331xars.pdf"
+    },
+    {
+      "label": "Q4 FY2026 results, May 26, 2026",
+      "url": "https://www.sec.gov/Archives/edgar/data/0000067347/000110465926066291/mod-20260526xex99d1.htm"
+    },
+    {
+      "label": "Modine 8-K exhibits (2026)",
+      "url": "https://www.sec.gov/Archives/edgar/data/0000067347/000110465926108615/tm2625565d2_ex99-1.htm"
+    },
+    {
+      "label": "Spin-off / Gentherm merger filings (Jan 29, 2026 425)",
+      "url": "https://www.sec.gov/Archives/edgar/data/67347/000110465926008534/mod-20260129x425.htm"
+    },
+    {
+      "label": "Insider transactions (Form 4)",
+      "url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=0000067347&type=4"
+    },
+    {
+      "label": "Vertiv Q4 2025 results",
+      "url": "https://www.sec.gov/Archives/edgar/data/1674101/000167410126000006/exhibit991vrt02112026.htm"
+    },
+    {
+      "label": "Trane 10-Q (Jun 30, 2026)",
+      "url": "https://www.sec.gov/Archives/edgar/data/0001466258/000162828026051117/tt-20260630.htm"
+    },
+    {
+      "label": "Dell'Oro Group data-centre thermal management reports (2026)"
+    },
+    {
+      "label": "Nvidia CES keynote, Jan 5, 2026"
+    }
+  ]
+}
